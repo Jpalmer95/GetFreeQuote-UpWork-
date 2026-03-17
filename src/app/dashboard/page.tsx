@@ -1,8 +1,8 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { jobService } from '@/services/jobService';
-import { Job, Quote, Message } from '@/types';
+import { Job, Quote, Message, IndustryVertical, INDUSTRY_VERTICALS } from '@/types';
 import styles from './page.module.css';
 import Navbar from '@/components/Navbar';
 import { useAuth } from '@/context/AuthContext';
@@ -31,6 +31,10 @@ export default function Dashboard() {
     const [quotes, setQuotes] = useState<Quote[]>([]);
     const [messages, setMessages] = useState<Message[]>([]);
 
+    const [industryFilter, setIndustryFilter] = useState<IndustryVertical | ''>('');
+    const [statusFilter, setStatusFilter] = useState<string>('');
+    const [searchQuery, setSearchQuery] = useState('');
+
     useEffect(() => {
         if (!isLoading && !user) {
             router.push('/login');
@@ -57,6 +61,29 @@ export default function Dashboard() {
         return () => clearInterval(interval);
     }, [selectedJob, user]);
 
+    const filteredJobs = useMemo(() => {
+        let result = jobs;
+
+        if (industryFilter) {
+            result = result.filter(j => j.industryVertical === industryFilter);
+        }
+
+        if (statusFilter) {
+            result = result.filter(j => j.status === statusFilter);
+        }
+
+        if (searchQuery) {
+            const q = searchQuery.toLowerCase();
+            result = result.filter(j =>
+                j.title.toLowerCase().includes(q) ||
+                j.subcategory.toLowerCase().includes(q) ||
+                j.tags.some(t => t.toLowerCase().includes(q))
+            );
+        }
+
+        return result;
+    }, [jobs, industryFilter, statusFilter, searchQuery]);
+
     if (isLoading || !user) {
         return <div className="loading-screen">Loading...</div>;
     }
@@ -72,27 +99,62 @@ export default function Dashboard() {
 
             <div className={styles.layout}>
                 <aside className={styles.jobList}>
-                    {jobs.map(job => (
-                        <div
-                            key={job.id}
-                            className={`${styles.jobCard} ${selectedJob?.id === job.id ? styles.activeJob : ''}`}
-                            onClick={() => setSelectedJob(job)}
+                    <div className={styles.filterBar}>
+                        <input
+                            type="text"
+                            placeholder="Search projects..."
+                            className={styles.sidebarSearch}
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                        <select
+                            className={styles.sidebarFilter}
+                            value={industryFilter}
+                            onChange={(e) => setIndustryFilter(e.target.value as IndustryVertical | '')}
                         >
-                            <div className={styles.jobCardTitle}>{job.title}</div>
-                            <div className={styles.jobCardIndustry}>{job.industryVertical}</div>
-                            <div className={styles.jobCardMeta}>
-                                <span className={STATUS_CLASS[job.status] || 'badge badge-muted'}>
-                                    {job.status}
-                                </span>
-                                <span className={styles.date}>
-                                    {new Date(job.createdAt).toLocaleDateString()}
-                                </span>
+                            <option value="">All Industries</option>
+                            {INDUSTRY_VERTICALS.map(v => (
+                                <option key={v} value={v}>{v}</option>
+                            ))}
+                        </select>
+                        <select
+                            className={styles.sidebarFilter}
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                        >
+                            <option value="">All Statuses</option>
+                            <option value="OPEN">Open</option>
+                            <option value="IN_PROGRESS">In Progress</option>
+                            <option value="COMPLETED">Completed</option>
+                            <option value="CANCELLED">Cancelled</option>
+                        </select>
+                    </div>
+
+                    <div className={styles.jobListItems}>
+                        {filteredJobs.map(job => (
+                            <div
+                                key={job.id}
+                                className={`${styles.jobCard} ${selectedJob?.id === job.id ? styles.activeJob : ''}`}
+                                onClick={() => setSelectedJob(job)}
+                            >
+                                <div className={styles.jobCardTitle}>{job.title}</div>
+                                <div className={styles.jobCardIndustry}>{job.industryVertical}</div>
+                                <div className={styles.jobCardMeta}>
+                                    <span className={STATUS_CLASS[job.status] || 'badge badge-muted'}>
+                                        {job.status}
+                                    </span>
+                                    <span className={styles.date}>
+                                        {new Date(job.createdAt).toLocaleDateString()}
+                                    </span>
+                                </div>
                             </div>
-                        </div>
-                    ))}
-                    {jobs.length === 0 && (
-                        <p className={styles.emptyState}>No projects yet. Post one!</p>
-                    )}
+                        ))}
+                        {filteredJobs.length === 0 && (
+                            <p className={styles.emptyState}>
+                                {jobs.length === 0 ? 'No projects yet. Post one!' : 'No projects match your filters.'}
+                            </p>
+                        )}
+                    </div>
                 </aside>
 
                 <main className={styles.detailView}>
@@ -124,6 +186,15 @@ export default function Dashboard() {
                                         {selectedJob.materials && (
                                             <span className={styles.tag}>{selectedJob.materials}</span>
                                         )}
+                                    </div>
+                                )}
+                                {selectedJob.tags.length > 0 && (
+                                    <div className={styles.tags}>
+                                        {selectedJob.tags
+                                            .filter(t => t !== selectedJob.industryVertical && t !== selectedJob.subcategory)
+                                            .map(t => (
+                                                <span key={t} className={styles.tag}>{t}</span>
+                                            ))}
                                     </div>
                                 )}
                             </div>

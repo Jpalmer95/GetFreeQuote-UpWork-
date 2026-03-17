@@ -29,6 +29,8 @@ export default function PostJob() {
         description: '',
         industryVertical: 'Home Services' as IndustryVertical,
         subcategory: '',
+        customIndustry: '',
+        customSubcategory: '',
         isPublic: true,
         requiresPermit: false,
         budget: '',
@@ -37,16 +39,27 @@ export default function PostJob() {
         materials: '',
         timelineStart: '',
         timelineEnd: '',
+        tags: '',
     });
     const [loading, setLoading] = useState(false);
 
     const subcategories = INDUSTRY_SUBCATEGORIES[formData.industryVertical] || ['Other'];
+    const isCustomIndustry = formData.industryVertical === 'Other';
+    const isCustomSubcategory = formData.subcategory === 'Other';
 
     useEffect(() => {
-        setFormData(prev => ({ ...prev, subcategory: subcategories[0] }));
+        setFormData(prev => ({ ...prev, subcategory: subcategories[0], customSubcategory: '' }));
     }, [formData.industryVertical]);
 
     const showPhysicalFields = ['Home Services', 'Commercial Construction', 'Trade Labor'].includes(formData.industryVertical);
+
+    const resolvedIndustry = isCustomIndustry && formData.customIndustry
+        ? formData.customIndustry
+        : formData.industryVertical;
+
+    const resolvedSubcategory = isCustomSubcategory && formData.customSubcategory
+        ? formData.customSubcategory
+        : formData.subcategory;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -54,15 +67,21 @@ export default function PostJob() {
 
         setLoading(true);
 
+        const tagList = [
+            resolvedIndustry,
+            resolvedSubcategory,
+            ...formData.tags.split(',').map(t => t.trim()).filter(Boolean),
+        ];
+
         try {
             await jobService.createJob({
                 userId: user.id,
                 title: formData.title,
                 location: formData.location,
                 description: formData.description,
-                category: formData.subcategory,
+                category: resolvedSubcategory,
                 industryVertical: formData.industryVertical,
-                subcategory: formData.subcategory,
+                subcategory: resolvedSubcategory,
                 isPublic: formData.isPublic,
                 requiresPermit: formData.requiresPermit,
                 budget: formData.budget || undefined,
@@ -71,7 +90,7 @@ export default function PostJob() {
                 materials: showPhysicalFields ? formData.materials || undefined : undefined,
                 timelineStart: formData.timelineStart || undefined,
                 timelineEnd: formData.timelineEnd || undefined,
-                tags: [formData.industryVertical, formData.subcategory].filter(Boolean),
+                tags: tagList,
             });
 
             router.push('/dashboard?new=true');
@@ -103,17 +122,43 @@ export default function PostJob() {
                             </select>
                         </div>
 
-                        <div className={styles.inputGroup}>
-                            <label>Subcategory</label>
-                            <select
-                                value={formData.subcategory}
-                                onChange={(e) => setFormData({ ...formData, subcategory: e.target.value })}
-                                className="field-select"
-                            >
-                                {subcategories.map(s => <option key={s} value={s}>{s}</option>)}
-                            </select>
-                        </div>
+                        {isCustomIndustry ? (
+                            <div className={styles.inputGroup}>
+                                <label>Custom Industry</label>
+                                <input
+                                    type="text"
+                                    placeholder="Enter your industry..."
+                                    value={formData.customIndustry}
+                                    onChange={(e) => setFormData({ ...formData, customIndustry: e.target.value })}
+                                    className="field-input"
+                                />
+                            </div>
+                        ) : (
+                            <div className={styles.inputGroup}>
+                                <label>Subcategory</label>
+                                <select
+                                    value={formData.subcategory}
+                                    onChange={(e) => setFormData({ ...formData, subcategory: e.target.value })}
+                                    className="field-select"
+                                >
+                                    {subcategories.map(s => <option key={s} value={s}>{s}</option>)}
+                                </select>
+                            </div>
+                        )}
                     </div>
+
+                    {!isCustomIndustry && isCustomSubcategory && (
+                        <div className={styles.inputGroup}>
+                            <label>Custom Subcategory</label>
+                            <input
+                                type="text"
+                                placeholder="Enter your subcategory..."
+                                value={formData.customSubcategory}
+                                onChange={(e) => setFormData({ ...formData, customSubcategory: e.target.value })}
+                                className="field-input"
+                            />
+                        </div>
+                    )}
 
                     <div className={styles.inputGroup}>
                         <label>Project Title</label>
@@ -144,7 +189,7 @@ export default function PostJob() {
                             <label>Budget Range</label>
                             <input
                                 type="text"
-                                placeholder="e.g. $500 – $5,000"
+                                placeholder="e.g. $500 - $5,000"
                                 value={formData.budget}
                                 onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
                                 className="field-input"
@@ -159,6 +204,17 @@ export default function PostJob() {
                             value={formData.description}
                             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                             className="field-textarea"
+                        />
+                    </div>
+
+                    <div className={styles.inputGroup}>
+                        <label>Tags (comma-separated, optional)</label>
+                        <input
+                            type="text"
+                            placeholder="e.g. residential, eco-friendly, fast turnaround"
+                            value={formData.tags}
+                            onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+                            className="field-input"
                         />
                     </div>
 

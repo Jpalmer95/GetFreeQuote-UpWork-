@@ -19,18 +19,29 @@ export default function Marketplace() {
         industryVertical: '' as IndustryVertical | '',
         subcategory: '',
         requiresPermit: undefined as boolean | undefined,
-        location: ''
+        location: '',
+        tagFilter: '',
     });
 
     useEffect(() => {
         const timer = setTimeout(async () => {
-            const results = await jobService.searchJobs({
+            let results = await jobService.searchJobs({
                 query: filters.query || undefined,
                 industryVertical: filters.industryVertical || undefined,
                 subcategory: filters.subcategory || undefined,
                 requiresPermit: filters.requiresPermit,
                 location: filters.location || undefined,
             });
+
+            if (filters.tagFilter) {
+                const tagTerms = filters.tagFilter.toLowerCase().split(',').map(t => t.trim()).filter(Boolean);
+                results = results.filter(job =>
+                    tagTerms.some(term =>
+                        job.tags.some(tag => tag.toLowerCase().includes(term))
+                    )
+                );
+            }
+
             setJobs(results);
         }, 300);
         return () => clearTimeout(timer);
@@ -89,6 +100,17 @@ export default function Marketplace() {
                             </div>
                         </div>
                     )}
+
+                    <div className={styles.filterSection}>
+                        <span className={styles.filterLabel}>Tags</span>
+                        <input
+                            type="text"
+                            placeholder="Filter by tags (comma-separated)..."
+                            className={styles.miniInput}
+                            value={filters.tagFilter}
+                            onChange={(e) => setFilters({ ...filters, tagFilter: e.target.value })}
+                        />
+                    </div>
 
                     <div className={styles.filterSection}>
                         <span className={styles.filterLabel}>Requirements</span>
@@ -157,6 +179,9 @@ export default function Marketplace() {
 
                                 <div className={styles.tagRow}>
                                     <span className={styles.categoryTag}>{job.subcategory || job.category}</span>
+                                    {job.tags.filter(t => t !== job.industryVertical && t !== job.subcategory && t !== job.category).map(t => (
+                                        <span key={t} className={styles.categoryTag}>{t}</span>
+                                    ))}
                                 </div>
 
                                 <p className={styles.description}>{job.description}</p>
