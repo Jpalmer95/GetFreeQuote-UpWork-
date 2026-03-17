@@ -1,58 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getAuthenticatedUser } from '@/lib/serverAuth';
+import { Job, AgentConfig } from '@/types';
+import {
+    JobRow, AgentConfigRow,
+    mapJobRow, mapAgentConfigRow,
+    customerAgentId, vendorAgentId, SYSTEM_AGENT_ID,
+    estimateHours,
+} from '@/services/serverMappers';
 
-function customerAgentId(userId: string): string {
-    return `customer-agent-${userId}`;
-}
-
-function vendorAgentId(userId: string): string {
-    return `vendor-agent-${userId}`;
-}
-
-const SYSTEM_AGENT_ID = 'system-agent';
-
-function mapJob(row: any) {
-    return {
-        id: row.id,
-        userId: row.user_id,
-        title: row.title,
-        category: row.category,
-        description: row.description,
-        location: row.location,
-        status: row.status,
-        industryVertical: row.industry_vertical || 'Other',
-        subcategory: row.subcategory || 'Other',
-        urgency: row.urgency,
-        budget: row.budget,
-        squareFootage: row.square_footage,
-        materials: row.materials,
-        tags: row.tags || [],
-    };
-}
-
-function mapAgentConfig(row: any) {
-    return {
-        id: row.id,
-        userId: row.user_id,
-        role: row.role,
-        isActive: row.is_active,
-        autoRespond: row.auto_respond,
-        autoQuote: row.auto_quote,
-        maxBudget: row.max_budget,
-        minBudget: row.min_budget,
-        industries: row.industries || [],
-        specialties: row.specialties || [],
-        maxDistance: row.max_distance,
-        baseRate: row.base_rate,
-        communicationStyle: row.communication_style || 'professional',
-        escalationTriggers: row.escalation_triggers || [],
-        autoApproveBelow: row.auto_approve_below,
-        workingHoursOnly: row.working_hours_only,
-    };
-}
-
-async function addMessage(jobId: string, senderId: string, senderType: string, content: string) {
+async function addMessage(jobId: string, senderId: string, senderType: string, content: string): Promise<void> {
     await supabaseAdmin.from('messages').insert({
         job_id: jobId,
         sender_id: senderId,
@@ -62,7 +19,7 @@ async function addMessage(jobId: string, senderId: string, senderType: string, c
     });
 }
 
-async function logAction(jobId: string, userId: string, actionType: string, summary: string, details: any = {}, agentConfigId?: string) {
+async function logAction(jobId: string, userId: string, actionType: string, summary: string, details: Record<string, unknown> = {}, agentConfigId?: string): Promise<void> {
     await supabaseAdmin.from('agent_actions').insert({
         job_id: jobId,
         agent_config_id: agentConfigId,
@@ -74,7 +31,7 @@ async function logAction(jobId: string, userId: string, actionType: string, summ
     });
 }
 
-async function createNotification(userId: string, jobId: string | null, type: string, priority: string, title: string, message: string, actionRequired: boolean, actionUrl?: string) {
+async function createNotification(userId: string, jobId: string | null, type: string, priority: string, title: string, message: string, actionRequired: boolean, actionUrl?: string): Promise<void> {
     await supabaseAdmin.from('notifications').insert({
         user_id: userId,
         job_id: jobId,
@@ -86,13 +43,6 @@ async function createNotification(userId: string, jobId: string | null, type: st
         action_url: actionUrl,
         read: false,
     });
-}
-
-function estimateHours(job: any): number {
-    const sqFt = job.squareFootage ? parseFloat(String(job.squareFootage).replace(/[^0-9.]/g, '')) : 0;
-    const base = sqFt > 0 ? Math.ceil(sqFt / 200) : 8;
-    const descComplexity = Math.min((job.description || '').length / 100, 3);
-    return Math.max(2, Math.round(base + descComplexity));
 }
 
 export async function POST(request: NextRequest) {
@@ -117,7 +67,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Job not found' }, { status: 404 });
         }
 
-        const job = mapJob(jobRow);
+        const job = mapJobRow(jobRow as JobRow);
 
         if (job.userId !== caller.id) {
             return NextResponse.json({ error: 'Forbidden: not job owner' }, { status: 403 });
@@ -129,7 +79,7 @@ export async function POST(request: NextRequest) {
             .eq('user_id', job.userId)
             .maybeSingle();
 
-        const customerConfig = customerConfigRow ? mapAgentConfig(customerConfigRow) : null;
+        const customerConfig = customerConfigRow ? mapAgentConfigRow(customerConfigRow as AgentConfigRow) : null;
         const style = customerConfig?.communicationStyle || 'professional';
 
         await addMessage(job.id, customerAgentId(job.userId), 'customer_agent',
@@ -160,7 +110,7 @@ export async function POST(request: NextRequest) {
             .eq('role', 'vendor')
             .eq('is_active', true);
 
-        const allVendors = (vendorRows || []).map(mapAgentConfig);
+        const allVendors = (vendorRows || []).map((r: AgentConfigRow) => mapAgentConfigRow(r as AgentConfigRow));
         const budgetNum = job.budget ? parseFloat(String(job.budget).replace(/[^0-9.]/g, '')) : null;
 
         type MatchResult = { config: typeof allVendors[0]; score: number; reasons: string[] };
@@ -208,6 +158,17 @@ export async function POST(request: NextRequest) {
             if (budgetNum && vc.minBudget && vc.maxBudget) {
                 score += 15;
                 reasons.push('budget_in_range');
+            }
+
+            if (vc.workingHoursOnly) {
+                const hour = new Date().getUTCHours();
+                if (hour < 9 || hour > 17) {
+                    score -= 5;
+                    reasons.push('outside_working_hours');
+                } else {
+                    score += 5;
+                    reasons.push('within_working_hours');
+                }
             }
 
             if (vc.autoQuote) { score += 10; reasons.push('auto_quote_enabled'); }

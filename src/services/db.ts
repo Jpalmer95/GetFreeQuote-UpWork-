@@ -1,5 +1,9 @@
 import { supabase } from '@/lib/supabase';
 import { Job, Quote, Message, AgentConfig, AgentAction, Notification, IndustryVertical } from '@/types';
+import {
+    JobRow, AgentConfigRow, QuoteRow, MessageRow, AgentActionRow, NotificationRow,
+    mapJobRow, mapAgentConfigRow,
+} from './serverMappers';
 
 export const db = {
     getJobs: async (userId?: string): Promise<Job[]> => {
@@ -318,32 +322,11 @@ export const db = {
     },
 };
 
-function mapJob(row: any): Job {
-    return {
-        id: row.id,
-        userId: row.user_id,
-        title: row.title,
-        category: row.category,
-        description: row.description,
-        location: row.location,
-        status: row.status,
-        createdAt: row.created_at,
-        tags: row.tags || [],
-        isPublic: row.is_public,
-        requiresPermit: row.requires_permit,
-        budget: row.budget,
-        industryVertical: row.industry_vertical || 'Other',
-        subcategory: row.subcategory || 'Other',
-        urgency: row.urgency,
-        squareFootage: row.square_footage,
-        materials: row.materials,
-        attachments: row.attachments || [],
-        timelineStart: row.timeline_start,
-        timelineEnd: row.timeline_end,
-    };
+function mapJob(row: JobRow): Job {
+    return mapJobRow(row);
 }
 
-function mapQuote(row: any): Quote {
+function mapQuote(row: QuoteRow): Quote {
     return {
         id: row.id,
         jobId: row.job_id,
@@ -351,54 +334,35 @@ function mapQuote(row: any): Quote {
         vendorName: row.vendor_name,
         amount: row.amount,
         estimatedDays: row.estimated_days,
-        details: row.details,
-        status: row.status,
+        details: row.details || '',
+        status: row.status as Quote['status'],
         createdAt: row.created_at
     };
 }
 
-function mapMessage(row: any): Message {
+function mapMessage(row: MessageRow): Message {
     return {
         id: row.id,
         jobId: row.job_id,
         senderId: row.sender_id,
-        senderType: row.sender_type || 'user',
+        senderType: (row.sender_type || 'user') as Message['senderType'],
         content: row.content,
         timestamp: row.timestamp,
         isAgentAction: row.is_agent_action
     };
 }
 
-function mapAgentConfig(row: any): AgentConfig {
-    return {
-        id: row.id,
-        userId: row.user_id,
-        role: row.role,
-        isActive: row.is_active,
-        autoRespond: row.auto_respond,
-        autoQuote: row.auto_quote,
-        maxBudget: row.max_budget,
-        minBudget: row.min_budget,
-        industries: row.industries || [],
-        specialties: row.specialties || [],
-        maxDistance: row.max_distance,
-        baseRate: row.base_rate,
-        communicationStyle: row.communication_style || 'professional',
-        escalationTriggers: row.escalation_triggers || [],
-        autoApproveBelow: row.auto_approve_below,
-        workingHoursOnly: row.working_hours_only,
-        createdAt: row.created_at,
-        updatedAt: row.updated_at,
-    };
+function mapAgentConfig(row: AgentConfigRow): AgentConfig {
+    return mapAgentConfigRow(row);
 }
 
-function mapAgentAction(row: any): AgentAction {
+function mapAgentAction(row: AgentActionRow): AgentAction {
     return {
         id: row.id,
         jobId: row.job_id,
-        agentConfigId: row.agent_config_id,
+        agentConfigId: row.agent_config_id || undefined,
         userId: row.user_id,
-        actionType: row.action_type,
+        actionType: row.action_type as AgentAction['actionType'],
         summary: row.summary,
         details: row.details,
         automated: row.automated,
@@ -406,18 +370,18 @@ function mapAgentAction(row: any): AgentAction {
     };
 }
 
-function mapNotification(row: any): Notification {
+function mapNotification(row: NotificationRow): Notification {
     return {
         id: row.id,
         userId: row.user_id,
-        jobId: row.job_id,
-        type: row.type,
-        priority: row.priority,
+        jobId: row.job_id || undefined,
+        type: row.type as Notification['type'],
+        priority: row.priority as Notification['priority'],
         title: row.title,
         message: row.message,
         read: row.read,
         actionRequired: row.action_required,
-        actionUrl: row.action_url,
+        actionUrl: row.action_url || undefined,
         createdAt: row.created_at,
     };
 }

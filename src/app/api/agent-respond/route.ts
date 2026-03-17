@@ -1,35 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getAuthenticatedUser } from '@/lib/serverAuth';
-
-function customerAgentId(userId: string): string {
-    return `customer-agent-${userId}`;
-}
-
-function vendorAgentId(userId: string): string {
-    return `vendor-agent-${userId}`;
-}
-
-function mapAgentConfig(row: any) {
-    return {
-        id: row.id,
-        userId: row.user_id,
-        role: row.role,
-        isActive: row.is_active,
-        autoRespond: row.auto_respond,
-        autoQuote: row.auto_quote,
-        maxBudget: row.max_budget,
-        minBudget: row.min_budget,
-        industries: row.industries || [],
-        specialties: row.specialties || [],
-        maxDistance: row.max_distance,
-        baseRate: row.base_rate,
-        communicationStyle: row.communication_style || 'professional',
-        escalationTriggers: row.escalation_triggers || [],
-        autoApproveBelow: row.auto_approve_below,
-        workingHoursOnly: row.working_hours_only,
-    };
-}
+import { AgentConfig } from '@/types';
+import {
+    AgentConfigRow,
+    mapAgentConfigRow,
+    customerAgentId, vendorAgentId,
+} from '@/services/serverMappers';
 
 export async function POST(request: NextRequest) {
     try {
@@ -83,7 +60,7 @@ export async function POST(request: NextRequest) {
             .eq('user_id', caller.id)
             .maybeSingle();
 
-        const callerConfig = configRow ? mapAgentConfig(configRow) : null;
+        const callerConfig = configRow ? mapAgentConfigRow(configRow as AgentConfigRow) : null;
         const responses: string[] = [];
 
         if (isJobOwner && callerConfig?.isActive && callerConfig.autoRespond) {
@@ -136,7 +113,7 @@ export async function POST(request: NextRequest) {
                         .maybeSingle();
 
                     if (vcRow) {
-                        const vc = mapAgentConfig(vcRow);
+                        const vc = mapAgentConfigRow(vcRow as AgentConfigRow);
                         if (vc.autoRespond) {
                             const vendorResponse = vc.communicationStyle === 'friendly'
                                 ? `Got it! We'll review the new details and update our estimate shortly.`
@@ -202,7 +179,7 @@ export async function POST(request: NextRequest) {
                 .maybeSingle();
 
             if (vcRow) {
-                const vc = mapAgentConfig(vcRow);
+                const vc = mapAgentConfigRow(vcRow as AgentConfigRow);
                 if (vc.autoRespond) {
                     await supabaseAdmin.from('agent_actions').insert({
                         job_id: jobId,
@@ -223,7 +200,7 @@ export async function POST(request: NextRequest) {
                 .eq('is_active', true)
                 .maybeSingle();
 
-            if (ownerConfig && mapAgentConfig(ownerConfig).autoRespond) {
+            if (ownerConfig && mapAgentConfigRow(ownerConfig as AgentConfigRow).autoRespond) {
                 await supabaseAdmin.from('notifications').insert({
                     user_id: jobRow.user_id,
                     job_id: jobId,

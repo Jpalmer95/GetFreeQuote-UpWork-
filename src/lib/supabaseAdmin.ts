@@ -5,7 +5,7 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
 let _client: SupabaseClient | null = null;
 
-function getClient(): SupabaseClient {
+export function getSupabaseAdmin(): SupabaseClient {
     if (!_client) {
         if (!supabaseServiceKey) {
             throw new Error('SUPABASE_SERVICE_ROLE_KEY is required for server-side operations');
@@ -17,13 +17,16 @@ function getClient(): SupabaseClient {
     return _client;
 }
 
-export const supabaseAdmin = new Proxy({} as SupabaseClient, {
-    get(_target, prop) {
-        const client = getClient();
-        const val = (client as any)[prop];
-        if (typeof val === 'function') {
-            return val.bind(client);
-        }
-        return val;
-    },
-});
+export const supabaseAdmin: SupabaseClient = new Proxy(
+    {} as SupabaseClient,
+    {
+        get(_target: SupabaseClient, prop: string | symbol): unknown {
+            const client = getSupabaseAdmin();
+            const value = client[prop as keyof SupabaseClient];
+            if (typeof value === 'function') {
+                return (value as Function).bind(client);
+            }
+            return value;
+        },
+    }
+);
