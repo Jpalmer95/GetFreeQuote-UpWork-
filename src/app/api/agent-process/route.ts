@@ -249,7 +249,7 @@ export async function POST(request: NextRequest) {
                 const amount = Math.round(baseRate * hours * urgencyMult);
                 const estimatedDays = Math.max(1, Math.ceil(hours / 8));
 
-                const { error: quoteError } = await supabaseAdmin.from('quotes').insert({
+                const { data: insertedQuote, error: quoteError } = await supabaseAdmin.from('quotes').insert({
                     job_id: job.id,
                     vendor_id: vc.userId,
                     vendor_name: 'Vendor Agent',
@@ -257,9 +257,9 @@ export async function POST(request: NextRequest) {
                     estimated_days: estimatedDays,
                     details: `Automated estimate for ${job.industryVertical} / ${job.subcategory}. Based on vendor rate of $${baseRate}/hr. Estimated timeline: ${estimatedDays} business day(s). ${job.urgency === 'urgent' ? 'Rush fee included. ' : ''}This is a preliminary estimate.`,
                     status: 'PENDING',
-                });
+                }).select('id').single();
 
-                if (!quoteError) {
+                if (!quoteError && insertedQuote) {
                     await addMessage(job.id, vendorAgentId(vc.userId), 'vendor_agent',
                         `Automated quote submitted: $${amount} for an estimated ${estimatedDays} day(s).`);
 
@@ -268,9 +268,26 @@ export async function POST(request: NextRequest) {
                         { amount, estimatedDays, baseRate, urgencyMult, hours }, vc.id);
 
                     if (customerConfig?.autoApproveBelow && amount <= customerConfig.autoApproveBelow) {
+                        await supabaseAdmin.from('quotes')
+                            .update({ status: 'ACCEPTED' })
+                            .eq('id', insertedQuote.id);
+
+                        await supabaseAdmin.from('jobs')
+                            .update({ status: 'IN_PROGRESS' })
+                            .eq('id', job.id);
+
                         await logAction(job.id, job.userId, 'auto_approve',
                             `Auto-approved quote of $${amount} (below threshold of $${customerConfig.autoApproveBelow})`,
-                            {}, customerConfig.id);
+                            { quoteId: insertedQuote.id, amount, threshold: customerConfig.autoApproveBelow }, customerConfig.id);
+
+                        await addMessage(job.id, customerAgentId(job.userId), 'customer_agent',
+                            `Quote of $${amount} from Vendor Agent has been auto-approved (below your $${customerConfig.autoApproveBelow} threshold). Project is now in progress.`);
+
+                        await createNotification(job.userId, job.id, 'agent_summary', 'medium', 'Quote Auto-Approved',
+                            `Your agent auto-approved a $${amount} quote for "${job.title}" (below your $${customerConfig.autoApproveBelow} threshold).`, false, '/dashboard');
+
+                        await createNotification(vc.userId, job.id, 'milestone', 'high', 'Quote Accepted!',
+                            `Your quote of $${amount} for "${job.title}" has been automatically accepted.`, false, '/vendor');
                     } else {
                         await createNotification(job.userId, job.id, 'quote_ready', 'high', 'New Quote Received',
                             `A vendor agent submitted a quote of $${amount} for "${job.title}". Review and approve?`, true, '/dashboard');
