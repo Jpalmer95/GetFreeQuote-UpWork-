@@ -2,7 +2,9 @@
 import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { jobService } from '@/services/jobService';
-import { Job, Quote, Message, IndustryVertical, INDUSTRY_VERTICALS } from '@/types';
+import { Job, Quote, Message, AgentAction, IndustryVertical, INDUSTRY_VERTICALS } from '@/types';
+import { db } from '@/services/db';
+import { isAgentSender, getAgentLabel } from '@/services/aiAgent';
 import styles from './page.module.css';
 import Navbar from '@/components/Navbar';
 import { useAuth } from '@/context/AuthContext';
@@ -22,6 +24,22 @@ const URGENCY_LABELS: Record<string, string> = {
     urgent: 'Urgent',
 };
 
+const ACTION_ICONS: Record<string, string> = {
+    job_broadcast: '📡',
+    vendor_match: '🤝',
+    auto_quote: '💰',
+    clarification_sent: '❓',
+    clarification_received: '💬',
+    scope_analysis: '🔍',
+    quote_comparison: '📊',
+    escalation: '⚠️',
+    negotiation: '🔄',
+    auto_approve: '✅',
+    auto_reject: '❌',
+};
+
+type DetailTab = 'timeline' | 'quotes' | 'agent-log';
+
 export default function Dashboard() {
     const { user, isLoading } = useAuth();
     const router = useRouter();
@@ -30,6 +48,8 @@ export default function Dashboard() {
     const [selectedJob, setSelectedJob] = useState<Job | null>(null);
     const [quotes, setQuotes] = useState<Quote[]>([]);
     const [messages, setMessages] = useState<Message[]>([]);
+    const [agentActions, setAgentActions] = useState<AgentAction[]>([]);
+    const [activeTab, setActiveTab] = useState<DetailTab>('timeline');
 
     const [industryFilter, setIndustryFilter] = useState<IndustryVertical | ''>('');
     const [statusFilter, setStatusFilter] = useState<string>('');
@@ -49,29 +69,26 @@ export default function Dashboard() {
             setJobs([...myJobs]);
 
             if (selectedJob) {
-                const updatedQuotes = await jobService.getJobQuotes(selectedJob.id);
-                const updatedMessages = await jobService.getJobMessages(selectedJob.id);
+                const [updatedQuotes, updatedMessages, updatedActions] = await Promise.all([
+                    jobService.getJobQuotes(selectedJob.id),
+                    jobService.getJobMessages(selectedJob.id),
+                    db.getAgentActions(selectedJob.id),
+                ]);
                 setQuotes([...updatedQuotes]);
                 setMessages([...updatedMessages]);
+                setAgentActions([...updatedActions]);
             }
         };
 
         fetchJobs();
-        const interval = setInterval(fetchJobs, 2000);
+        const interval = setInterval(fetchJobs, 3000);
         return () => clearInterval(interval);
     }, [selectedJob, user]);
 
     const filteredJobs = useMemo(() => {
         let result = jobs;
-
-        if (industryFilter) {
-            result = result.filter(j => j.industryVertical === industryFilter);
-        }
-
-        if (statusFilter) {
-            result = result.filter(j => j.status === statusFilter);
-        }
-
+        if (industryFilter) result = result.filter(j => j.industryVertical === industryFilter);
+        if (statusFilter) result = result.filter(j => j.status === statusFilter);
         if (searchQuery) {
             const q = searchQuery.toLowerCase();
             result = result.filter(j =>
@@ -80,7 +97,6 @@ export default function Dashboard() {
                 j.tags.some(t => t.toLowerCase().includes(q))
             );
         }
-
         return result;
     }, [jobs, industryFilter, statusFilter, searchQuery]);
 
@@ -94,7 +110,10 @@ export default function Dashboard() {
 
             <header className={styles.pageHeader}>
                 <h2 className="gradient-text">My Projects</h2>
-                <Link href="/post-job" className={styles.newBtn}>+ New Project</Link>
+                <div className={styles.headerActions}>
+                    <Link href="/agent-settings" className={styles.agentBtn}>AI Agent Settings</Link>
+                    <Link href="/post-job" className={styles.newBtn}>+ New Project</Link>
+                </div>
             </header>
 
             <div className={styles.layout}>
@@ -135,7 +154,7 @@ export default function Dashboard() {
                             <div
                                 key={job.id}
                                 className={`${styles.jobCard} ${selectedJob?.id === job.id ? styles.activeJob : ''}`}
-                                onClick={() => setSelectedJob(job)}
+                                onClick={() => { setSelectedJob(job); setActiveTab('timeline'); }}
                             >
                                 <div className={styles.jobCardTitle}>{job.title}</div>
                                 <div className={styles.jobCardIndustry}>{job.industryVertical}</div>
@@ -177,15 +196,9 @@ export default function Dashboard() {
                                 </p>
                                 {(selectedJob.squareFootage || selectedJob.materials || selectedJob.budget) && (
                                     <div className={styles.tags}>
-                                        {selectedJob.budget && (
-                                            <span className={styles.tag}>{selectedJob.budget}</span>
-                                        )}
-                                        {selectedJob.squareFootage && (
-                                            <span className={styles.tag}>{selectedJob.squareFootage}</span>
-                                        )}
-                                        {selectedJob.materials && (
-                                            <span className={styles.tag}>{selectedJob.materials}</span>
-                                        )}
+                                        {selectedJob.budget && <span className={styles.tag}>{selectedJob.budget}</span>}
+                                        {selectedJob.squareFootage && <span className={styles.tag}>{selectedJob.squareFootage}</span>}
+                                        {selectedJob.materials && <span className={styles.tag}>{selectedJob.materials}</span>}
                                     </div>
                                 )}
                                 {selectedJob.tags.length > 0 && (
@@ -199,29 +212,62 @@ export default function Dashboard() {
                                 )}
                             </div>
 
-                            <div className={styles.splitContent}>
+                            <div className={styles.tabBar}>
+                                <button
+                                    className={`${styles.tabBtn} ${activeTab === 'timeline' ? styles.tabActive : ''}`}
+                                    onClick={() => setActiveTab('timeline')}
+                                >
+                                    Timeline ({messages.length})
+                                </button>
+                                <button
+                                    className={`${styles.tabBtn} ${activeTab === 'quotes' ? styles.tabActive : ''}`}
+                                    onClick={() => setActiveTab('quotes')}
+                                >
+                                    Quotes ({quotes.length})
+                                </button>
+                                <button
+                                    className={`${styles.tabBtn} ${activeTab === 'agent-log' ? styles.tabActive : ''}`}
+                                    onClick={() => setActiveTab('agent-log')}
+                                >
+                                    Agent Log ({agentActions.length})
+                                </button>
+                            </div>
+
+                            {activeTab === 'timeline' && (
                                 <section className={`glass-panel ${styles.section}`}>
-                                    <div className={styles.sectionTitle}>Agent Updates</div>
-                                    <div className={styles.messageLog}>
-                                        {messages.map(msg => (
-                                            <div
-                                                key={msg.id}
-                                                className={`${styles.message} ${msg.senderId === 'system-agent' ? styles.agentMsg : ''}`}
-                                            >
-                                                <span className={styles.messageSender}>
-                                                    {msg.senderId === 'system-agent' ? 'AI Agent' : 'You'}
-                                                </span>
-                                                {msg.content}
-                                            </div>
-                                        ))}
+                                    <div className={styles.timelineList}>
+                                        {messages.map(msg => {
+                                            const isAgent = isAgentSender(msg.senderId);
+                                            const label = getAgentLabel(msg.senderId);
+                                            return (
+                                                <div
+                                                    key={msg.id}
+                                                    className={`${styles.timelineItem} ${isAgent ? styles.timelineAgent : styles.timelineUser}`}
+                                                >
+                                                    <div className={styles.timelineHeader}>
+                                                        <span className={`${styles.senderLabel} ${isAgent ? styles.senderAgent : styles.senderHuman}`}>
+                                                            {label}
+                                                        </span>
+                                                        {isAgent && (
+                                                            <span className={styles.automatedBadge}>Automated</span>
+                                                        )}
+                                                        <span className={styles.timelineTime}>
+                                                            {new Date(msg.timestamp).toLocaleString()}
+                                                        </span>
+                                                    </div>
+                                                    <div className={styles.timelineContent}>{msg.content}</div>
+                                                </div>
+                                            );
+                                        })}
                                         {messages.length === 0 && (
-                                            <p className={styles.emptyMsg}>No activity yet.</p>
+                                            <p className={styles.emptyMsg}>No activity yet. Your AI agent will begin working once the project is posted.</p>
                                         )}
                                     </div>
                                 </section>
+                            )}
 
+                            {activeTab === 'quotes' && (
                                 <section className={`glass-panel ${styles.section}`}>
-                                    <div className={styles.sectionTitle}>Quotes ({quotes.length})</div>
                                     <div className={styles.quoteList}>
                                         {quotes.map(quote => (
                                             <div key={quote.id} className={styles.quoteCard}>
@@ -231,22 +277,53 @@ export default function Dashboard() {
                                                 </div>
                                                 <p className={styles.timeline}>{quote.estimatedDays} day estimate</p>
                                                 <p className={styles.details}>{quote.details}</p>
-                                                <button className={styles.acceptBtn}>Accept Quote</button>
+                                                <div className={styles.quoteActions}>
+                                                    <button className={styles.acceptBtn}>Accept</button>
+                                                    <button className={styles.rejectBtn}>Reject</button>
+                                                </div>
                                             </div>
                                         ))}
                                         {quotes.length === 0 && (
-                                            <p className={styles.emptyMsg}>Waiting for vendors...</p>
+                                            <p className={styles.emptyMsg}>Waiting for vendor agents to submit quotes...</p>
                                         )}
                                     </div>
                                 </section>
-                            </div>
+                            )}
+
+                            {activeTab === 'agent-log' && (
+                                <section className={`glass-panel ${styles.section}`}>
+                                    <div className={styles.agentLogList}>
+                                        {agentActions.map(action => (
+                                            <div key={action.id} className={styles.agentLogItem}>
+                                                <span className={styles.agentLogIcon}>
+                                                    {ACTION_ICONS[action.actionType] || '🔵'}
+                                                </span>
+                                                <div className={styles.agentLogContent}>
+                                                    <div className={styles.agentLogSummary}>{action.summary}</div>
+                                                    <div className={styles.agentLogMeta}>
+                                                        <span className={action.automated ? styles.automatedBadge : styles.manualBadge}>
+                                                            {action.automated ? 'Automated' : 'Manual'}
+                                                        </span>
+                                                        <span className={styles.agentLogTime}>
+                                                            {new Date(action.createdAt).toLocaleString()}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                        {agentActions.length === 0 && (
+                                            <p className={styles.emptyMsg}>No agent actions recorded yet.</p>
+                                        )}
+                                    </div>
+                                </section>
+                            )}
                         </>
                     ) : (
                         <div className={styles.placeholder}>
                             <svg className={styles.placeholderIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                                 <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                             </svg>
-                            <p>Select a project to view details &amp; quotes</p>
+                            <p>Select a project to view details, quotes &amp; agent activity</p>
                         </div>
                     )}
                 </main>

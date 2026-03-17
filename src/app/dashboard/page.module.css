@@ -414,3 +414,209 @@
     height: 48px;
     opacity: 0.15;
 }
+
+/* ─── Header Actions ─── */
+.headerActions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.agentBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1.1rem;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--border-mid);
+    background: transparent;
+    color: rgba(255,255,255,0.7);
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: border-color var(--dur-base) ease, color var(--dur-base) ease;
+}
+
+.agentBtn:hover {
+    border-color: var(--primary);
+    color: var(--primary-light);
+}
+
+/* ─── Tab Bar ─── */
+.tabBar {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.tabBtn {
+    padding: 0.65rem 1.25rem;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: rgba(255,255,255,0.4);
+    font-family: var(--font-sans);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: color var(--dur-base) ease, border-color var(--dur-base) ease;
+}
+
+.tabBtn:hover { color: rgba(255,255,255,0.7); }
+
+.tabActive {
+    color: var(--primary-light);
+    border-bottom-color: var(--primary);
+}
+
+/* ─── Conversation Timeline ─── */
+.timelineList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    flex: 1;
+}
+
+.timelineItem {
+    padding: 0.85rem 1rem;
+    border-radius: var(--radius-md);
+    border-left: 3px solid var(--border-subtle);
+}
+
+.timelineAgent {
+    background: rgba(79,142,247,0.05);
+    border-left-color: var(--primary);
+}
+
+.timelineUser {
+    background: var(--surface-100);
+    border-left-color: rgba(255,255,255,0.15);
+}
+
+.timelineHeader {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.4rem;
+    flex-wrap: wrap;
+}
+
+.senderLabel {
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.senderAgent { color: var(--primary-light); }
+.senderHuman { color: rgba(255,255,255,0.55); }
+
+.automatedBadge {
+    padding: 0.1rem 0.4rem;
+    border-radius: var(--radius-xs);
+    background: rgba(79,142,247,0.12);
+    color: var(--primary-light);
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.manualBadge {
+    padding: 0.1rem 0.4rem;
+    border-radius: var(--radius-xs);
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.5);
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.timelineTime {
+    font-size: 0.68rem;
+    color: rgba(255,255,255,0.25);
+    margin-left: auto;
+}
+
+.timelineContent {
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.7);
+    line-height: 1.55;
+}
+
+/* ─── Quote Actions ─── */
+.quoteActions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.quoteActions .acceptBtn {
+    flex: 1;
+}
+
+.rejectBtn {
+    flex: 1;
+    padding: 0.55rem;
+    background: transparent;
+    border: 1px solid var(--border-mid);
+    color: rgba(255,255,255,0.5);
+    font-family: var(--font-sans);
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: border-color var(--dur-base) ease, color var(--dur-base) ease;
+}
+
+.rejectBtn:hover {
+    border-color: var(--accent-red);
+    color: var(--accent-red);
+}
+
+/* ─── Agent Log ─── */
+.agentLogList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex: 1;
+}
+
+.agentLogItem {
+    display: flex;
+    gap: 0.75rem;
+    padding: 0.7rem 0.85rem;
+    border-radius: var(--radius-sm);
+    background: var(--surface-100);
+    border: 1px solid var(--border-subtle);
+    transition: background var(--dur-base) ease;
+}
+
+.agentLogItem:hover { background: var(--surface-200); }
+
+.agentLogIcon {
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+.agentLogContent {
+    flex: 1;
+    min-width: 0;
+}
+
+.agentLogSummary {
+    font-size: 0.82rem;
+    color: var(--foreground);
+    line-height: 1.4;
+    margin-bottom: 0.25rem;
+}
+
+.agentLogMeta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.agentLogTime {
+    font-size: 0.68rem;
+    color: rgba(255,255,255,0.25);
+}

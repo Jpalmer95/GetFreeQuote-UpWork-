@@ -280,4 +280,156 @@
 .emptyFeed {
     color: rgba(255,255,255,0.3);
     font-size: 0.9rem;
+    padding: 2rem;
+    text-align: center;
 }
+
+.statMuted { color: rgba(255,255,255,0.35); }
+
+.settingsLink {
+    padding: 0.45rem 1rem;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--border-mid);
+    color: rgba(255,255,255,0.6);
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: border-color var(--dur-base) ease, color var(--dur-base) ease;
+}
+
+.settingsLink:hover {
+    border-color: var(--primary);
+    color: var(--primary-light);
+}
+
+.tabBar {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border-subtle);
+    margin-bottom: 1.5rem;
+}
+
+.tabBtn {
+    padding: 0.65rem 1.25rem;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: rgba(255,255,255,0.4);
+    font-family: var(--font-sans);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: color var(--dur-base) ease, border-color var(--dur-base) ease;
+}
+
+.tabBtn:hover { color: rgba(255,255,255,0.7); }
+
+.tabActive {
+    color: var(--primary-light);
+    border-bottom-color: var(--primary);
+}
+
+.filterPanel {
+    padding: 1.25rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-subtle);
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    height: fit-content;
+}
+
+.filterTitle {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: rgba(255,255,255,0.35);
+    margin-bottom: 0.75rem;
+}
+
+.jobBudget {
+    font-weight: 600;
+    color: var(--accent) !important;
+    margin-top: 0.25rem;
+}
+
+.reviewSection {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.reviewCard {
+    padding: 1.25rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-subtle);
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+}
+
+.reviewHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.reviewTitle {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--foreground);
+}
+
+.priorityBadge {
+    padding: 0.15rem 0.5rem;
+    border-radius: var(--radius-full);
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.priorityLow { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.4); }
+.priorityMedium { background: rgba(79,142,247,0.12); color: var(--primary-light); }
+.priorityHigh { background: rgba(245,166,35,0.12); color: var(--accent-amber); }
+.priorityUrgent { background: rgba(240,92,92,0.12); color: var(--accent-red); }
+
+.reviewMsg {
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.55);
+    line-height: 1.5;
+    margin-bottom: 0.75rem;
+}
+
+.reviewActions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.reviewActionBtn {
+    padding: 0.45rem 1rem;
+    border-radius: var(--radius-sm);
+    background: var(--primary);
+    color: white;
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: opacity var(--dur-base) ease;
+}
+
+.reviewActionBtn:hover { opacity: 0.85; }
+
+.dismissBtn {
+    padding: 0.45rem 1rem;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    border: 1px solid var(--border-mid);
+    color: rgba(255,255,255,0.5);
+    font-family: var(--font-sans);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color var(--dur-base) ease;
+}
+
+.dismissBtn:hover { border-color: var(--primary); }

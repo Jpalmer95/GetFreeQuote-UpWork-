@@ -100,7 +100,83 @@ export interface Message {
     id: string;
     jobId: string;
     senderId: string;
+    senderType: 'user' | 'vendor' | 'customer_agent' | 'vendor_agent' | 'system';
     content: string;
     timestamp: string;
     isAgentAction?: boolean;
+}
+
+export type AgentRole = 'customer' | 'vendor';
+
+export type EscalationTrigger = 'quote_received' | 'scope_change' | 'budget_exceeded' | 'timeline_conflict' | 'manual_review';
+
+export interface AgentConfig {
+    id: string;
+    userId: string;
+    role: AgentRole;
+    isActive: boolean;
+    autoRespond: boolean;
+    autoQuote: boolean;
+    maxBudget?: number;
+    minBudget?: number;
+    industries: string[];
+    specialties: string[];
+    maxDistance?: number;
+    baseRate?: number;
+    communicationStyle: 'professional' | 'friendly' | 'concise';
+    escalationTriggers: EscalationTrigger[];
+    autoApproveBelow?: number;
+    workingHoursOnly: boolean;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export type AgentActionType =
+    | 'job_broadcast'
+    | 'vendor_match'
+    | 'auto_quote'
+    | 'clarification_sent'
+    | 'clarification_received'
+    | 'scope_analysis'
+    | 'quote_comparison'
+    | 'escalation'
+    | 'negotiation'
+    | 'auto_approve'
+    | 'auto_reject';
+
+export interface AgentAction {
+    id: string;
+    jobId: string;
+    agentConfigId?: string;
+    userId: string;
+    actionType: AgentActionType;
+    summary: string;
+    details?: Record<string, unknown>;
+    automated: boolean;
+    createdAt: string;
+}
+
+export type NotificationType =
+    | 'quote_ready'
+    | 'approval_needed'
+    | 'scope_change'
+    | 'agent_summary'
+    | 'job_match'
+    | 'negotiation_update'
+    | 'milestone';
+
+export type NotificationPriority = 'low' | 'medium' | 'high' | 'urgent';
+
+export interface Notification {
+    id: string;
+    userId: string;
+    jobId?: string;
+    type: NotificationType;
+    priority: NotificationPriority;
+    title: string;
+    message: string;
+    read: boolean;
+    actionRequired: boolean;
+    actionUrl?: string;
+    createdAt: string;
 }

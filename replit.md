@@ -1,6 +1,6 @@
 # BidFlow
 
-An AI-native marketplace for estimates and bids across any industry — home services, commercial construction, gig work, events, trade labor, professional services, technology, and more. Built with Next.js and Supabase.
+An AI-agent-native marketplace for estimates and bids across any industry — home services, commercial construction, gig work, events, trade labor, professional services, technology, and more. AI agents handle quote negotiation; humans only intervene when approval is needed. Built with Next.js and Supabase.
 
 ## Architecture
 
@@ -20,36 +20,58 @@ src/
     page.tsx               # Landing page (aurora hero, industry verticals, CTA)
     page.module.css
     login/                 # Login / Sign Up page
-    dashboard/             # Project dashboard (shows industry, subcategory, urgency badges)
-    marketplace/           # Public project marketplace (filters by industry vertical + subcategory)
+    dashboard/             # Project dashboard (timeline, quotes, agent log tabs)
+    marketplace/           # Public project marketplace (industry/subcategory/tag filters)
     post-job/              # Post a new project form (dynamic fields per industry)
-    vendor/                # Vendor portal (industry filter, auto-quote agent)
+    vendor/                # Vendor portal (opportunities feed, pending reviews)
+    agent-settings/        # AI Agent configuration page
   components/
-    Navbar.tsx             # Sticky glass navbar with active route indicator
+    Navbar.tsx             # Sticky glass navbar with notification bell + AI Agent link
     Navbar.module.css
+    NotificationPanel.tsx  # Notification dropdown with priority indicators
+    NotificationPanel.module.css
   context/
     AuthContext.tsx        # Supabase auth state provider
   lib/
     supabase.ts            # Supabase client
   services/
     jobService.ts          # Business logic layer
-    aiAgent.ts             # AI agent service (processes new jobs)
+    aiAgent.ts             # AI agent engine (job processing, auto-quoting, escalation)
     db.ts                  # Database access layer (Supabase queries, mappers)
   types/
-    index.ts               # TypeScript types, industry verticals, subcategories
+    index.ts               # TypeScript types, agent configs, notifications
 public/                    # Static assets
 supabase_schema.sql        # Database schema reference
 ```
 
 ## Data Model
 
-The platform uses an industry-agnostic data model:
+The platform uses an industry-agnostic data model with AI agent infrastructure:
 
-- **Industry Verticals**: Home Services, Commercial Construction, Gig Work, Events & Entertainment, Trade Labor, Day Labor, Professional Services, Technology, Other
-- **Subcategories**: Each vertical has its own set of subcategories (e.g., Home Services → Plumbing, Electrical, HVAC, etc.)
-- **Jobs** include: `industryVertical`, `subcategory`, `urgency` (flexible/within_month/within_week/urgent), `squareFootage`, `materials`, `attachments`, `timelineStart`, `timelineEnd` in addition to base fields
-- **Quotes**: vendor bids with amount, estimated days, details
-- **Messages**: conversation thread per job with AI agent action support
+- **Industry Verticals**: Home Services, Commercial Construction, Gig Work, Events & Entertainment, Trade Labor, Day Labor, Professional Services, Technology, Other (+ custom)
+- **Subcategories**: Each vertical has its own set (e.g., Home Services → Plumbing, Electrical, HVAC, etc.) + custom support
+- **Jobs**: `industryVertical`, `subcategory`, `urgency`, `squareFootage`, `materials`, `attachments`, `timelineStart`, `timelineEnd`, tags
+- **Quotes**: vendor bids with amount, estimated days, details, accept/reject workflow
+- **Messages**: conversation thread per job with `senderType` (user/vendor/customer_agent/vendor_agent/system)
+- **Agent Configs**: per-user AI agent settings (role, auto-respond, auto-quote, budget thresholds, industries, specialties, escalation triggers, communication style)
+- **Agent Actions**: audit log of all AI agent operations (scope_analysis, job_broadcast, vendor_match, auto_quote, clarification, escalation, etc.)
+- **Notifications**: prioritized alerts (low/medium/high/urgent) with action_required flag, types: quote_ready, approval_needed, scope_change, agent_summary, job_match, negotiation_update
+
+## AI Agent System
+
+The agent system operates at two levels:
+
+1. **Customer Agents**: When a job is posted, the customer's AI agent analyzes scope, broadcasts to matching vendor agents, handles clarification dialogs, compares quotes, and escalates to the human for approvals.
+2. **Vendor Agents**: Match incoming opportunities against vendor's configured criteria (industry, specialties, budget range, distance), auto-generate preliminary quotes, and send introductions.
+
+Key features:
+- Agent-to-agent communication with typed `senderType` on messages
+- Auto-quoting based on vendor base rate, urgency multiplier, and estimated hours
+- Budget threshold checking (auto-reject quotes above/below configured limits)
+- Auto-approve quotes below configured threshold
+- Escalation triggers for human review (configurable per user)
+- Full audit trail via `agent_actions` table
+- Notification system with priority levels and action-required flags
 
 ## Design System
 

@@ -103,11 +103,12 @@ create policy "Vendors can create quotes." on public.quotes
   for insert with check (auth.uid() = vendor_id);
 
 
--- MESSAGES
+-- MESSAGES (sender_id is text to support AI agent IDs like 'customer-agent-xxx')
 create table public.messages (
   id uuid default gen_random_uuid() primary key,
   job_id uuid references public.jobs(id) not null,
-  sender_id uuid references public.profiles(id) not null,
+  sender_id text not null,
+  sender_type text check (sender_type in ('user', 'vendor', 'customer_agent', 'vendor_agent', 'system')) default 'user',
   content text not null,
   timestamp timestamp with time zone default timezone('utc'::text, now()) not null,
   is_agent_action boolean default false
@@ -131,6 +132,101 @@ create policy "Users can view messages for their jobs." on public.messages
   );
 
 create policy "Users can insert messages." on public.messages
-  for insert with check (
-    auth.uid() = sender_id
+  for insert with check (true);
+
+
+-- AGENT CONFIGS
+create table public.agent_configs (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references public.profiles(id) not null,
+  role text check (role in ('customer', 'vendor')) not null default 'customer',
+  is_active boolean default true,
+  auto_respond boolean default true,
+  auto_quote boolean default false,
+  max_budget numeric,
+  min_budget numeric,
+  industries text[] default '{}',
+  specialties text[] default '{}',
+  max_distance integer,
+  base_rate numeric,
+  communication_style text check (communication_style in ('professional', 'friendly', 'concise')) default 'professional',
+  escalation_triggers text[] default '{quote_received,scope_change,budget_exceeded}',
+  auto_approve_below numeric,
+  working_hours_only boolean default false,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.agent_configs enable row level security;
+
+create policy "Users can view own agent config." on public.agent_configs
+  for select using (auth.uid() = user_id);
+
+create policy "Users can insert own agent config." on public.agent_configs
+  for insert with check (auth.uid() = user_id);
+
+create policy "Users can update own agent config." on public.agent_configs
+  for update using (auth.uid() = user_id);
+
+
+-- AGENT ACTIONS (audit log of everything agents do)
+create table public.agent_actions (
+  id uuid default gen_random_uuid() primary key,
+  job_id uuid references public.jobs(id) not null,
+  agent_config_id uuid references public.agent_configs(id),
+  user_id uuid references public.profiles(id) not null,
+  action_type text check (action_type in (
+    'job_broadcast', 'vendor_match', 'auto_quote', 'clarification_sent',
+    'clarification_received', 'scope_analysis', 'quote_comparison',
+    'escalation', 'negotiation', 'auto_approve', 'auto_reject'
+  )) not null,
+  summary text not null,
+  details jsonb default '{}',
+  automated boolean default true,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.agent_actions enable row level security;
+
+create policy "Users can view agent actions for their jobs." on public.agent_actions
+  for select using (
+    auth.uid() = user_id
+    OR exists (
+      select 1 from public.jobs
+      where public.jobs.id = agent_actions.job_id
+      and public.jobs.user_id = auth.uid()
+    )
   );
+
+create policy "System can insert agent actions." on public.agent_actions
+  for insert with check (true);
+
+
+-- NOTIFICATIONS
+create table public.notifications (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references public.profiles(id) not null,
+  job_id uuid references public.jobs(id),
+  type text check (type in (
+    'quote_ready', 'approval_needed', 'scope_change',
+    'agent_summary', 'job_match', 'negotiation_update', 'milestone'
+  )) not null,
+  priority text check (priority in ('low', 'medium', 'high', 'urgent')) default 'medium',
+  title text not null,
+  message text not null,
+  read boolean default false,
+  action_required boolean default false,
+  action_url text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.notifications enable row level security;
+
+create policy "Users can view own notifications." on public.notifications
+  for select using (auth.uid() = user_id);
+
+create policy "Users can update own notifications." on public.notifications
+  for update using (auth.uid() = user_id);
+
+create policy "System can insert notifications." on public.notifications
+  for insert with check (true);

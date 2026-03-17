@@ -26,7 +26,9 @@ export const jobService = {
     createJob: async (jobData: Omit<Job, 'id' | 'createdAt' | 'status'>) => {
         const newJob = await db.createJob(jobData);
 
-        aiAgent.processNewJob(newJob.id);
+        aiAgent.processNewJob(newJob.id).catch(err => {
+            console.error('AI agent processing error:', err);
+        });
 
         return newJob;
     },
@@ -37,5 +39,13 @@ export const jobService = {
 
     getJobQuotes: async (jobId: string) => {
         return db.getQuotes(jobId);
-    }
+    },
+
+    acceptQuote: async (quoteId: string) => {
+        await db.updateQuoteStatus(quoteId, 'ACCEPTED');
+    },
+
+    rejectQuote: async (quoteId: string) => {
+        await db.updateQuoteStatus(quoteId, 'REJECTED');
+    },
 };

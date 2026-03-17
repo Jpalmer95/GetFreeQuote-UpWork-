@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import NotificationPanel from './NotificationPanel';
 import styles from './Navbar.module.css';
 
 export default function Navbar() {
@@ -24,18 +25,27 @@ export default function Navbar() {
                         Marketplace
                     </Link>
                     {user && (
-                        <Link
-                            href="/dashboard"
-                            className={`${styles.link} ${pathname === '/dashboard' ? styles.active : ''}`}
-                        >
-                            Dashboard
-                        </Link>
+                        <>
+                            <Link
+                                href="/dashboard"
+                                className={`${styles.link} ${pathname === '/dashboard' ? styles.active : ''}`}
+                            >
+                                Dashboard
+                            </Link>
+                            <Link
+                                href="/agent-settings"
+                                className={`${styles.link} ${pathname === '/agent-settings' ? styles.active : ''}`}
+                            >
+                                AI Agent
+                            </Link>
+                        </>
                     )}
                 </nav>
 
                 <div className={styles.actions}>
                     {user ? (
                         <div className={styles.userMenu}>
+                            <NotificationPanel />
                             <span className={styles.avatar}>
                                 {(profile?.full_name?.[0] || 'U').toUpperCase()}
                             </span>
