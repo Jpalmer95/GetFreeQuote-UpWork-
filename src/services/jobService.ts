@@ -11,14 +11,21 @@ export const jobService = {
         return db.getJob(jobId);
     },
 
-    searchJobs: async (filters: any) => {
+    searchJobs: async (filters: {
+        query?: string;
+        category?: string;
+        requiresPermit?: boolean;
+        location?: string;
+        industryVertical?: string;
+        subcategory?: string;
+        urgency?: string;
+    }) => {
         return db.searchJobs(filters);
     },
 
     createJob: async (jobData: Omit<Job, 'id' | 'createdAt' | 'status'>) => {
         const newJob = await db.createJob(jobData);
 
-        // Trigger AI processing in background
         aiAgent.processNewJob(newJob.id);
 
         return newJob;

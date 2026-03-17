@@ -56,7 +56,7 @@ function LoginForm() {
             <div className={`glass-panel ${styles.card}`}>
                 <div className={styles.cardHeader}>
                     <Link href="/" className={styles.backLink}>← Back</Link>
-                    <div className={styles.logoMark}>Q</div>
+                    <div className={styles.logoMark}>B</div>
                 </div>
 
                 <div className={styles.tabs}>
@@ -81,8 +81,8 @@ function LoginForm() {
                 </h2>
                 <p className={styles.subtitle}>
                     {mode === 'login'
-                        ? 'Sign in to manage your jobs and quotes.'
-                        : 'Join QuoteBot and simplify your home services.'}
+                        ? 'Sign in to manage your projects and quotes.'
+                        : 'Join BidFlow and simplify getting estimates.'}
                 </p>
 
                 {error && (
@@ -115,8 +115,8 @@ function LoginForm() {
                                     onChange={e => setRole(e.target.value)}
                                     className="field-select"
                                 >
-                                    <option value="USER">Homeowner / Client</option>
-                                    <option value="VENDOR">Contractor / Vendor</option>
+                                    <option value="USER">Client / Project Owner</option>
+                                    <option value="VENDOR">Service Provider / Vendor</option>
                                 </select>
                             </div>
                         </>

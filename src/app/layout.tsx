@@ -3,8 +3,8 @@ import type { Metadata } from 'next';
 import { AuthProvider } from '@/context/AuthContext';
 
 export const metadata: Metadata = {
-  title: 'QuoteBot Network | Automated Quote Management',
-  description: 'Commoditizing and reinventing the quote process with AI.',
+  title: 'BidFlow | AI-Powered Marketplace for Estimates & Bids',
+  description: 'Post a project, let AI agents handle the quoting. Industry-agnostic marketplace for home services, commercial construction, gig work, events, and more.',
 };
 
 export default function RootLayout({

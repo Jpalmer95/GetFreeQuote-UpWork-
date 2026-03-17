@@ -1,8 +1,7 @@
 import { supabase } from '@/lib/supabase';
-import { Job, Quote, Message, JobCategory } from '@/types';
+import { Job, Quote, Message, IndustryVertical } from '@/types';
 
 export const db = {
-    // Jobs
     getJobs: async (userId?: string): Promise<Job[]> => {
         let query = supabase.from('jobs').select('*');
         if (userId) query = query.eq('user_id', userId);
@@ -19,12 +18,27 @@ export const db = {
         query?: string;
         category?: string;
         requiresPermit?: boolean;
-        location?: string
+        location?: string;
+        industryVertical?: string;
+        subcategory?: string;
+        urgency?: string;
     }): Promise<Job[]> => {
         let query = supabase.from('jobs').select('*').eq('is_public', true);
 
         if (filters.category) {
             query = query.eq('category', filters.category);
+        }
+
+        if (filters.industryVertical) {
+            query = query.eq('industry_vertical', filters.industryVertical);
+        }
+
+        if (filters.subcategory) {
+            query = query.eq('subcategory', filters.subcategory);
+        }
+
+        if (filters.urgency) {
+            query = query.eq('urgency', filters.urgency);
         }
 
         if (filters.requiresPermit !== undefined) {
@@ -35,11 +49,7 @@ export const db = {
             query = query.ilike('location', `%${filters.location}%`);
         }
 
-        // For text search (title, description, tags), simple ILIKE OR logic is hard in single Supabase call without specific search index or RPC.
-        // We will filter client-side for complex text match if needed, OR use simple ilike on title for now.
-        // Implementing proper text search:
         if (filters.query) {
-            // Supabase 'or' syntax: width filters
             query = query.or(`title.ilike.%${filters.query}%,description.ilike.%${filters.query}%`);
         }
 
@@ -49,7 +59,6 @@ export const db = {
             return [];
         }
 
-        // Post-filter for tags if needed (since OR query above might miss tags or be too simple)
         let results = data.map(mapJob);
 
         if (filters.query) {
@@ -57,7 +66,7 @@ export const db = {
             results = results.filter(j =>
                 j.title.toLowerCase().includes(lowerQ) ||
                 j.description.toLowerCase().includes(lowerQ) ||
-                j.tags.some(t => t.toLowerCase().includes(lowerQ)) // Check tags here
+                j.tags.some(t => t.toLowerCase().includes(lowerQ))
             );
         }
 
@@ -81,6 +90,14 @@ export const db = {
             is_public: job.isPublic,
             requires_permit: job.requiresPermit,
             budget: job.budget,
+            industry_vertical: job.industryVertical,
+            subcategory: job.subcategory,
+            urgency: job.urgency || 'flexible',
+            square_footage: job.squareFootage,
+            materials: job.materials,
+            attachments: job.attachments || [],
+            timeline_start: job.timelineStart,
+            timeline_end: job.timelineEnd,
             status: 'OPEN'
         }).select().single();
 
@@ -88,7 +105,6 @@ export const db = {
         return mapJob(data);
     },
 
-    // Quotes
     getQuotes: async (jobId: string): Promise<Quote[]> => {
         const { data, error } = await supabase.from('quotes').select('*').eq('job_id', jobId);
         if (error) {
@@ -113,7 +129,6 @@ export const db = {
         return mapQuote(data);
     },
 
-    // Messages
     getMessages: async (jobId: string): Promise<Message[]> => {
         const { data, error } = await supabase.from('messages').select('*').eq('job_id', jobId).order('timestamp', { ascending: true });
         if (error) {
@@ -136,13 +151,12 @@ export const db = {
     }
 };
 
-// Mappers
 function mapJob(row: any): Job {
     return {
         id: row.id,
         userId: row.user_id,
         title: row.title,
-        category: row.category as JobCategory,
+        category: row.category,
         description: row.description,
         location: row.location,
         status: row.status,
@@ -150,7 +164,15 @@ function mapJob(row: any): Job {
         tags: row.tags || [],
         isPublic: row.is_public,
         requiresPermit: row.requires_permit,
-        budget: row.budget
+        budget: row.budget,
+        industryVertical: row.industry_vertical || 'Other',
+        subcategory: row.subcategory || 'Other',
+        urgency: row.urgency,
+        squareFootage: row.square_footage,
+        materials: row.materials,
+        attachments: row.attachments || [],
+        timelineStart: row.timeline_start,
+        timelineEnd: row.timeline_end,
     };
 }
 

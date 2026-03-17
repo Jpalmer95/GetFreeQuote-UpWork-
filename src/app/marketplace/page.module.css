@@ -202,12 +202,6 @@
     background: linear-gradient(90deg, #78909c, #455a64);
 }
 
-[data-category="Plumbing"] .cardAccent     { background: linear-gradient(90deg, #4f8ef7, #3b6fd4); }
-[data-category="Electrical"] .cardAccent   { background: linear-gradient(90deg, #f5a623, #d4860a); }
-[data-category="HVAC"] .cardAccent         { background: linear-gradient(90deg, #0fd98e, #09b074); }
-[data-category="Construction"] .cardAccent { background: linear-gradient(90deg, #9b6dff, #7340e0); }
-[data-category="Cleaning"] .cardAccent     { background: linear-gradient(90deg, #4fc3f7, #0288d1); }
-[data-category="Web Design"] .cardAccent   { background: linear-gradient(90deg, #f06292, #c2185b); }
 
 .cardHeader {
     display: flex;
@@ -215,17 +209,36 @@
     align-items: flex-start;
 }
 
-.categoryTag {
+.industryTag {
     display: inline-flex;
     align-items: center;
     padding: 0.2rem 0.65rem;
     border-radius: var(--radius-full);
-    font-size: 0.72rem;
+    font-size: 0.68rem;
     font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
+    background: rgba(79,142,247,0.12);
+    color: var(--primary-light);
+    border: 1px solid rgba(79,142,247,0.25);
+}
+
+.tagRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.categoryTag {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.15rem 0.55rem;
+    border-radius: var(--radius-full);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
     background: var(--surface-200);
-    color: rgba(255,255,255,0.6);
+    color: rgba(255,255,255,0.55);
     border: 1px solid var(--border-subtle);
 }
 

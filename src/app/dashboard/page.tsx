@@ -15,6 +15,13 @@ const STATUS_CLASS: Record<string, string> = {
     CANCELLED:   'badge badge-muted',
 };
 
+const URGENCY_LABELS: Record<string, string> = {
+    flexible: 'Flexible',
+    within_month: 'This Month',
+    within_week: 'This Week',
+    urgent: 'Urgent',
+};
+
 export default function Dashboard() {
     const { user, isLoading } = useAuth();
     const router = useRouter();
@@ -51,7 +58,7 @@ export default function Dashboard() {
     }, [selectedJob, user]);
 
     if (isLoading || !user) {
-        return <div className="loading-screen">Loading…</div>;
+        return <div className="loading-screen">Loading...</div>;
     }
 
     return (
@@ -59,8 +66,8 @@ export default function Dashboard() {
             <Navbar />
 
             <header className={styles.pageHeader}>
-                <h2 className="gradient-text">My Jobs</h2>
-                <Link href="/post-job" className={styles.newBtn}>+ New Job</Link>
+                <h2 className="gradient-text">My Projects</h2>
+                <Link href="/post-job" className={styles.newBtn}>+ New Project</Link>
             </header>
 
             <div className={styles.layout}>
@@ -72,6 +79,7 @@ export default function Dashboard() {
                             onClick={() => setSelectedJob(job)}
                         >
                             <div className={styles.jobCardTitle}>{job.title}</div>
+                            <div className={styles.jobCardIndustry}>{job.industryVertical}</div>
                             <div className={styles.jobCardMeta}>
                                 <span className={STATUS_CLASS[job.status] || 'badge badge-muted'}>
                                     {job.status}
@@ -83,7 +91,7 @@ export default function Dashboard() {
                         </div>
                     ))}
                     {jobs.length === 0 && (
-                        <p className={styles.emptyState}>No jobs yet. Post one!</p>
+                        <p className={styles.emptyState}>No projects yet. Post one!</p>
                     )}
                 </aside>
 
@@ -92,17 +100,32 @@ export default function Dashboard() {
                         <>
                             <div className={`glass-panel ${styles.detailHeaders}`}>
                                 <h2>{selectedJob.title}</h2>
+                                <div className={styles.detailMeta}>
+                                    <span className={styles.industryBadge}>{selectedJob.industryVertical}</span>
+                                    <span className={styles.subcategoryBadge}>{selectedJob.subcategory || selectedJob.category}</span>
+                                    {selectedJob.urgency && selectedJob.urgency !== 'flexible' && (
+                                        <span className={styles.urgencyBadge}>{URGENCY_LABELS[selectedJob.urgency]}</span>
+                                    )}
+                                </div>
                                 <p className={styles.location}>
                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                                         <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
                                     </svg>
                                     {selectedJob.location}
                                 </p>
-                                <div className={styles.tags}>
-                                    {selectedJob.tags.map(t => (
-                                        <span key={t} className={styles.tag}>{t}</span>
-                                    ))}
-                                </div>
+                                {(selectedJob.squareFootage || selectedJob.materials || selectedJob.budget) && (
+                                    <div className={styles.tags}>
+                                        {selectedJob.budget && (
+                                            <span className={styles.tag}>{selectedJob.budget}</span>
+                                        )}
+                                        {selectedJob.squareFootage && (
+                                            <span className={styles.tag}>{selectedJob.squareFootage}</span>
+                                        )}
+                                        {selectedJob.materials && (
+                                            <span className={styles.tag}>{selectedJob.materials}</span>
+                                        )}
+                                    </div>
+                                )}
                             </div>
 
                             <div className={styles.splitContent}>
@@ -141,7 +164,7 @@ export default function Dashboard() {
                                             </div>
                                         ))}
                                         {quotes.length === 0 && (
-                                            <p className={styles.emptyMsg}>Waiting for vendors…</p>
+                                            <p className={styles.emptyMsg}>Waiting for vendors...</p>
                                         )}
                                     </div>
                                 </section>
@@ -152,7 +175,7 @@ export default function Dashboard() {
                             <svg className={styles.placeholderIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                                 <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                             </svg>
-                            <p>Select a job to view details &amp; quotes</p>
+                            <p>Select a project to view details &amp; quotes</p>
                         </div>
                     )}
                 </main>

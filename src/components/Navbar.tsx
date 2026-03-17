@@ -12,8 +12,8 @@ export default function Navbar() {
         <header className={styles.header}>
             <div className={styles.inner}>
                 <Link href="/" className={styles.logo}>
-                    <span className={styles.logoIcon}>Q</span>
-                    <span className="gradient-text">QuoteBot</span>
+                    <span className={styles.logoIcon}>B</span>
+                    <span className="gradient-text">BidFlow</span>
                 </Link>
 
                 <nav className={styles.navLinks}>

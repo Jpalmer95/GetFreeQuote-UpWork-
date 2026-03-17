@@ -8,7 +8,7 @@
   padding: 0 1.5rem 6rem;
 }
 
-/* ─── Aurora Background ─── */
+/* Aurora Background */
 .auroraWrap {
   position: fixed;
   inset: 0;
@@ -42,7 +42,7 @@
   filter: blur(40px);
 }
 
-/* ─── Hero ─── */
+/* Hero */
 .hero {
   position: relative;
   z-index: 1;
@@ -93,7 +93,7 @@
   font-size: 1.15rem;
   color: rgba(255,255,255,0.6);
   line-height: 1.7;
-  max-width: 560px;
+  max-width: 600px;
   animation: fadeUp 0.65s 0.18s var(--ease-out-expo) both;
 }
 
@@ -112,18 +112,32 @@
   color: rgba(255,255,255,0.35);
   animation: fadeUp 0.65s 0.34s var(--ease-out-expo) both;
   margin-top: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .divider {
   opacity: 0.4;
 }
 
-/* ─── Features ─── */
+/* Section Label */
+.sectionLabel {
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(255,255,255,0.35);
+  margin-bottom: 2rem;
+}
+
+/* Features */
 .featuresSection {
   position: relative;
   z-index: 1;
   width: 100%;
   max-width: 1200px;
+  margin-bottom: 5rem;
 }
 
 .featuresGrid {
@@ -177,3 +191,80 @@
 .iconBlue   { background: rgba(79,142,247,0.15); color: var(--primary-light); }
 .iconPurple { background: rgba(155,109,255,0.15); color: var(--secondary-light); }
 .iconGreen  { background: rgba(15,217,142,0.12);  color: var(--accent); }
+
+/* Verticals Grid */
+.verticalsSection {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 1200px;
+  margin-bottom: 5rem;
+}
+
+.verticalsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+}
+
+.verticalCard {
+  padding: 1.5rem;
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  transition: transform var(--dur-slow) var(--ease-spring),
+              border-color var(--dur-base) ease;
+}
+
+.verticalCard:hover {
+  transform: translateY(-4px);
+  border-color: var(--border-mid);
+}
+
+.verticalIcon {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.verticalCard h4 {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.verticalCard p {
+  font-size: 0.82rem;
+  color: rgba(255,255,255,0.45);
+  line-height: 1.5;
+}
+
+/* CTA Section */
+.ctaSection {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 800px;
+}
+
+.ctaCard {
+  padding: 3rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  border: 1px solid var(--border-mid);
+}
+
+.ctaCard h2 {
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.ctaCard p {
+  font-size: 1rem;
+  color: rgba(255,255,255,0.5);
+  max-width: 520px;
+  line-height: 1.65;
+}

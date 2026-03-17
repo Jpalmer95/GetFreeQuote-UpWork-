@@ -1,29 +1,44 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { jobService } from '@/services/jobService';
-import { Job, JobCategory } from '@/types';
+import { Job, IndustryVertical, INDUSTRY_VERTICALS, INDUSTRY_SUBCATEGORIES } from '@/types';
 import styles from './page.module.css';
 import Navbar from '@/components/Navbar';
 
+const URGENCY_LABELS: Record<string, string> = {
+    flexible: 'Flexible',
+    within_month: 'This Month',
+    within_week: 'This Week',
+    urgent: 'Urgent',
+};
 
 export default function Marketplace() {
     const [jobs, setJobs] = useState<Job[]>([]);
     const [filters, setFilters] = useState({
         query: '',
-        category: '' as JobCategory | '',
+        industryVertical: '' as IndustryVertical | '',
+        subcategory: '',
         requiresPermit: undefined as boolean | undefined,
         location: ''
     });
 
     useEffect(() => {
         const timer = setTimeout(async () => {
-            const results = await jobService.searchJobs(filters);
+            const results = await jobService.searchJobs({
+                query: filters.query || undefined,
+                industryVertical: filters.industryVertical || undefined,
+                subcategory: filters.subcategory || undefined,
+                requiresPermit: filters.requiresPermit,
+                location: filters.location || undefined,
+            });
             setJobs(results);
         }, 300);
         return () => clearTimeout(timer);
     }, [filters]);
 
-    const categories: JobCategory[] = ['Plumbing', 'Electrical', 'HVAC', 'Construction', 'Cleaning', 'Web Design', 'Other'];
+    const subcategories = filters.industryVertical
+        ? INDUSTRY_SUBCATEGORIES[filters.industryVertical] || []
+        : [];
 
     return (
         <div className={styles.container}>
@@ -32,25 +47,48 @@ export default function Marketplace() {
             <div className={styles.layout}>
                 <aside className={styles.sidebar}>
                     <div className={styles.filterSection}>
-                        <span className={styles.filterLabel}>Category</span>
+                        <span className={styles.filterLabel}>Industry</span>
                         <div className={styles.pillGroup}>
                             <button
-                                className={`${styles.pill} ${filters.category === '' ? styles.pillActive : ''}`}
-                                onClick={() => setFilters({ ...filters, category: '' })}
+                                className={`${styles.pill} ${filters.industryVertical === '' ? styles.pillActive : ''}`}
+                                onClick={() => setFilters({ ...filters, industryVertical: '', subcategory: '' })}
                             >
-                                All Categories
+                                All Industries
                             </button>
-                            {categories.map(cat => (
+                            {INDUSTRY_VERTICALS.map(v => (
                                 <button
-                                    key={cat}
-                                    className={`${styles.pill} ${filters.category === cat ? styles.pillActive : ''}`}
-                                    onClick={() => setFilters({ ...filters, category: cat })}
+                                    key={v}
+                                    className={`${styles.pill} ${filters.industryVertical === v ? styles.pillActive : ''}`}
+                                    onClick={() => setFilters({ ...filters, industryVertical: v, subcategory: '' })}
                                 >
-                                    {cat}
+                                    {v}
                                 </button>
                             ))}
                         </div>
                     </div>
+
+                    {subcategories.length > 0 && (
+                        <div className={styles.filterSection}>
+                            <span className={styles.filterLabel}>Subcategory</span>
+                            <div className={styles.pillGroup}>
+                                <button
+                                    className={`${styles.pill} ${filters.subcategory === '' ? styles.pillActive : ''}`}
+                                    onClick={() => setFilters({ ...filters, subcategory: '' })}
+                                >
+                                    All
+                                </button>
+                                {subcategories.map(s => (
+                                    <button
+                                        key={s}
+                                        className={`${styles.pill} ${filters.subcategory === s ? styles.pillActive : ''}`}
+                                        onClick={() => setFilters({ ...filters, subcategory: s })}
+                                    >
+                                        {s}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     <div className={styles.filterSection}>
                         <span className={styles.filterLabel}>Requirements</span>
@@ -68,7 +106,7 @@ export default function Marketplace() {
                         <span className={styles.filterLabel}>Location</span>
                         <input
                             type="text"
-                            placeholder="Filter by city…"
+                            placeholder="Filter by city..."
                             className={styles.miniInput}
                             value={filters.location}
                             onChange={(e) => setFilters({ ...filters, location: e.target.value })}
@@ -83,7 +121,7 @@ export default function Marketplace() {
                         </svg>
                         <input
                             type="text"
-                            placeholder="Search jobs by keyword…"
+                            placeholder="Search projects by keyword..."
                             className={styles.searchInput}
                             value={filters.query}
                             onChange={(e) => setFilters({ ...filters, query: e.target.value })}
@@ -103,30 +141,43 @@ export default function Marketplace() {
                             <div
                                 key={job.id}
                                 className={`glass-panel ${styles.jobCard}`}
-                                data-category={job.category}
                             >
                                 <div className={styles.cardAccent} />
 
                                 <div className={styles.cardHeader}>
-                                    <span className={styles.categoryTag}>{job.category}</span>
-                                    <span className={styles.timeAgo}>Today</span>
+                                    <span className={styles.industryTag}>{job.industryVertical}</span>
+                                    <span className={styles.timeAgo}>
+                                        {job.urgency && job.urgency !== 'flexible'
+                                            ? URGENCY_LABELS[job.urgency]
+                                            : 'Today'}
+                                    </span>
                                 </div>
 
                                 <h3>{job.title}</h3>
+
+                                <div className={styles.tagRow}>
+                                    <span className={styles.categoryTag}>{job.subcategory || job.category}</span>
+                                </div>
+
                                 <p className={styles.description}>{job.description}</p>
 
                                 <div className={styles.metaRow}>
                                     <span className={styles.metaChip}>
-                                        📍 {job.location}
+                                        {job.location}
                                     </span>
                                     {job.budget && (
                                         <span className={styles.metaChip}>
-                                            💰 {job.budget}
+                                            {job.budget}
                                         </span>
                                     )}
                                     {job.requiresPermit && (
                                         <span className={`${styles.metaChip} ${styles.metaChipWarn}`}>
-                                            ⚠ Permit Req.
+                                            Permit Req.
+                                        </span>
+                                    )}
+                                    {job.squareFootage && (
+                                        <span className={styles.metaChip}>
+                                            {job.squareFootage}
                                         </span>
                                     )}
                                 </div>
@@ -143,7 +194,7 @@ export default function Marketplace() {
                                 <svg className={styles.emptyIcon} width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                                     <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
                                 </svg>
-                                <p>No jobs found matching your filters.</p>
+                                <p>No projects found matching your filters.</p>
                             </div>
                         )}
                     </div>
