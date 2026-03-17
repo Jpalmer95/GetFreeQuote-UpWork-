@@ -1,28 +1,50 @@
 'use client';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import styles from './Navbar.module.css'; // We'll create this css next
+import styles from './Navbar.module.css';
 
 export default function Navbar() {
     const { user, profile, signOut } = useAuth();
+    const pathname = usePathname();
 
     return (
-        <header className={`glass-panel ${styles.header}`}>
-            <div className={styles.logoRow}>
-                <Link href="/" className="gradient-text" style={{ fontWeight: 800, fontSize: '1.5rem', textDecoration: 'none' }}>
-                    QuoteBot
+        <header className={styles.header}>
+            <div className={styles.inner}>
+                <Link href="/" className={styles.logo}>
+                    <span className={styles.logoIcon}>Q</span>
+                    <span className="gradient-text">QuoteBot</span>
                 </Link>
 
                 <nav className={styles.navLinks}>
-                    <Link href="/marketplace" className={styles.link}>Marketplace</Link>
-                    {user && <Link href="/dashboard" className={styles.link}>Dashboard</Link>}
+                    <Link
+                        href="/marketplace"
+                        className={`${styles.link} ${pathname === '/marketplace' ? styles.active : ''}`}
+                    >
+                        Marketplace
+                    </Link>
+                    {user && (
+                        <Link
+                            href="/dashboard"
+                            className={`${styles.link} ${pathname === '/dashboard' ? styles.active : ''}`}
+                        >
+                            Dashboard
+                        </Link>
+                    )}
                 </nav>
 
                 <div className={styles.actions}>
                     {user ? (
                         <div className={styles.userMenu}>
-                            <span className={styles.welcome}>Hi, {profile?.full_name?.split(' ')[0] || 'User'}</span>
-                            <button onClick={() => signOut()} className={styles.logoutBtn}>Sign Out</button>
+                            <span className={styles.avatar}>
+                                {(profile?.full_name?.[0] || 'U').toUpperCase()}
+                            </span>
+                            <span className={styles.welcome}>
+                                {profile?.full_name?.split(' ')[0] || 'User'}
+                            </span>
+                            <button onClick={() => signOut()} className={styles.logoutBtn}>
+                                Sign Out
+                            </button>
                         </div>
                     ) : (
                         <div className={styles.authButtons}>

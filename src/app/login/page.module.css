@@ -1,0 +1,165 @@
+.page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+    background: var(--background);
+}
+
+/* ─── Decorative orbs ─── */
+.orb1 {
+    position: fixed;
+    width: 500px;
+    height: 500px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(79,142,247,0.14) 0%, transparent 70%);
+    top: -120px;
+    left: -160px;
+    pointer-events: none;
+    filter: blur(30px);
+}
+
+.orb2 {
+    position: fixed;
+    width: 420px;
+    height: 420px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(155,109,255,0.12) 0%, transparent 70%);
+    bottom: -80px;
+    right: -100px;
+    pointer-events: none;
+    filter: blur(30px);
+}
+
+/* ─── Card ─── */
+.card {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 420px;
+    padding: 2.25rem;
+    border: 1px solid var(--border-mid);
+    animation: fadeUp 0.55s var(--ease-out-expo) both;
+}
+
+.cardHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.75rem;
+}
+
+.backLink {
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.4);
+    transition: color var(--dur-base) ease;
+}
+.backLink:hover { color: rgba(255,255,255,0.75); }
+
+.logoMark {
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-sm);
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    font-size: 0.9rem;
+    color: #fff;
+}
+
+/* ─── Tabs ─── */
+.tabs {
+    display: flex;
+    background: var(--surface-100);
+    border-radius: var(--radius-sm);
+    padding: 3px;
+    margin-bottom: 1.5rem;
+}
+
+.tab {
+    flex: 1;
+    padding: 0.5rem;
+    border-radius: calc(var(--radius-sm) - 2px);
+    border: none;
+    background: transparent;
+    color: rgba(255,255,255,0.45);
+    font-family: var(--font-sans);
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background var(--dur-base) ease, color var(--dur-base) ease;
+}
+
+.tabActive {
+    background: var(--surface-300);
+    color: var(--foreground);
+}
+
+/* ─── Content ─── */
+.title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 0.35rem;
+}
+
+.subtitle {
+    font-size: 0.88rem;
+    color: rgba(255,255,255,0.45);
+    margin-bottom: 1.5rem;
+}
+
+.errorBox {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    background: rgba(240,92,92,0.1);
+    color: #f87171;
+    border: 1px solid rgba(240,92,92,0.25);
+    border-radius: var(--radius-sm);
+    font-size: 0.87rem;
+}
+
+/* ─── Form ─── */
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.fieldGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.label {
+    font-size: 0.83rem;
+    font-weight: 600;
+    color: rgba(255,255,255,0.6);
+    letter-spacing: 0.02em;
+}
+
+.submitBtn {
+    width: 100%;
+    margin-top: 0.5rem;
+    padding: 0.9rem;
+    font-size: 0.97rem;
+    border-radius: var(--radius-sm);
+}
+
+/* ─── Spinner ─── */
+.spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+}

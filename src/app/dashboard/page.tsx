@@ -7,6 +7,12 @@ import Navbar from '@/components/Navbar';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 
+const STATUS_CLASS: Record<string, string> = {
+    open:        'badge badge-blue',
+    in_progress: 'badge badge-amber',
+    closed:      'badge badge-green',
+};
+
 export default function Dashboard() {
     const { user, isLoading } = useAuth();
     const router = useRouter();
@@ -22,14 +28,12 @@ export default function Dashboard() {
         }
     }, [user, isLoading, router]);
 
-
-    // refresh loop to simulate real-time agent updates
     useEffect(() => {
         if (!user) return;
 
         const fetchJobs = async () => {
             const myJobs = await jobService.getMyJobs(user.id);
-            setJobs([...myJobs]); // clone to trigger render
+            setJobs([...myJobs]);
 
             if (selectedJob) {
                 const updatedQuotes = await jobService.getJobQuotes(selectedJob.id);
@@ -40,24 +44,24 @@ export default function Dashboard() {
         };
 
         fetchJobs();
-        const interval = setInterval(fetchJobs, 2000); // Poll every 2s
+        const interval = setInterval(fetchJobs, 2000);
         return () => clearInterval(interval);
     }, [selectedJob, user]);
 
     if (isLoading || !user) {
-        return <div className="loading-screen">Loading...</div>;
+        return <div className="loading-screen">Loading…</div>;
     }
 
     return (
         <div className={styles.container}>
             <Navbar />
-            <header className={styles.header}>
+
+            <header className={styles.pageHeader}>
                 <h2 className="gradient-text">My Jobs</h2>
                 <a href="/post-job" className={styles.newBtn}>+ New Job</a>
             </header>
 
             <div className={styles.layout}>
-                {/* Sidebar List */}
                 <aside className={styles.jobList}>
                     {jobs.map(job => (
                         <div
@@ -65,44 +69,63 @@ export default function Dashboard() {
                             className={`${styles.jobCard} ${selectedJob?.id === job.id ? styles.activeJob : ''}`}
                             onClick={() => setSelectedJob(job)}
                         >
-                            <h3>{job.title}</h3>
-                            <span className={styles.statusBadge}>{job.status}</span>
-                            <p className={styles.date}>{new Date(job.createdAt).toLocaleDateString()}</p>
+                            <div className={styles.jobCardTitle}>{job.title}</div>
+                            <div className={styles.jobCardMeta}>
+                                <span className={STATUS_CLASS[job.status] || 'badge badge-muted'}>
+                                    {job.status}
+                                </span>
+                                <span className={styles.date}>
+                                    {new Date(job.createdAt).toLocaleDateString()}
+                                </span>
+                            </div>
                         </div>
                     ))}
-                    {jobs.length === 0 && <p className={styles.emptyState}>No jobs yet. Post one!</p>}
+                    {jobs.length === 0 && (
+                        <p className={styles.emptyState}>No jobs yet. Post one!</p>
+                    )}
                 </aside>
 
-                {/* Main Content Area */}
                 <main className={styles.detailView}>
                     {selectedJob ? (
                         <>
                             <div className={`glass-panel ${styles.detailHeaders}`}>
                                 <h2>{selectedJob.title}</h2>
-                                <p className={styles.location}>{selectedJob.location}</p>
+                                <p className={styles.location}>
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
+                                    </svg>
+                                    {selectedJob.location}
+                                </p>
                                 <div className={styles.tags}>
-                                    {selectedJob.tags.map(t => <span key={t} className={styles.tag}>{t}</span>)}
+                                    {selectedJob.tags.map(t => (
+                                        <span key={t} className={styles.tag}>{t}</span>
+                                    ))}
                                 </div>
                             </div>
 
                             <div className={styles.splitContent}>
-                                {/* Agent Activity / Chat */}
                                 <section className={`glass-panel ${styles.section}`}>
-                                    <h3>Agent Updates</h3>
+                                    <div className={styles.sectionTitle}>Agent Updates</div>
                                     <div className={styles.messageLog}>
                                         {messages.map(msg => (
-                                            <div key={msg.id} className={`${styles.message} ${msg.senderId === 'system-agent' ? styles.agentMsg : ''}`}>
-                                                <strong>{msg.senderId === 'system-agent' ? '🤖 Agent' : 'You'}:</strong>
-                                                <p>{msg.content}</p>
+                                            <div
+                                                key={msg.id}
+                                                className={`${styles.message} ${msg.senderId === 'system-agent' ? styles.agentMsg : ''}`}
+                                            >
+                                                <span className={styles.messageSender}>
+                                                    {msg.senderId === 'system-agent' ? 'AI Agent' : 'You'}
+                                                </span>
+                                                {msg.content}
                                             </div>
                                         ))}
-                                        {messages.length === 0 && <p style={{ opacity: 0.5 }}>No activity yet.</p>}
+                                        {messages.length === 0 && (
+                                            <p className={styles.emptyMsg}>No activity yet.</p>
+                                        )}
                                     </div>
                                 </section>
 
-                                {/* Quotes List */}
                                 <section className={`glass-panel ${styles.section}`}>
-                                    <h3>Quotes ({quotes.length})</h3>
+                                    <div className={styles.sectionTitle}>Quotes ({quotes.length})</div>
                                     <div className={styles.quoteList}>
                                         {quotes.map(quote => (
                                             <div key={quote.id} className={styles.quoteCard}>
@@ -110,19 +133,24 @@ export default function Dashboard() {
                                                     <span className={styles.vendorName}>{quote.vendorName}</span>
                                                     <span className={styles.price}>${quote.amount}</span>
                                                 </div>
-                                                <p className={styles.timeline}>{quote.estimatedDays} Days</p>
+                                                <p className={styles.timeline}>{quote.estimatedDays} day estimate</p>
                                                 <p className={styles.details}>{quote.details}</p>
-                                                <button className={styles.acceptBtn}>Accept</button>
+                                                <button className={styles.acceptBtn}>Accept Quote</button>
                                             </div>
                                         ))}
-                                        {quotes.length === 0 && <p style={{ opacity: 0.5 }}>Waiting for vendors...</p>}
+                                        {quotes.length === 0 && (
+                                            <p className={styles.emptyMsg}>Waiting for vendors…</p>
+                                        )}
                                     </div>
                                 </section>
                             </div>
                         </>
                     ) : (
                         <div className={styles.placeholder}>
-                            <p>Select a job to view details & quotes.</p>
+                            <svg className={styles.placeholderIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                            </svg>
+                            <p>Select a job to view details &amp; quotes</p>
                         </div>
                     )}
                 </main>

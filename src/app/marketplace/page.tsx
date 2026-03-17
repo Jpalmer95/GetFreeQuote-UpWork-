@@ -3,8 +3,17 @@ import { useState, useEffect } from 'react';
 import { jobService } from '@/services/jobService';
 import { Job, JobCategory } from '@/types';
 import styles from './page.module.css';
-import Link from 'next/link';
 import Navbar from '@/components/Navbar';
+
+const CATEGORY_COLORS: Record<string, string> = {
+    Plumbing:     'linear-gradient(90deg,#4f8ef7,#3b6fd4)',
+    Electrical:   'linear-gradient(90deg,#f5a623,#d4860a)',
+    HVAC:         'linear-gradient(90deg,#0fd98e,#09b074)',
+    Construction: 'linear-gradient(90deg,#9b6dff,#7340e0)',
+    Cleaning:     'linear-gradient(90deg,#4fc3f7,#0288d1)',
+    'Web Design': 'linear-gradient(90deg,#f06292,#c2185b)',
+    Other:        'linear-gradient(90deg,#78909c,#455a64)',
+};
 
 export default function Marketplace() {
     const [jobs, setJobs] = useState<Job[]>([]);
@@ -15,7 +24,6 @@ export default function Marketplace() {
         location: ''
     });
 
-    // Debounced search effect
     useEffect(() => {
         const timer = setTimeout(async () => {
             const results = await jobService.searchJobs(filters);
@@ -28,38 +36,33 @@ export default function Marketplace() {
 
     return (
         <div className={styles.container}>
-            {/* Header / Nav */}
             <Navbar />
 
             <div className={styles.layout}>
-                {/* Sidebar Filters */}
                 <aside className={styles.sidebar}>
                     <div className={styles.filterSection}>
-                        <h3>Category</h3>
-                        <div className={styles.checkboxGroup}>
-                            <label className={filters.category === '' ? styles.activeFilter : ''}>
-                                <input
-                                    type="radio"
-                                    name="category"
-                                    checked={filters.category === ''}
-                                    onChange={() => setFilters({ ...filters, category: '' })}
-                                /> All
-                            </label>
+                        <span className={styles.filterLabel}>Category</span>
+                        <div className={styles.pillGroup}>
+                            <button
+                                className={`${styles.pill} ${filters.category === '' ? styles.pillActive : ''}`}
+                                onClick={() => setFilters({ ...filters, category: '' })}
+                            >
+                                All Categories
+                            </button>
                             {categories.map(cat => (
-                                <label key={cat} className={filters.category === cat ? styles.activeFilter : ''}>
-                                    <input
-                                        type="radio"
-                                        name="category"
-                                        checked={filters.category === cat}
-                                        onChange={() => setFilters({ ...filters, category: cat })}
-                                    /> {cat}
-                                </label>
+                                <button
+                                    key={cat}
+                                    className={`${styles.pill} ${filters.category === cat ? styles.pillActive : ''}`}
+                                    onClick={() => setFilters({ ...filters, category: cat })}
+                                >
+                                    {cat}
+                                </button>
                             ))}
                         </div>
                     </div>
 
                     <div className={styles.filterSection}>
-                        <h3>Requirements</h3>
+                        <span className={styles.filterLabel}>Requirements</span>
                         <label className={styles.toggleRow}>
                             <span>Permit Required Only</span>
                             <input
@@ -71,10 +74,10 @@ export default function Marketplace() {
                     </div>
 
                     <div className={styles.filterSection}>
-                        <h3>Location</h3>
+                        <span className={styles.filterLabel}>Location</span>
                         <input
                             type="text"
-                            placeholder="Filter by City..."
+                            placeholder="Filter by city…"
                             className={styles.miniInput}
                             value={filters.location}
                             onChange={(e) => setFilters({ ...filters, location: e.target.value })}
@@ -82,7 +85,6 @@ export default function Marketplace() {
                     </div>
                 </aside>
 
-                {/* Main Feed */}
                 <main className={styles.feed}>
                     <div className={styles.feedHeader}>
                         <h2>Active Opportunities ({jobs.length})</h2>
@@ -95,6 +97,11 @@ export default function Marketplace() {
                     <div className={styles.grid}>
                         {jobs.map(job => (
                             <div key={job.id} className={`glass-panel ${styles.jobCard}`}>
+                                <div
+                                    className={styles.cardAccent}
+                                    style={{ background: CATEGORY_COLORS[job.category] || CATEGORY_COLORS.Other }}
+                                />
+
                                 <div className={styles.cardHeader}>
                                     <span className={styles.categoryTag}>{job.category}</span>
                                     <span className={styles.timeAgo}>Today</span>
@@ -103,19 +110,19 @@ export default function Marketplace() {
                                 <h3>{job.title}</h3>
                                 <p className={styles.description}>{job.description}</p>
 
-                                <div className={styles.metaGrid}>
-                                    <div className={styles.metaItem}>
-                                        <span>📍</span> {job.location}
-                                    </div>
+                                <div className={styles.metaRow}>
+                                    <span className={styles.metaChip}>
+                                        📍 {job.location}
+                                    </span>
                                     {job.budget && (
-                                        <div className={styles.metaItem}>
-                                            <span>💰</span> {job.budget}
-                                        </div>
+                                        <span className={styles.metaChip}>
+                                            💰 {job.budget}
+                                        </span>
                                     )}
                                     {job.requiresPermit && (
-                                        <div className={styles.metaItem} style={{ color: '#fbbf24' }}>
-                                            <span>⚠️</span> Permit Req.
-                                        </div>
+                                        <span className={`${styles.metaChip} ${styles.metaChipWarn}`}>
+                                            ⚠ Permit Req.
+                                        </span>
                                     )}
                                 </div>
 
@@ -128,6 +135,9 @@ export default function Marketplace() {
 
                         {jobs.length === 0 && (
                             <div className={styles.emptyState}>
+                                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{opacity:0.2}}>
+                                    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                                </svg>
                                 <p>No jobs found matching your filters.</p>
                             </div>
                         )}

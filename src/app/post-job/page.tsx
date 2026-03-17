@@ -1,11 +1,10 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { jobService } from '@/services/jobService';
 import { JobCategory } from '@/types';
 import styles from './page.module.css';
 import { useAuth } from '@/context/AuthContext';
-import { useEffect } from 'react';
 
 export default function PostJob() {
     const router = useRouter();
@@ -45,14 +44,13 @@ export default function PostJob() {
                 category: formData.category,
                 isPublic: formData.isPublic,
                 requiresPermit: formData.requiresPermit,
-                budget: formData.budget || undefined, // Send undefined if empty string
+                budget: formData.budget || undefined,
                 tags: [formData.category]
             });
 
             router.push('/dashboard?new=true');
         } catch (error) {
             console.error('Error creating job:', error);
-            // In a real app, show a toast notification here
         } finally {
             setLoading(false);
         }
@@ -64,27 +62,42 @@ export default function PostJob() {
                 <h1 className="gradient-text">Tell us what you need.</h1>
                 <p className={styles.subtext}>Our AI Agents will handle the rest.</p>
 
+                <div className={styles.divider} />
+
                 <form onSubmit={handleSubmit} className={styles.form}>
-                    <div className={styles.inputGroup}>
-                        <label>Service Category</label>
-                        <select
-                            value={formData.category}
-                            onChange={(e) => setFormData({ ...formData, category: e.target.value as JobCategory })}
-                            className={styles.input}
-                        >
-                            {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                        </select>
+                    <div className={styles.inputRow}>
+                        <div className={styles.inputGroup}>
+                            <label>Service Category</label>
+                            <select
+                                value={formData.category}
+                                onChange={(e) => setFormData({ ...formData, category: e.target.value as JobCategory })}
+                                className="field-select"
+                            >
+                                {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                            </select>
+                        </div>
+
+                        <div className={styles.inputGroup}>
+                            <label>Budget Range</label>
+                            <input
+                                type="text"
+                                placeholder="e.g. $500 – $1,000"
+                                value={formData.budget}
+                                onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
+                                className="field-input"
+                            />
+                        </div>
                     </div>
 
                     <div className={styles.inputGroup}>
                         <label>Job Title / Summary</label>
                         <input
                             type="text"
-                            placeholder="e.g. Fix Leaky Faucet"
+                            placeholder="e.g. Fix leaky faucet in master bathroom"
                             value={formData.title}
                             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                             required
-                            className={styles.input}
+                            className="field-input"
                         />
                     </div>
 
@@ -92,62 +105,61 @@ export default function PostJob() {
                         <label>Location</label>
                         <input
                             type="text"
-                            placeholder="City, Zip, or 'Remote'"
+                            placeholder="City, ZIP code, or 'Remote'"
                             value={formData.location}
                             onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                             required
-                            className={styles.input}
+                            className="field-input"
                         />
                     </div>
 
                     <div className={styles.inputGroup}>
                         <label>Description</label>
                         <textarea
-                            placeholder="Describe the issue, timeline, or special requirements..."
+                            placeholder="Describe the issue, timeline, or any special requirements…"
                             value={formData.description}
                             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                            className={styles.textarea}
+                            className="field-textarea"
                         />
                     </div>
 
-                    <div className={styles.inputGroup}>
-                        <label>Budget Range (Optional)</label>
-                        <input
-                            type="text"
-                            placeholder="e.g. $500 - $1000"
-                            value={formData.budget}
-                            onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
-                            className={styles.input}
-                        />
-                    </div>
+                    <div className={styles.divider} />
 
-                    <div className={styles.checkboxRow} style={{ marginTop: '0.5rem' }}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                    <div className={styles.checkboxGroup}>
+                        <label className={styles.checkboxRow}>
                             <input
                                 type="checkbox"
                                 checked={formData.requiresPermit}
                                 onChange={(e) => setFormData({ ...formData, requiresPermit: e.target.checked })}
                             />
-                            <span>Requires Permit?</span>
+                            <div className={styles.checkboxLabel}>
+                                <span className={styles.checkboxTitle}>Permit Required</span>
+                                <span className={styles.checkboxHint}>Check if this job will require a building or trade permit.</span>
+                            </div>
                         </label>
-                    </div>
 
-                    <div className={styles.checkboxRow}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                        <label className={styles.checkboxRow}>
                             <input
                                 type="checkbox"
                                 checked={formData.isPublic}
                                 onChange={(e) => setFormData({ ...formData, isPublic: e.target.checked })}
                             />
-                            <span>List on Public Marketplace?</span>
+                            <div className={styles.checkboxLabel}>
+                                <span className={styles.checkboxTitle}>List on Public Marketplace</span>
+                                <span className={styles.checkboxHint}>If unchecked, only invited vendors can see this job.</span>
+                            </div>
                         </label>
-                        <p style={{ fontSize: '0.8rem', color: '#666', marginLeft: '1.8rem' }}>
-                            If unchecked, only invited vendors can see this.
-                        </p>
                     </div>
 
                     <button type="submit" className={styles.submitButton} disabled={loading}>
-                        {loading ? 'Initializing Agents...' : 'Start Search'}
+                        {loading ? (
+                            <>
+                                <span className={styles.spinner} />
+                                Initializing Agents…
+                            </>
+                        ) : (
+                            'Start Search'
+                        )}
                     </button>
                 </form>
             </div>
