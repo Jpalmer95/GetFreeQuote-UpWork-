@@ -277,10 +277,29 @@ export default function Dashboard() {
                                                 </div>
                                                 <p className={styles.timeline}>{quote.estimatedDays} day estimate</p>
                                                 <p className={styles.details}>{quote.details}</p>
-                                                <div className={styles.quoteActions}>
-                                                    <button className={styles.acceptBtn}>Accept</button>
-                                                    <button className={styles.rejectBtn}>Reject</button>
-                                                </div>
+                                                {quote.status === 'PENDING' && (
+                                                    <div className={styles.quoteActions}>
+                                                        <button
+                                                            className={styles.acceptBtn}
+                                                            onClick={async () => {
+                                                                await jobService.acceptQuote(quote.id);
+                                                            }}
+                                                        >Accept</button>
+                                                        <button
+                                                            className={styles.rejectBtn}
+                                                            onClick={async () => {
+                                                                await jobService.rejectQuote(quote.id);
+                                                            }}
+                                                        >Reject</button>
+                                                    </div>
+                                                )}
+                                                {quote.status !== 'PENDING' && (
+                                                    <div className={styles.quoteStatus}>
+                                                        <span className={`badge ${quote.status === 'ACCEPTED' ? 'badge-green' : 'badge-muted'}`}>
+                                                            {quote.status}
+                                                        </span>
+                                                    </div>
+                                                )}
                                             </div>
                                         ))}
                                         {quotes.length === 0 && (

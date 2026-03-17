@@ -25,6 +25,9 @@ src/
     post-job/              # Post a new project form (dynamic fields per industry)
     vendor/                # Vendor portal (opportunities feed, pending reviews)
     agent-settings/        # AI Agent configuration page
+    api/
+      agent-process/       # Server-side AI agent orchestration (POST)
+      quote-action/        # Server-side quote accept/reject (POST)
   components/
     Navbar.tsx             # Sticky glass navbar with notification bell + AI Agent link
     Navbar.module.css
@@ -33,7 +36,8 @@ src/
   context/
     AuthContext.tsx        # Supabase auth state provider
   lib/
-    supabase.ts            # Supabase client
+    supabase.ts            # Supabase client (browser/client-side)
+    supabaseAdmin.ts       # Supabase admin client (server-side, service role)
   services/
     jobService.ts          # Business logic layer
     aiAgent.ts             # AI agent engine (job processing, auto-quoting, escalation)
@@ -64,6 +68,11 @@ The agent system operates at two levels:
 1. **Customer Agents**: When a job is posted, the customer's AI agent analyzes scope, broadcasts to matching vendor agents, handles clarification dialogs, compares quotes, and escalates to the human for approvals.
 2. **Vendor Agents**: Match incoming opportunities against vendor's configured criteria (industry, specialties, budget range, distance), auto-generate preliminary quotes, and send introductions.
 
+Architecture:
+- **Server-side orchestration**: Agent processing (vendor matching, auto-quoting, cross-user notifications) runs in Next.js API routes (`/api/agent-process`, `/api/quote-action`) using `supabaseAdmin` (service role key) to bypass RLS for cross-user operations.
+- **Client-side helpers**: `aiAgent.ts` exports only `isAgentSender()` and `getAgentLabel()` for UI rendering.
+- **RLS policies** are ownership-based: users can only read/write their own data. All cross-user operations go through server-side API routes.
+
 Key features:
 - Agent-to-agent communication with typed `senderType` on messages
 - Auto-quoting based on vendor base rate, urgency multiplier, and estimated hours
@@ -72,6 +81,7 @@ Key features:
 - Escalation triggers for human review (configurable per user)
 - Full audit trail via `agent_actions` table
 - Notification system with priority levels and action-required flags
+- Accept/reject quote actions with server-side status updates and notifications
 
 ## Design System
 
@@ -88,6 +98,7 @@ All global CSS custom properties live in `src/app/globals.css`:
 
 - `NEXT_PUBLIC_SUPABASE_URL` — Supabase project URL
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Supabase public anon key
+- `SUPABASE_SERVICE_ROLE_KEY` — Supabase service role key (server-side only, for agent orchestration)
 
 ## Running the App
 

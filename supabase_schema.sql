@@ -102,6 +102,9 @@ create policy "Job owners can view quotes for their jobs." on public.quotes
 create policy "Vendors can create quotes." on public.quotes
   for insert with check (auth.uid() = vendor_id);
 
+-- Note: Quote status updates and cross-user operations (auto-quoting by AI agents)
+-- are performed server-side via supabaseAdmin (service_role), which bypasses RLS.
+
 
 -- MESSAGES (sender_id is text to support AI agent IDs like 'customer-agent-xxx')
 create table public.messages (
@@ -131,8 +134,26 @@ create policy "Users can view messages for their jobs." on public.messages
     )
   );
 
-create policy "Users can insert messages." on public.messages
-  for insert with check (true);
+create policy "Users can insert messages for their jobs." on public.messages
+  for insert with check (
+    sender_id = auth.uid()::text
+    AND sender_type in ('user', 'vendor')
+    AND (
+      exists (
+        select 1 from public.jobs
+        where public.jobs.id = job_id
+        and public.jobs.user_id = auth.uid()
+      )
+      OR exists (
+        select 1 from public.quotes
+        where public.quotes.job_id = job_id
+        and public.quotes.vendor_id = auth.uid()
+      )
+    )
+  );
+
+-- Note: AI agent messages (sender_type = customer_agent/vendor_agent/system) are
+-- inserted server-side via supabaseAdmin (service_role), which bypasses RLS.
 
 
 -- AGENT CONFIGS
@@ -168,6 +189,9 @@ create policy "Users can insert own agent config." on public.agent_configs
 create policy "Users can update own agent config." on public.agent_configs
   for update using (auth.uid() = user_id);
 
+-- Note: Vendor agent config lookups for job matching are performed server-side
+-- via supabaseAdmin (service_role), which bypasses RLS.
+
 
 -- AGENT ACTIONS (audit log of everything agents do)
 create table public.agent_actions (
@@ -198,8 +222,25 @@ create policy "Users can view agent actions for their jobs." on public.agent_act
     )
   );
 
-create policy "System can insert agent actions." on public.agent_actions
-  for insert with check (true);
+create policy "Users can insert own agent actions." on public.agent_actions
+  for insert with check (
+    auth.uid() = user_id
+    AND exists (
+      select 1 from public.jobs
+      where public.jobs.id = job_id
+      and (
+        public.jobs.user_id = auth.uid()
+        OR exists (
+          select 1 from public.quotes
+          where public.quotes.job_id = public.jobs.id
+          and public.quotes.vendor_id = auth.uid()
+        )
+      )
+    )
+  );
+
+-- Note: Cross-user agent action logging is performed server-side via
+-- supabaseAdmin (service_role), which bypasses RLS.
 
 
 -- NOTIFICATIONS
@@ -228,5 +269,25 @@ create policy "Users can view own notifications." on public.notifications
 create policy "Users can update own notifications." on public.notifications
   for update using (auth.uid() = user_id);
 
-create policy "System can insert notifications." on public.notifications
-  for insert with check (true);
+create policy "Users can insert own notifications." on public.notifications
+  for insert with check (
+    auth.uid() = user_id
+    AND (
+      job_id IS NULL
+      OR exists (
+        select 1 from public.jobs
+        where public.jobs.id = job_id
+        and (
+          public.jobs.user_id = auth.uid()
+          OR exists (
+            select 1 from public.quotes
+            where public.quotes.job_id = public.jobs.id
+            and public.quotes.vendor_id = auth.uid()
+          )
+        )
+      )
+    )
+  );
+
+-- Note: System/agent notifications for other users are inserted server-side via
+-- supabaseAdmin (service_role), which bypasses RLS.

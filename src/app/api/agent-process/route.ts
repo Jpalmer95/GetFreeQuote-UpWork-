@@ -1,0 +1,262 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { getAuthenticatedUser } from '@/lib/serverAuth';
+
+function customerAgentId(userId: string): string {
+    return `customer-agent-${userId}`;
+}
+
+function vendorAgentId(userId: string): string {
+    return `vendor-agent-${userId}`;
+}
+
+const SYSTEM_AGENT_ID = 'system-agent';
+
+function mapJob(row: any) {
+    return {
+        id: row.id,
+        userId: row.user_id,
+        title: row.title,
+        category: row.category,
+        description: row.description,
+        location: row.location,
+        status: row.status,
+        industryVertical: row.industry_vertical || 'Other',
+        subcategory: row.subcategory || 'Other',
+        urgency: row.urgency,
+        budget: row.budget,
+        squareFootage: row.square_footage,
+        materials: row.materials,
+        tags: row.tags || [],
+    };
+}
+
+function mapAgentConfig(row: any) {
+    return {
+        id: row.id,
+        userId: row.user_id,
+        role: row.role,
+        isActive: row.is_active,
+        autoRespond: row.auto_respond,
+        autoQuote: row.auto_quote,
+        maxBudget: row.max_budget,
+        minBudget: row.min_budget,
+        industries: row.industries || [],
+        specialties: row.specialties || [],
+        maxDistance: row.max_distance,
+        baseRate: row.base_rate,
+        communicationStyle: row.communication_style || 'professional',
+        escalationTriggers: row.escalation_triggers || [],
+        autoApproveBelow: row.auto_approve_below,
+        workingHoursOnly: row.working_hours_only,
+    };
+}
+
+async function addMessage(jobId: string, senderId: string, senderType: string, content: string) {
+    await supabaseAdmin.from('messages').insert({
+        job_id: jobId,
+        sender_id: senderId,
+        sender_type: senderType,
+        content,
+        is_agent_action: true,
+    });
+}
+
+async function logAction(jobId: string, userId: string, actionType: string, summary: string, details: any = {}, agentConfigId?: string) {
+    await supabaseAdmin.from('agent_actions').insert({
+        job_id: jobId,
+        agent_config_id: agentConfigId,
+        user_id: userId,
+        action_type: actionType,
+        summary,
+        details,
+        automated: true,
+    });
+}
+
+async function createNotification(userId: string, jobId: string | null, type: string, priority: string, title: string, message: string, actionRequired: boolean, actionUrl?: string) {
+    await supabaseAdmin.from('notifications').insert({
+        user_id: userId,
+        job_id: jobId,
+        type,
+        priority,
+        title,
+        message,
+        action_required: actionRequired,
+        action_url: actionUrl,
+        read: false,
+    });
+}
+
+function estimateHours(job: any): number {
+    const sqFt = job.squareFootage ? parseFloat(String(job.squareFootage).replace(/[^0-9.]/g, '')) : 0;
+    const base = sqFt > 0 ? Math.ceil(sqFt / 200) : 8;
+    const descComplexity = Math.min((job.description || '').length / 100, 3);
+    return Math.max(2, Math.round(base + descComplexity));
+}
+
+export async function POST(request: NextRequest) {
+    try {
+        const caller = await getAuthenticatedUser(request);
+        if (!caller) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const { jobId } = await request.json();
+        if (!jobId) {
+            return NextResponse.json({ error: 'jobId required' }, { status: 400 });
+        }
+
+        const { data: jobRow, error: jobError } = await supabaseAdmin
+            .from('jobs')
+            .select('*')
+            .eq('id', jobId)
+            .single();
+
+        if (jobError || !jobRow) {
+            return NextResponse.json({ error: 'Job not found' }, { status: 404 });
+        }
+
+        const job = mapJob(jobRow);
+
+        if (job.userId !== caller.id) {
+            return NextResponse.json({ error: 'Forbidden: not job owner' }, { status: 403 });
+        }
+
+        const { data: customerConfigRow } = await supabaseAdmin
+            .from('agent_configs')
+            .select('*')
+            .eq('user_id', job.userId)
+            .maybeSingle();
+
+        const customerConfig = customerConfigRow ? mapAgentConfig(customerConfigRow) : null;
+        const style = customerConfig?.communicationStyle || 'professional';
+
+        await addMessage(job.id, customerAgentId(job.userId), 'customer_agent',
+            `Project "${job.title}" received. Analyzing requirements and searching for matching vendors...`);
+
+        await logAction(job.id, job.userId, 'scope_analysis',
+            `Analyzed project scope: ${job.industryVertical} / ${job.subcategory}`,
+            { industry: job.industryVertical, subcategory: job.subcategory, budget: job.budget, urgency: job.urgency },
+            customerConfig?.id);
+
+        if ((job.description || '').length < 30) {
+            const clarMessages: Record<string, string> = {
+                professional: `I've reviewed your project "${job.title}" and noticed the description could use more detail. Could you provide additional specifications, photos, or measurements? This will help vendors deliver more accurate quotes.`,
+                friendly: `Hey! Your project looks interesting, but I'd love a bit more detail to help find the best vendors. Can you add more specifics, photos, or measurements?`,
+                concise: `More details needed for "${job.title}". Please add: specifications, photos, or measurements for accurate vendor quotes.`,
+            };
+
+            await addMessage(job.id, customerAgentId(job.userId), 'customer_agent', clarMessages[style] || clarMessages.professional);
+            await logAction(job.id, job.userId, 'clarification_sent', 'Requested additional project details from customer',
+                { reason: 'description_too_brief' }, customerConfig?.id);
+            await createNotification(job.userId, job.id, 'scope_change', 'medium', 'More Details Needed',
+                `Your AI agent needs more information about "${job.title}" to find the best vendors.`, true, '/dashboard');
+
+            return NextResponse.json({ status: 'clarification_requested' });
+        }
+
+        let query = supabaseAdmin.from('agent_configs').select('*')
+            .eq('role', 'vendor')
+            .eq('is_active', true);
+
+        const { data: vendorRows } = await query;
+        let vendorConfigs = (vendorRows || []).map(mapAgentConfig);
+
+        vendorConfigs = vendorConfigs.filter(c =>
+            c.industries.length === 0 || c.industries.includes(job.industryVertical)
+        );
+
+        await logAction(job.id, job.userId, 'job_broadcast',
+            `Broadcast project to ${vendorConfigs.length} matching vendor agent(s)`,
+            { matchedVendors: vendorConfigs.length, industry: job.industryVertical },
+            customerConfig?.id);
+
+        await addMessage(job.id, customerAgentId(job.userId), 'customer_agent',
+            `Found ${vendorConfigs.length} vendor agent(s) matching your project criteria. ${vendorConfigs.length > 0 ? 'Initiating quote requests...' : 'Expanding search to additional vendors in your area.'}`);
+
+        for (const vc of vendorConfigs) {
+            await logAction(job.id, vc.userId, 'vendor_match',
+                `Vendor agent matched to project "${job.title}"`,
+                { industry: job.industryVertical, vendorSpecialties: vc.specialties }, vc.id);
+
+            await createNotification(vc.userId, job.id, 'job_match', 'medium', 'New Project Match',
+                `A new ${job.industryVertical} project "${job.title}" matches your expertise.`, false, '/vendor');
+
+            if (vc.autoQuote && vc.baseRate) {
+                const baseRate = vc.baseRate;
+                const urgencyMult = job.urgency === 'urgent' ? 1.5 : job.urgency === 'within_week' ? 1.25 : 1.0;
+                const hours = estimateHours(job);
+                const amount = Math.round(baseRate * hours * urgencyMult);
+
+                const budgetNum = job.budget ? parseFloat(String(job.budget).replace(/[^0-9.]/g, '')) : null;
+                if (vc.maxBudget && budgetNum && budgetNum > vc.maxBudget) {
+                    await logAction(job.id, vc.userId, 'auto_reject',
+                        `Auto-rejected: budget exceeds vendor max`, {}, vc.id);
+                    continue;
+                }
+                if (vc.minBudget && amount < vc.minBudget) {
+                    await logAction(job.id, vc.userId, 'auto_reject',
+                        `Auto-rejected: estimated quote below vendor minimum`, {}, vc.id);
+                    continue;
+                }
+
+                const estimatedDays = Math.max(1, Math.ceil(hours / 8));
+
+                const { error: quoteError } = await supabaseAdmin.from('quotes').insert({
+                    job_id: job.id,
+                    vendor_id: vc.userId,
+                    vendor_name: 'Vendor Agent',
+                    amount,
+                    estimated_days: estimatedDays,
+                    details: `Automated estimate for ${job.industryVertical} / ${job.subcategory}. Based on vendor rate of $${baseRate}/hr. Estimated timeline: ${estimatedDays} business day(s). ${job.urgency === 'urgent' ? 'Rush fee included. ' : ''}This is a preliminary estimate.`,
+                    status: 'PENDING',
+                });
+
+                if (!quoteError) {
+                    await addMessage(job.id, vendorAgentId(vc.userId), 'vendor_agent',
+                        `Automated quote submitted: $${amount} for an estimated ${estimatedDays} day(s).`);
+
+                    await logAction(job.id, vc.userId, 'auto_quote',
+                        `Auto-generated quote: $${amount} / ${estimatedDays} day(s)`,
+                        { amount, estimatedDays, baseRate, urgencyMult, hours }, vc.id);
+
+                    if (customerConfig?.autoApproveBelow && amount <= customerConfig.autoApproveBelow) {
+                        await logAction(job.id, job.userId, 'auto_approve',
+                            `Auto-approved quote of $${amount} (below threshold of $${customerConfig.autoApproveBelow})`,
+                            {}, customerConfig.id);
+                    } else {
+                        await createNotification(job.userId, job.id, 'quote_ready', 'high', 'New Quote Received',
+                            `A vendor agent submitted a quote of $${amount} for "${job.title}". Review and approve?`, true, '/dashboard');
+                    }
+
+                    await createNotification(vc.userId, job.id, 'agent_summary', 'low', 'Auto-Quote Submitted',
+                        `Your agent submitted a $${amount} quote for "${job.title}".`, false);
+                }
+            } else if (vc.autoRespond) {
+                const introMessages: Record<string, string> = {
+                    professional: `Hello, I'm reaching out on behalf of a vendor specializing in ${vc.specialties.join(', ') || job.industryVertical}. We'd like to learn more about your project "${job.title}" to provide an accurate estimate.`,
+                    friendly: `Hi there! A vendor that specializes in ${vc.specialties.join(', ') || job.industryVertical} is interested in your project!`,
+                    concise: `Vendor interested in "${job.title}". Specialties: ${vc.specialties.join(', ') || job.industryVertical}. Requesting details for quote.`,
+                };
+                await addMessage(job.id, vendorAgentId(vc.userId), 'vendor_agent',
+                    introMessages[vc.communicationStyle] || introMessages.professional);
+                await logAction(job.id, vc.userId, 'clarification_sent',
+                    'Vendor agent sent introduction and requested project details', {}, vc.id);
+            }
+        }
+
+        if (vendorConfigs.length === 0) {
+            await addMessage(job.id, SYSTEM_AGENT_ID, 'system',
+                'Your project is now listed on the marketplace. Vendor agents will be notified as they come online.');
+        }
+
+        await createNotification(job.userId, job.id, 'agent_summary', 'low', 'Project Broadcast Complete',
+            `Your agent broadcast "${job.title}" to ${vendorConfigs.length} vendor(s). Quotes will arrive as vendors respond.`, false, '/dashboard');
+
+        return NextResponse.json({ status: 'processed', vendorsMatched: vendorConfigs.length });
+    } catch (error) {
+        console.error('Agent processing error:', error);
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
+}

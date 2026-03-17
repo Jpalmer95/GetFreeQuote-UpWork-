@@ -1,6 +1,15 @@
 import { db } from './db';
-import { aiAgent } from './aiAgent';
 import { Job } from '@/types';
+import { supabase } from '@/lib/supabase';
+
+async function getAuthHeaders(): Promise<Record<string, string>> {
+    const { data: { session } } = await supabase.auth.getSession();
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+    }
+    return headers;
+}
 
 export const jobService = {
     getMyJobs: async (userId: string) => {
@@ -26,8 +35,14 @@ export const jobService = {
     createJob: async (jobData: Omit<Job, 'id' | 'createdAt' | 'status'>) => {
         const newJob = await db.createJob(jobData);
 
-        aiAgent.processNewJob(newJob.id).catch(err => {
-            console.error('AI agent processing error:', err);
+        getAuthHeaders().then(headers => {
+            fetch('/api/agent-process', {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({ jobId: newJob.id }),
+            }).catch(err => {
+                console.error('Agent processing trigger error:', err);
+            });
         });
 
         return newJob;
@@ -42,10 +57,22 @@ export const jobService = {
     },
 
     acceptQuote: async (quoteId: string) => {
-        await db.updateQuoteStatus(quoteId, 'ACCEPTED');
+        const headers = await getAuthHeaders();
+        const res = await fetch('/api/quote-action', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ quoteId, action: 'accept' }),
+        });
+        if (!res.ok) throw new Error('Failed to accept quote');
     },
 
     rejectQuote: async (quoteId: string) => {
-        await db.updateQuoteStatus(quoteId, 'REJECTED');
+        const headers = await getAuthHeaders();
+        const res = await fetch('/api/quote-action', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ quoteId, action: 'reject' }),
+        });
+        if (!res.ok) throw new Error('Failed to reject quote');
     },
 };
