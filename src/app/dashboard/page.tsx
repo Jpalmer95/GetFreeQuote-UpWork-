@@ -1,10 +1,11 @@
 'use client';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { jobService } from '@/services/jobService';
 import { Job, Quote, Message, AgentAction, IndustryVertical, INDUSTRY_VERTICALS } from '@/types';
 import { db } from '@/services/db';
 import { isAgentSender, getAgentLabel } from '@/services/aiAgent';
+import { supabase } from '@/lib/supabase';
 import styles from './page.module.css';
 import Navbar from '@/components/Navbar';
 import { useAuth } from '@/context/AuthContext';
@@ -38,7 +39,7 @@ const ACTION_ICONS: Record<string, string> = {
     auto_reject: '❌',
 };
 
-type DetailTab = 'timeline' | 'quotes' | 'agent-log';
+type DetailTab = 'timeline' | 'quotes' | 'agent-log' | 'digest';
 
 export default function Dashboard() {
     const { user, isLoading } = useAuth();
@@ -54,6 +55,30 @@ export default function Dashboard() {
     const [industryFilter, setIndustryFilter] = useState<IndustryVertical | ''>('');
     const [statusFilter, setStatusFilter] = useState<string>('');
     const [searchQuery, setSearchQuery] = useState('');
+    const [replyText, setReplyText] = useState('');
+    const [sendingReply, setSendingReply] = useState(false);
+
+    const handleSendReply = useCallback(async () => {
+        if (!selectedJob || !replyText.trim() || sendingReply) return;
+        setSendingReply(true);
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+            if (session?.access_token) {
+                headers['Authorization'] = `Bearer ${session.access_token}`;
+            }
+            await fetch('/api/agent-respond', {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({ jobId: selectedJob.id, message: replyText.trim() }),
+            });
+            setReplyText('');
+        } catch (err) {
+            console.error('Failed to send reply:', err);
+        } finally {
+            setSendingReply(false);
+        }
+    }, [selectedJob, replyText, sendingReply]);
 
     useEffect(() => {
         if (!isLoading && !user) {
@@ -231,6 +256,12 @@ export default function Dashboard() {
                                 >
                                     Agent Log ({agentActions.length})
                                 </button>
+                                <button
+                                    className={`${styles.tabBtn} ${activeTab === 'digest' ? styles.tabActive : ''}`}
+                                    onClick={() => setActiveTab('digest')}
+                                >
+                                    Digest
+                                </button>
                             </div>
 
                             {activeTab === 'timeline' && (
@@ -262,6 +293,24 @@ export default function Dashboard() {
                                         {messages.length === 0 && (
                                             <p className={styles.emptyMsg}>No activity yet. Your AI agent will begin working once the project is posted.</p>
                                         )}
+                                    </div>
+                                    <div className={styles.replyBar}>
+                                        <input
+                                            type="text"
+                                            className={styles.replyInput}
+                                            placeholder="Type a message to intervene or add details..."
+                                            value={replyText}
+                                            onChange={(e) => setReplyText(e.target.value)}
+                                            onKeyDown={(e) => { if (e.key === 'Enter') handleSendReply(); }}
+                                            disabled={sendingReply}
+                                        />
+                                        <button
+                                            className={styles.replyBtn}
+                                            onClick={handleSendReply}
+                                            disabled={sendingReply || !replyText.trim()}
+                                        >
+                                            {sendingReply ? 'Sending...' : 'Send'}
+                                        </button>
                                     </div>
                                 </section>
                             )}
@@ -332,6 +381,118 @@ export default function Dashboard() {
                                         ))}
                                         {agentActions.length === 0 && (
                                             <p className={styles.emptyMsg}>No agent actions recorded yet.</p>
+                                        )}
+                                    </div>
+                                </section>
+                            )}
+
+                            {activeTab === 'digest' && (
+                                <section className={`glass-panel ${styles.section}`}>
+                                    <div className={styles.digestSection}>
+                                        <div className={styles.digestCard}>
+                                            <div className={styles.digestTitle}>Agent Activity Summary</div>
+                                            <div className={styles.digestStats}>
+                                                <span className={styles.digestStat}>
+                                                    <span className={styles.digestStatValue}>{messages.filter(m => isAgentSender(m.senderId)).length}</span>
+                                                    agent messages
+                                                </span>
+                                                <span className={styles.digestStat}>
+                                                    <span className={styles.digestStatValue}>{messages.filter(m => !isAgentSender(m.senderId)).length}</span>
+                                                    human messages
+                                                </span>
+                                                <span className={styles.digestStat}>
+                                                    <span className={styles.digestStatValue}>{agentActions.filter(a => a.automated).length}</span>
+                                                    automated actions
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <div className={styles.digestCard}>
+                                            <div className={styles.digestTitle}>Quotes Overview</div>
+                                            <div className={styles.digestStats}>
+                                                <span className={styles.digestStat}>
+                                                    <span className={styles.digestStatValue}>{quotes.length}</span>
+                                                    total quotes
+                                                </span>
+                                                <span className={styles.digestStat}>
+                                                    <span className={styles.digestStatValue}>{quotes.filter(q => q.status === 'PENDING').length}</span>
+                                                    pending review
+                                                </span>
+                                                <span className={styles.digestStat}>
+                                                    <span className={styles.digestStatValue}>{quotes.filter(q => q.status === 'ACCEPTED').length}</span>
+                                                    accepted
+                                                </span>
+                                                {quotes.length > 0 && (
+                                                    <span className={styles.digestStat}>
+                                                        <span className={styles.digestStatValue}>
+                                                            ${Math.min(...quotes.map(q => q.amount))} - ${Math.max(...quotes.map(q => q.amount))}
+                                                        </span>
+                                                        price range
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className={styles.digestCard}>
+                                            <div className={styles.digestTitle}>Vendor Matching</div>
+                                            <div className={styles.digestStats}>
+                                                <span className={styles.digestStat}>
+                                                    <span className={styles.digestStatValue}>{agentActions.filter(a => a.actionType === 'vendor_match').length}</span>
+                                                    vendors matched
+                                                </span>
+                                                <span className={styles.digestStat}>
+                                                    <span className={styles.digestStatValue}>{agentActions.filter(a => a.actionType === 'auto_quote').length}</span>
+                                                    auto-quotes generated
+                                                </span>
+                                                <span className={styles.digestStat}>
+                                                    <span className={styles.digestStatValue}>{agentActions.filter(a => a.actionType === 'escalation').length}</span>
+                                                    escalations
+                                                </span>
+                                                <span className={styles.digestStat}>
+                                                    <span className={styles.digestStatValue}>{agentActions.filter(a => a.actionType === 'auto_reject').length}</span>
+                                                    auto-rejected
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {agentActions.filter(a => a.actionType === 'escalation').length > 0 && (
+                                            <div className={styles.digestCard}>
+                                                <div className={styles.digestTitle}>Requires Your Attention</div>
+                                                {agentActions.filter(a => a.actionType === 'escalation').map(a => (
+                                                    <div key={a.id} className={styles.agentLogItem} style={{ marginBottom: '0.4rem' }}>
+                                                        <span className={styles.agentLogIcon}>⚠️</span>
+                                                        <div className={styles.agentLogContent}>
+                                                            <div className={styles.agentLogSummary}>{a.summary}</div>
+                                                            <div className={styles.agentLogTime}>{new Date(a.createdAt).toLocaleString()}</div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {quotes.filter(q => q.status === 'PENDING').length > 0 && (
+                                            <div className={styles.digestCard}>
+                                                <div className={styles.digestTitle}>Pending Quote Decisions</div>
+                                                {quotes.filter(q => q.status === 'PENDING').map(q => (
+                                                    <div key={q.id} className={styles.quoteCard} style={{ marginBottom: '0.4rem' }}>
+                                                        <div className={styles.quoteHeader}>
+                                                            <span className={styles.vendorName}>{q.vendorName}</span>
+                                                            <span className={styles.price}>${q.amount}</span>
+                                                        </div>
+                                                        <p className={styles.timeline}>{q.estimatedDays} day estimate</p>
+                                                        <div className={styles.quoteActions}>
+                                                            <button
+                                                                className={styles.acceptBtn}
+                                                                onClick={async () => { await jobService.acceptQuote(q.id); }}
+                                                            >Accept</button>
+                                                            <button
+                                                                className={styles.rejectBtn}
+                                                                onClick={async () => { await jobService.rejectQuote(q.id); }}
+                                                            >Reject</button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
                                         )}
                                     </div>
                                 </section>

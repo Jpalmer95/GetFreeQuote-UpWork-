@@ -156,29 +156,88 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ status: 'clarification_requested' });
         }
 
-        let query = supabaseAdmin.from('agent_configs').select('*')
+        const { data: vendorRows } = await supabaseAdmin.from('agent_configs').select('*')
             .eq('role', 'vendor')
             .eq('is_active', true);
 
-        const { data: vendorRows } = await query;
-        let vendorConfigs = (vendorRows || []).map(mapAgentConfig);
+        const allVendors = (vendorRows || []).map(mapAgentConfig);
+        const budgetNum = job.budget ? parseFloat(String(job.budget).replace(/[^0-9.]/g, '')) : null;
 
-        vendorConfigs = vendorConfigs.filter(c =>
-            c.industries.length === 0 || c.industries.includes(job.industryVertical)
-        );
+        type MatchResult = { config: typeof allVendors[0]; score: number; reasons: string[] };
+        const matched: MatchResult[] = [];
+        const rejected: { config: typeof allVendors[0]; reason: string }[] = [];
+
+        for (const vc of allVendors) {
+            let score = 0;
+            const reasons: string[] = [];
+
+            if (vc.industries.length > 0) {
+                if (vc.industries.includes(job.industryVertical)) {
+                    score += 30;
+                    reasons.push('industry_match');
+                } else {
+                    rejected.push({ config: vc, reason: 'industry_mismatch' });
+                    continue;
+                }
+            } else {
+                score += 10;
+                reasons.push('accepts_all_industries');
+            }
+
+            if (vc.specialties.length > 0) {
+                const jobTerms = [job.subcategory, ...(job.tags || []), job.category].map(s => (s || '').toLowerCase());
+                const specialtyMatch = vc.specialties.some((s: string) => jobTerms.some((t: string) => t.includes(s.toLowerCase()) || s.toLowerCase().includes(t)));
+                if (specialtyMatch) {
+                    score += 25;
+                    reasons.push('specialty_match');
+                } else {
+                    score += 5;
+                    reasons.push('no_specialty_match');
+                }
+            }
+
+            if (vc.maxBudget && budgetNum && budgetNum > vc.maxBudget) {
+                rejected.push({ config: vc, reason: 'budget_exceeds_max' });
+                continue;
+            }
+            if (vc.minBudget && budgetNum && budgetNum < vc.minBudget) {
+                rejected.push({ config: vc, reason: 'budget_below_min' });
+                continue;
+            }
+
+            if (budgetNum && vc.minBudget && vc.maxBudget) {
+                score += 15;
+                reasons.push('budget_in_range');
+            }
+
+            if (vc.autoQuote) { score += 10; reasons.push('auto_quote_enabled'); }
+            if (vc.autoRespond) { score += 5; reasons.push('auto_respond_enabled'); }
+
+            matched.push({ config: vc, score, reasons });
+        }
+
+        matched.sort((a, b) => b.score - a.score);
+        const vendorConfigs = matched.map(m => m.config);
 
         await logAction(job.id, job.userId, 'job_broadcast',
-            `Broadcast project to ${vendorConfigs.length} matching vendor agent(s)`,
-            { matchedVendors: vendorConfigs.length, industry: job.industryVertical },
+            `Broadcast project to ${vendorConfigs.length} matching vendor agent(s) (${rejected.length} filtered out)`,
+            {
+                matchedVendors: vendorConfigs.length,
+                rejectedVendors: rejected.length,
+                industry: job.industryVertical,
+                matchScores: matched.map(m => ({ userId: m.config.userId, score: m.score, reasons: m.reasons })),
+                rejectionReasons: rejected.map(r => ({ userId: r.config.userId, reason: r.reason })),
+            },
             customerConfig?.id);
 
         await addMessage(job.id, customerAgentId(job.userId), 'customer_agent',
-            `Found ${vendorConfigs.length} vendor agent(s) matching your project criteria. ${vendorConfigs.length > 0 ? 'Initiating quote requests...' : 'Expanding search to additional vendors in your area.'}`);
+            `Found ${vendorConfigs.length} qualified vendor agent(s) for your project. ${rejected.length > 0 ? `${rejected.length} vendor(s) were filtered out due to criteria mismatch. ` : ''}${vendorConfigs.length > 0 ? 'Initiating quote requests ranked by relevance...' : 'Your project is listed on the marketplace for manual vendor discovery.'}`);
 
         for (const vc of vendorConfigs) {
+            const matchInfo = matched.find(m => m.config.userId === vc.userId);
             await logAction(job.id, vc.userId, 'vendor_match',
-                `Vendor agent matched to project "${job.title}"`,
-                { industry: job.industryVertical, vendorSpecialties: vc.specialties }, vc.id);
+                `Vendor agent matched to project "${job.title}" (score: ${matchInfo?.score || 0})`,
+                { industry: job.industryVertical, vendorSpecialties: vc.specialties, matchScore: matchInfo?.score, matchReasons: matchInfo?.reasons }, vc.id);
 
             await createNotification(vc.userId, job.id, 'job_match', 'medium', 'New Project Match',
                 `A new ${job.industryVertical} project "${job.title}" matches your expertise.`, false, '/vendor');
@@ -188,19 +247,6 @@ export async function POST(request: NextRequest) {
                 const urgencyMult = job.urgency === 'urgent' ? 1.5 : job.urgency === 'within_week' ? 1.25 : 1.0;
                 const hours = estimateHours(job);
                 const amount = Math.round(baseRate * hours * urgencyMult);
-
-                const budgetNum = job.budget ? parseFloat(String(job.budget).replace(/[^0-9.]/g, '')) : null;
-                if (vc.maxBudget && budgetNum && budgetNum > vc.maxBudget) {
-                    await logAction(job.id, vc.userId, 'auto_reject',
-                        `Auto-rejected: budget exceeds vendor max`, {}, vc.id);
-                    continue;
-                }
-                if (vc.minBudget && amount < vc.minBudget) {
-                    await logAction(job.id, vc.userId, 'auto_reject',
-                        `Auto-rejected: estimated quote below vendor minimum`, {}, vc.id);
-                    continue;
-                }
-
                 const estimatedDays = Math.max(1, Math.ceil(hours / 8));
 
                 const { error: quoteError } = await supabaseAdmin.from('quotes').insert({

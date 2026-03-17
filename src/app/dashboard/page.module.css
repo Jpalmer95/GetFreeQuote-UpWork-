@@ -626,3 +626,95 @@
     font-size: 0.68rem;
     color: rgba(255,255,255,0.25);
 }
+
+/* ─── Reply Bar ─── */
+.replyBar {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.75rem 0;
+    border-top: 1px solid var(--border-subtle);
+    margin-top: auto;
+}
+
+.replyInput {
+    flex: 1;
+    background: var(--surface-100);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 0.6rem 0.85rem;
+    color: var(--foreground);
+    font-size: 0.82rem;
+    outline: none;
+    transition: border-color var(--dur-base) ease;
+}
+
+.replyInput:focus {
+    border-color: var(--primary);
+}
+
+.replyInput::placeholder {
+    color: rgba(255,255,255,0.3);
+}
+
+.replyInput:disabled {
+    opacity: 0.5;
+}
+
+.replyBtn {
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 0.6rem 1.2rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background var(--dur-base) ease, opacity var(--dur-base) ease;
+}
+
+.replyBtn:hover:not(:disabled) {
+    background: var(--primary-hover, #3b82f6);
+}
+
+.replyBtn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* ─── Agent Digest ─── */
+.digestSection {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.digestCard {
+    padding: 0.85rem 1rem;
+    border-radius: var(--radius-sm);
+    background: var(--surface-100);
+    border: 1px solid var(--border-subtle);
+}
+
+.digestTitle {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--foreground);
+    margin-bottom: 0.4rem;
+}
+
+.digestStats {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.digestStat {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.5);
+}
+
+.digestStatValue {
+    font-weight: 700;
+    color: var(--foreground);
+    margin-right: 0.25rem;
+}
