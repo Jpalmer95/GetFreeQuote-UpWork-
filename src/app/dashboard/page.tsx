@@ -8,9 +8,10 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 
 const STATUS_CLASS: Record<string, string> = {
-    open:        'badge badge-blue',
-    in_progress: 'badge badge-amber',
-    closed:      'badge badge-green',
+    OPEN:        'badge badge-blue',
+    IN_PROGRESS: 'badge badge-amber',
+    COMPLETED:   'badge badge-green',
+    CANCELLED:   'badge badge-muted',
 };
 
 export default function Dashboard() {
