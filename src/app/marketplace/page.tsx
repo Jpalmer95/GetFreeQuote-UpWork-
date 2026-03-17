@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { jobService } from '@/services/jobService';
-import { Job, IndustryVertical, INDUSTRY_VERTICALS, INDUSTRY_SUBCATEGORIES } from '@/types';
+import { Job, IndustryVertical, KnownIndustryVertical, INDUSTRY_VERTICALS, INDUSTRY_SUBCATEGORIES } from '@/types';
 import styles from './page.module.css';
 import Navbar from '@/components/Navbar';
 
@@ -48,7 +48,7 @@ export default function Marketplace() {
     }, [filters]);
 
     const subcategories = filters.industryVertical
-        ? INDUSTRY_SUBCATEGORIES[filters.industryVertical] || []
+        ? (INDUSTRY_SUBCATEGORIES as Record<string, string[]>)[filters.industryVertical] || []
         : [];
 
     return (

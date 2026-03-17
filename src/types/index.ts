@@ -8,7 +8,7 @@ export interface User {
     avatarUrl?: string;
 }
 
-export type IndustryVertical =
+export type KnownIndustryVertical =
     | 'Home Services'
     | 'Commercial Construction'
     | 'Gig Work'
@@ -19,7 +19,9 @@ export type IndustryVertical =
     | 'Technology'
     | 'Other';
 
-export const INDUSTRY_VERTICALS: IndustryVertical[] = [
+export type IndustryVertical = KnownIndustryVertical | (string & {});
+
+export const INDUSTRY_VERTICALS: KnownIndustryVertical[] = [
     'Home Services',
     'Commercial Construction',
     'Gig Work',
@@ -31,7 +33,7 @@ export const INDUSTRY_VERTICALS: IndustryVertical[] = [
     'Other',
 ];
 
-export const INDUSTRY_SUBCATEGORIES: Record<IndustryVertical, string[]> = {
+export const INDUSTRY_SUBCATEGORIES: Record<KnownIndustryVertical, string[]> = {
     'Home Services': ['Plumbing', 'Electrical', 'HVAC', 'Roofing', 'Painting', 'Landscaping', 'Cleaning', 'Pest Control', 'Handyman', 'Other'],
     'Commercial Construction': ['General Contracting', 'Concrete & Foundation', 'Steel & Framing', 'Electrical Systems', 'Mechanical / HVAC', 'Plumbing Systems', 'Interior Finish', 'Demolition', 'Site Work', 'Other'],
     'Gig Work': ['Delivery', 'Moving & Hauling', 'Assembly', 'Personal Shopping', 'Pet Care', 'Tutoring', 'Photography', 'Videography', 'Other'],
@@ -43,7 +45,7 @@ export const INDUSTRY_SUBCATEGORIES: Record<IndustryVertical, string[]> = {
     'Other': ['Other'],
 };
 
-export const INDUSTRY_ICONS: Record<IndustryVertical, string> = {
+export const INDUSTRY_ICONS: Record<KnownIndustryVertical, string> = {
     'Home Services': 'home',
     'Commercial Construction': 'building',
     'Gig Work': 'briefcase',

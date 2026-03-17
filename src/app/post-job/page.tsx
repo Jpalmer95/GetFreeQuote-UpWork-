@@ -43,7 +43,7 @@ export default function PostJob() {
     });
     const [loading, setLoading] = useState(false);
 
-    const subcategories = INDUSTRY_SUBCATEGORIES[formData.industryVertical] || ['Other'];
+    const subcategories = (INDUSTRY_SUBCATEGORIES as Record<string, string[]>)[formData.industryVertical] || ['Other'];
     const isCustomIndustry = formData.industryVertical === 'Other';
     const isCustomSubcategory = formData.subcategory === 'Other';
 
@@ -80,7 +80,7 @@ export default function PostJob() {
                 location: formData.location,
                 description: formData.description,
                 category: resolvedSubcategory,
-                industryVertical: formData.industryVertical,
+                industryVertical: resolvedIndustry as IndustryVertical,
                 subcategory: resolvedSubcategory,
                 isPublic: formData.isPublic,
                 requiresPermit: formData.requiresPermit,
