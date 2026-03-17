@@ -194,6 +194,8 @@ export const db = {
             escalation_triggers: config.escalationTriggers,
             auto_approve_below: config.autoApproveBelow,
             working_hours_only: config.workingHoursOnly,
+            service_area: config.serviceArea,
+            max_active_jobs: config.maxActiveJobs,
             updated_at: new Date().toISOString(),
         };
 

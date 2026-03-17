@@ -40,6 +40,8 @@ export interface AgentConfigRow {
     escalation_triggers: string[] | null;
     auto_approve_below: number | null;
     working_hours_only: boolean;
+    service_area: string[] | null;
+    max_active_jobs: number | null;
     created_at: string;
     updated_at: string;
 }
@@ -135,6 +137,8 @@ export function mapAgentConfigRow(row: AgentConfigRow): AgentConfig {
         escalationTriggers: (row.escalation_triggers || []) as AgentConfig['escalationTriggers'],
         autoApproveBelow: row.auto_approve_below ?? undefined,
         workingHoursOnly: row.working_hours_only,
+        serviceArea: row.service_area || [],
+        maxActiveJobs: row.max_active_jobs ?? undefined,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
     };

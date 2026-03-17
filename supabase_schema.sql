@@ -174,6 +174,8 @@ create table public.agent_configs (
   escalation_triggers text[] default '{quote_received,scope_change,budget_exceeded}',
   auto_approve_below numeric,
   working_hours_only boolean default false,
+  service_area text[] default '{}',
+  max_active_jobs integer,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );

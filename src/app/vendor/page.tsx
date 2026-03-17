@@ -2,34 +2,19 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { jobService } from '@/services/jobService';
-import { Job, AgentAction, Notification, INDUSTRY_VERTICALS, IndustryVertical } from '@/types';
+import { Job, Notification, INDUSTRY_VERTICALS, IndustryVertical } from '@/types';
 import { db } from '@/services/db';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import styles from './page.module.css';
 import Navbar from '@/components/Navbar';
 
-const ACTION_ICONS: Record<string, string> = {
-    job_broadcast: '📡',
-    vendor_match: '🤝',
-    auto_quote: '💰',
-    clarification_sent: '❓',
-    clarification_received: '💬',
-    scope_analysis: '🔍',
-    quote_comparison: '📊',
-    escalation: '⚠️',
-    negotiation: '🔄',
-    auto_approve: '✅',
-    auto_reject: '❌',
-};
-
-type VendorTab = 'opportunities' | 'agent-activity' | 'reviews';
+type VendorTab = 'opportunities' | 'reviews';
 
 export default function VendorDashboard() {
     const { user, isLoading } = useAuth();
     const router = useRouter();
     const [availableJobs, setAvailableJobs] = useState<Job[]>([]);
-    const [recentActions, setRecentActions] = useState<AgentAction[]>([]);
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [industryFilter, setIndustryFilter] = useState<IndustryVertical | ''>('');
     const [activeTab, setActiveTab] = useState<VendorTab>('opportunities');

@@ -127,6 +127,8 @@ export interface AgentConfig {
     escalationTriggers: EscalationTrigger[];
     autoApproveBelow?: number;
     workingHoursOnly: boolean;
+    serviceArea: string[];
+    maxActiveJobs?: number;
     createdAt: string;
     updatedAt: string;
 }

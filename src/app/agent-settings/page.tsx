@@ -42,6 +42,8 @@ export default function AgentSettings() {
         escalationTriggers: ['quote_received', 'scope_change', 'budget_exceeded'] as EscalationTrigger[],
         autoApproveBelow: '',
         workingHoursOnly: false,
+        serviceArea: '',
+        maxActiveJobs: '',
     });
 
     useEffect(() => {
@@ -69,6 +71,8 @@ export default function AgentSettings() {
                     escalationTriggers: existing.escalationTriggers,
                     autoApproveBelow: existing.autoApproveBelow?.toString() || '',
                     workingHoursOnly: existing.workingHoursOnly,
+                    serviceArea: existing.serviceArea.join(', '),
+                    maxActiveJobs: existing.maxActiveJobs?.toString() || '',
                 });
             }
         };
@@ -115,6 +119,8 @@ export default function AgentSettings() {
                 escalationTriggers: config.escalationTriggers,
                 autoApproveBelow: config.autoApproveBelow ? parseFloat(config.autoApproveBelow) : undefined,
                 workingHoursOnly: config.workingHoursOnly,
+                serviceArea: config.serviceArea.split(',').map(s => s.trim()).filter(Boolean),
+                maxActiveJobs: config.maxActiveJobs ? parseInt(config.maxActiveJobs) : undefined,
             });
             setSaved(true);
             setTimeout(() => setSaved(false), 3000);
@@ -294,6 +300,32 @@ export default function AgentSettings() {
                                 value={config.minBudget}
                                 onChange={(e) => setConfig(prev => ({ ...prev, minBudget: e.target.value }))}
                                 placeholder="50"
+                            />
+                        </div>
+                        <div className={styles.settingRow}>
+                            <div className={styles.settingLabel}>
+                                <span className={styles.settingName}>Service Area</span>
+                                <span className={styles.settingHint}>Comma-separated cities, regions, or zip codes you serve</span>
+                            </div>
+                            <input
+                                type="text"
+                                className={styles.input}
+                                value={config.serviceArea}
+                                onChange={(e) => setConfig(prev => ({ ...prev, serviceArea: e.target.value }))}
+                                placeholder="New York, Brooklyn, 10001"
+                            />
+                        </div>
+                        <div className={styles.settingRow}>
+                            <div className={styles.settingLabel}>
+                                <span className={styles.settingName}>Max Active Jobs</span>
+                                <span className={styles.settingHint}>Maximum concurrent jobs your team can handle (capacity limit)</span>
+                            </div>
+                            <input
+                                type="number"
+                                className={styles.input}
+                                value={config.maxActiveJobs}
+                                onChange={(e) => setConfig(prev => ({ ...prev, maxActiveJobs: e.target.value }))}
+                                placeholder="10"
                             />
                         </div>
                     </div>

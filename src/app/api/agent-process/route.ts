@@ -160,6 +160,44 @@ export async function POST(request: NextRequest) {
                 reasons.push('budget_in_range');
             }
 
+            if (vc.serviceArea.length > 0 && job.location) {
+                const jobLocationLower = job.location.toLowerCase();
+                const locationMatch = vc.serviceArea.some((area: string) => {
+                    const areaLower = area.toLowerCase();
+                    return jobLocationLower.includes(areaLower) || areaLower.includes(jobLocationLower);
+                });
+                if (locationMatch) {
+                    score += 20;
+                    reasons.push('location_match');
+                } else {
+                    rejected.push({ config: vc, reason: 'location_outside_service_area' });
+                    continue;
+                }
+            }
+
+            if (vc.maxActiveJobs) {
+                const { count: activeQuoteCount } = await supabaseAdmin
+                    .from('quotes')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('vendor_id', vc.userId)
+                    .eq('status', 'ACCEPTED');
+
+                if (activeQuoteCount !== null && activeQuoteCount >= vc.maxActiveJobs) {
+                    rejected.push({ config: vc, reason: 'at_capacity' });
+                    continue;
+                }
+                const capacityUsed = activeQuoteCount ? activeQuoteCount / vc.maxActiveJobs : 0;
+                if (capacityUsed < 0.5) {
+                    score += 10;
+                    reasons.push('high_capacity_available');
+                } else if (capacityUsed < 0.8) {
+                    score += 5;
+                    reasons.push('moderate_capacity_available');
+                } else {
+                    reasons.push('low_capacity_remaining');
+                }
+            }
+
             if (vc.workingHoursOnly) {
                 const hour = new Date().getUTCHours();
                 if (hour < 9 || hour > 17) {

@@ -26,7 +26,8 @@ src/
     vendor/                # Vendor portal (opportunities feed, pending reviews)
     agent-settings/        # AI Agent configuration page
     api/
-      agent-process/       # Server-side AI agent orchestration (POST)
+      agent-process/       # Server-side AI agent orchestration (POST) — vendor matching with location, capacity, specialty, budget scoring
+      agent-respond/       # Multi-turn conversation handler (POST) — scope updates, escalation, vendor notifications
       quote-action/        # Server-side quote accept/reject (POST)
   components/
     Navbar.tsx             # Sticky glass navbar with notification bell + AI Agent link
@@ -40,7 +41,8 @@ src/
     supabaseAdmin.ts       # Supabase admin client (server-side, service role)
   services/
     jobService.ts          # Business logic layer
-    aiAgent.ts             # AI agent engine (job processing, auto-quoting, escalation)
+    aiAgent.ts             # AI agent UI helpers (status labels, scoring display)
+    serverMappers.ts       # Shared typed row interfaces + mapper functions for server-side routes
     db.ts                  # Database access layer (Supabase queries, mappers)
   types/
     index.ts               # TypeScript types, agent configs, notifications
@@ -57,7 +59,7 @@ The platform uses an industry-agnostic data model with AI agent infrastructure:
 - **Jobs**: `industryVertical`, `subcategory`, `urgency`, `squareFootage`, `materials`, `attachments`, `timelineStart`, `timelineEnd`, tags
 - **Quotes**: vendor bids with amount, estimated days, details, accept/reject workflow
 - **Messages**: conversation thread per job with `senderType` (user/vendor/customer_agent/vendor_agent/system)
-- **Agent Configs**: per-user AI agent settings (role, auto-respond, auto-quote, budget thresholds, industries, specialties, escalation triggers, communication style)
+- **Agent Configs**: per-user AI agent settings (role, auto-respond, auto-quote, budget thresholds, industries, specialties, service area, max active jobs/capacity, escalation triggers, communication style)
 - **Agent Actions**: audit log of all AI agent operations (scope_analysis, job_broadcast, vendor_match, auto_quote, clarification, escalation, etc.)
 - **Notifications**: prioritized alerts (low/medium/high/urgent) with action_required flag, types: quote_ready, approval_needed, scope_change, agent_summary, job_match, negotiation_update
 
@@ -69,15 +71,25 @@ The agent system operates at two levels:
 2. **Vendor Agents**: Match incoming opportunities against vendor's configured criteria (industry, specialties, budget range, distance), auto-generate preliminary quotes, and send introductions.
 
 Architecture:
-- **Server-side orchestration**: Agent processing (vendor matching, auto-quoting, cross-user notifications) runs in Next.js API routes (`/api/agent-process`, `/api/quote-action`) using `supabaseAdmin` (service role key) to bypass RLS for cross-user operations.
+- **Server-side orchestration**: Agent processing (vendor matching, auto-quoting, multi-turn conversation, cross-user notifications) runs in Next.js API routes (`/api/agent-process`, `/api/agent-respond`, `/api/quote-action`) using `supabaseAdmin` (service role key) to bypass RLS for cross-user operations.
 - **Client-side helpers**: `aiAgent.ts` exports only `isAgentSender()` and `getAgentLabel()` for UI rendering.
 - **RLS policies** are ownership-based: users can only read/write their own data. All cross-user operations go through server-side API routes.
+
+Vendor Matching Criteria (scored ranking):
+- **Industry match** (+30 pts, disqualify on mismatch)
+- **Specialty match** (+25 pts)
+- **Location/service area** (+20 pts, disqualify if vendor has service area and job location not in it)
+- **Budget fit** (+15 pts, disqualify if job budget outside vendor min/max range)
+- **Capacity** (+5-10 pts based on remaining capacity, disqualify if at max active jobs)
+- **Working hours** (±5 pts)
+- **Auto-quote/auto-respond** bonuses (+10/+5 pts)
 
 Key features:
 - Agent-to-agent communication with typed `senderType` on messages
 - Auto-quoting based on vendor base rate, urgency multiplier, and estimated hours
 - Budget threshold checking (auto-reject quotes above/below configured limits)
 - Auto-approve quotes below configured threshold
+- Multi-turn conversation via `/api/agent-respond` (scope updates, escalation, vendor notifications)
 - Escalation triggers for human review (configurable per user)
 - Full audit trail via `agent_actions` table
 - Notification system with priority levels and action-required flags
