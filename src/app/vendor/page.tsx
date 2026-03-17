@@ -12,8 +12,11 @@ export default function VendorDashboard() {
     const [maxDistance, setMaxDistance] = useState(25);
 
     useEffect(() => {
-        const allJobs = jobService.getMyJobs('');
-        setAvailableJobs(allJobs);
+        const load = async () => {
+            const allJobs = await jobService.getMyJobs('');
+            setAvailableJobs(allJobs);
+        };
+        load();
     }, []);
 
     return (
@@ -108,9 +111,7 @@ export default function VendorDashboard() {
                             </div>
                         ))}
                         {availableJobs.length === 0 && (
-                            <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.9rem' }}>
-                                No active jobs in your area.
-                            </p>
+                            <p className={styles.emptyFeed}>No active jobs in your area.</p>
                         )}
                     </div>
                 </section>

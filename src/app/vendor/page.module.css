@@ -270,3 +270,7 @@
     background: var(--primary);
     color: #fff;
 }
+.emptyFeed {
+    color: rgba(255,255,255,0.3);
+    font-size: 0.9rem;
+}

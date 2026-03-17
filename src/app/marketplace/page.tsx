@@ -5,15 +5,6 @@ import { Job, JobCategory } from '@/types';
 import styles from './page.module.css';
 import Navbar from '@/components/Navbar';
 
-const CATEGORY_COLORS: Record<string, string> = {
-    Plumbing:     'linear-gradient(90deg,#4f8ef7,#3b6fd4)',
-    Electrical:   'linear-gradient(90deg,#f5a623,#d4860a)',
-    HVAC:         'linear-gradient(90deg,#0fd98e,#09b074)',
-    Construction: 'linear-gradient(90deg,#9b6dff,#7340e0)',
-    Cleaning:     'linear-gradient(90deg,#4fc3f7,#0288d1)',
-    'Web Design': 'linear-gradient(90deg,#f06292,#c2185b)',
-    Other:        'linear-gradient(90deg,#78909c,#455a64)',
-};
 
 export default function Marketplace() {
     const [jobs, setJobs] = useState<Job[]>([]);
@@ -96,11 +87,12 @@ export default function Marketplace() {
 
                     <div className={styles.grid}>
                         {jobs.map(job => (
-                            <div key={job.id} className={`glass-panel ${styles.jobCard}`}>
-                                <div
-                                    className={styles.cardAccent}
-                                    style={{ background: CATEGORY_COLORS[job.category] || CATEGORY_COLORS.Other }}
-                                />
+                            <div
+                                key={job.id}
+                                className={`glass-panel ${styles.jobCard}`}
+                                data-category={job.category}
+                            >
+                                <div className={styles.cardAccent} />
 
                                 <div className={styles.cardHeader}>
                                     <span className={styles.categoryTag}>{job.category}</span>
@@ -135,7 +127,7 @@ export default function Marketplace() {
 
                         {jobs.length === 0 && (
                             <div className={styles.emptyState}>
-                                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{opacity:0.2}}>
+                                <svg className={styles.emptyIcon} width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                                     <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
                                 </svg>
                                 <p>No jobs found matching your filters.</p>
