@@ -109,6 +109,40 @@
 /* ─── Feed ─── */
 .feed { flex: 1; }
 
+.searchBar {
+    position: relative;
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.searchIcon {
+    position: absolute;
+    left: 1rem;
+    color: rgba(255,255,255,0.35);
+    pointer-events: none;
+}
+
+.searchInput {
+    width: 100%;
+    background: var(--surface-100);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: 0.9rem;
+    padding: 0.7rem 1rem 0.7rem 2.75rem;
+    transition: border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
+    outline: none;
+}
+
+.searchInput::placeholder { color: rgba(255,255,255,0.3); }
+
+.searchInput:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
 .feedHeader {
     display: flex;
     justify-content: space-between;

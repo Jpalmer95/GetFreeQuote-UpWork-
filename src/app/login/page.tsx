@@ -41,8 +41,8 @@ function LoginForm() {
                 if (signInError) throw signInError;
                 router.push('/dashboard');
             }
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : 'An unexpected error occurred.');
         } finally {
             setLoading(false);
         }

@@ -77,6 +77,19 @@ export default function Marketplace() {
                 </aside>
 
                 <main className={styles.feed}>
+                    <div className={styles.searchBar}>
+                        <svg className={styles.searchIcon} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                        </svg>
+                        <input
+                            type="text"
+                            placeholder="Search jobs by keyword…"
+                            className={styles.searchInput}
+                            value={filters.query}
+                            onChange={(e) => setFilters({ ...filters, query: e.target.value })}
+                        />
+                    </div>
+
                     <div className={styles.feedHeader}>
                         <h2>Active Opportunities ({jobs.length})</h2>
                         <select className={styles.sortSelect}>
