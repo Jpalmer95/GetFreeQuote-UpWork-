@@ -1,0 +1,147 @@
+.container {
+    min-height: 100vh;
+    background: var(--background);
+    padding: 2rem;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 3rem;
+    border-bottom: 1px solid var(--border-subtle);
+    padding-bottom: 1rem;
+}
+
+.stats {
+    display: flex;
+    gap: 2rem;
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: 350px 1fr;
+    gap: 2rem;
+}
+
+.settingsCard {
+    padding: 2rem;
+    height: fit-content;
+}
+
+.settingsCard h3 {
+    margin-bottom: 0.5rem;
+}
+
+.desc {
+    font-size: 0.9rem;
+    color: #888;
+    margin-bottom: 2rem;
+}
+
+.settingRow {
+    margin-bottom: 1.5rem;
+}
+
+.settingRow label {
+    display: block;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+    color: #ccc;
+}
+
+.toggle {
+    background: var(--surface-300);
+    border: none;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    font-weight: 600;
+    width: 100%;
+    transition: all 0.2s;
+}
+
+.active {
+    background: var(--accent);
+    color: black;
+}
+
+.input {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-highlight);
+    padding: 0.8rem;
+    border-radius: var(--radius-sm);
+    color: white;
+}
+
+.marketSection h3 {
+    margin-bottom: 1.5rem;
+    color: var(--primary);
+}
+
+.feed {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.jobCard {
+    padding: 1.5rem;
+    border: 1px solid var(--border-subtle);
+    transition: transform 0.2s;
+}
+
+.jobCard:hover {
+    transform: translateY(-2px);
+    border-color: var(--primary-glow);
+}
+
+.jobHeader {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.tag {
+    background: var(--surface-200);
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+}
+
+.time {
+    font-size: 0.8rem;
+    color: #888;
+}
+
+.botAction {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-subtle);
+    font-size: 0.9rem;
+}
+
+.success {
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.quoteBtn {
+    background: transparent;
+    border: 1px solid var(--primary);
+    color: var(--primary);
+    padding: 0.4rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.quoteBtn:hover {
+    background: var(--primary);
+    color: white;
+}
