@@ -130,6 +130,7 @@ export default function PostJob() {
                                     placeholder="Enter your industry..."
                                     value={formData.customIndustry}
                                     onChange={(e) => setFormData({ ...formData, customIndustry: e.target.value })}
+                                    required
                                     className="field-input"
                                 />
                             </div>
@@ -147,6 +148,20 @@ export default function PostJob() {
                         )}
                     </div>
 
+                    {isCustomIndustry && (
+                        <div className={styles.inputGroup}>
+                            <label>Custom Subcategory</label>
+                            <input
+                                type="text"
+                                placeholder="Enter your subcategory..."
+                                value={formData.customSubcategory}
+                                onChange={(e) => setFormData({ ...formData, customSubcategory: e.target.value })}
+                                required
+                                className="field-input"
+                            />
+                        </div>
+                    )}
+
                     {!isCustomIndustry && isCustomSubcategory && (
                         <div className={styles.inputGroup}>
                             <label>Custom Subcategory</label>
@@ -155,6 +170,7 @@ export default function PostJob() {
                                 placeholder="Enter your subcategory..."
                                 value={formData.customSubcategory}
                                 onChange={(e) => setFormData({ ...formData, customSubcategory: e.target.value })}
+                                required
                                 className="field-input"
                             />
                         </div>
