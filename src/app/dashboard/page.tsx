@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { jobService } from '@/services/jobService';
 import { Job, Quote, Message } from '@/types';
 import styles from './page.module.css';
@@ -59,7 +60,7 @@ export default function Dashboard() {
 
             <header className={styles.pageHeader}>
                 <h2 className="gradient-text">My Jobs</h2>
-                <a href="/post-job" className={styles.newBtn}>+ New Job</a>
+                <Link href="/post-job" className={styles.newBtn}>+ New Job</Link>
             </header>
 
             <div className={styles.layout}>

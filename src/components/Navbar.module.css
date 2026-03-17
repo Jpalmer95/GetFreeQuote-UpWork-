@@ -73,6 +73,24 @@
     background: var(--surface-200) !important;
 }
 
+.active::after {
+    content: '';
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60%;
+    height: 2px;
+    border-radius: var(--radius-full);
+    background: linear-gradient(90deg, var(--primary), var(--secondary));
+    animation: navIndicatorIn 0.2s ease forwards;
+}
+
+@keyframes navIndicatorIn {
+    from { opacity: 0; width: 20%; }
+    to   { opacity: 1; width: 60%; }
+}
+
 /* ─── Actions ─── */
 .actions {
     display: flex;
