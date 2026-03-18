@@ -1,4 +1,5 @@
 'use client';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
@@ -8,6 +9,13 @@ import styles from './Navbar.module.css';
 export default function Navbar() {
     const { user, profile, signOut } = useAuth();
     const pathname = usePathname();
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    const showUser = mounted && user;
 
     return (
         <header className={styles.header}>
@@ -30,7 +38,7 @@ export default function Navbar() {
                     >
                         Community
                     </Link>
-                    {user && (
+                    {showUser && (
                         <>
                             <Link
                                 href="/dashboard"
@@ -55,7 +63,7 @@ export default function Navbar() {
                 </nav>
 
                 <div className={styles.actions}>
-                    {user ? (
+                    {showUser ? (
                         <div className={styles.userMenu}>
                             <NotificationPanel />
                             <span className={styles.avatar}>
@@ -68,12 +76,12 @@ export default function Navbar() {
                                 Sign Out
                             </button>
                         </div>
-                    ) : (
+                    ) : mounted ? (
                         <div className={styles.authButtons}>
                             <Link href="/login" className={styles.loginBtn}>Log In</Link>
                             <Link href="/login?mode=signup" className={styles.signupBtn}>Sign Up</Link>
                         </div>
-                    )}
+                    ) : null}
                 </div>
             </div>
         </header>
