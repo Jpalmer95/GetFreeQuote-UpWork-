@@ -16,7 +16,8 @@ An AI-agent-native marketplace for estimates and bids across any industry — ho
 src/
   app/                     # Next.js App Router pages
     globals.css            # Design system: CSS tokens, utilities, animations
-    layout.tsx             # Root layout (font, AuthProvider)
+    layout.tsx             # Root layout (font, suppressHydrationWarning on html/body)
+    providers.tsx          # Client-only providers wrapper (AuthProvider)
     page.tsx               # Landing page (aurora hero, industry verticals, CTA)
     page.module.css
     login/                 # Login / Sign Up page
@@ -145,4 +146,5 @@ npm run start  # Production server on port 5000 (Replit)
 
 - Workflow: `Start application` runs `npm run dev`
 - `next.config.ts` sets `allowedDevOrigins` to `REPLIT_DEV_DOMAIN`
+- Hydration: `suppressHydrationWarning` on `<html>` and `<body>` in layout.tsx; Replit iframe proxy may inject DOM nodes causing dev-mode hydration warnings (cosmetic only, no impact on functionality or production)
 - Port 5000 is required for Replit's webview preview
