@@ -39,7 +39,7 @@ src/
       agent-process/       # Server-side AI agent orchestration (POST) — vendor matching with location, capacity, specialty, budget scoring
       agent-respond/       # Multi-turn conversation handler (POST) — scope updates, escalation, vendor notifications
       quote-action/        # Server-side quote accept/reject (POST)
-      community/           # Community project API (donate, create-project, post-update, record-expense) with smart contract escrow simulation
+      community/           # Community project API (donate, create-project, post-update, record-expense, post-to-marketplace) with atomic RPCs for donations & expenses
   components/
     Navbar.tsx             # Sticky glass navbar with notification bell + AI Agent link
     Navbar.module.css

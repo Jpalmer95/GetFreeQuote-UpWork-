@@ -26,20 +26,6 @@ export async function POST(request: NextRequest) {
                 return NextResponse.json({ error: 'Valid communityProjectId and positive amount required' }, { status: 400 });
             }
 
-            const { data: project, error: projError } = await supabaseAdmin
-                .from('community_projects')
-                .select('id, status, goal_amount, creator_id')
-                .eq('id', communityProjectId)
-                .single();
-
-            if (projError || !project) {
-                return NextResponse.json({ error: 'Community project not found' }, { status: 404 });
-            }
-
-            if (project.status !== 'ACTIVE') {
-                return NextResponse.json({ error: 'This project is not currently accepting donations' }, { status: 400 });
-            }
-
             const { data: profile } = await supabaseAdmin
                 .from('profiles')
                 .select('full_name')
@@ -47,67 +33,22 @@ export async function POST(request: NextRequest) {
                 .single();
 
             const donorName = isAnonymous ? 'Anonymous' : (profile?.full_name || 'Anonymous');
-
             const txHash = `0x${Date.now().toString(16)}${Math.random().toString(16).slice(2, 10)}`;
 
-            const { data: donation, error: donError } = await supabaseAdmin
-                .from('donations')
-                .insert({
-                    community_project_id: communityProjectId,
-                    donor_id: caller.id,
-                    donor_name: donorName,
-                    amount,
-                    is_anonymous: isAnonymous,
-                    transaction_hash: txHash,
-                    message: message || null,
-                })
-                .select()
-                .single();
-
-            if (donError) throw donError;
-
-            const { error: updateError } = await supabaseAdmin.rpc('increment_community_funding', {
+            const { data: donationId, error: rpcError } = await supabaseAdmin.rpc('process_donation', {
                 p_project_id: communityProjectId,
+                p_donor_id: caller.id,
+                p_donor_name: donorName,
                 p_amount: amount,
+                p_is_anonymous: isAnonymous,
+                p_tx_hash: txHash,
+                p_message: message || null,
             });
 
-            if (updateError) {
-                console.error('RPC increment failed, using direct update fallback:', updateError);
-                const { data: latestProject } = await supabaseAdmin
-                    .from('community_projects')
-                    .select('current_funding, goal_amount')
-                    .eq('id', communityProjectId)
-                    .single();
-                if (latestProject) {
-                    const newFunding = Number(latestProject.current_funding) + amount;
-                    const newStatus = newFunding >= Number(latestProject.goal_amount) ? 'FUNDED' : 'ACTIVE';
-                    const { error: fallbackError } = await supabaseAdmin
-                        .from('community_projects')
-                        .update({
-                            current_funding: newFunding,
-                            status: newStatus,
-                            updated_at: new Date().toISOString(),
-                        })
-                        .eq('id', communityProjectId);
-                    if (fallbackError) {
-                        console.error('Fallback funding update also failed:', fallbackError);
-                    }
-                }
-            }
-
-            const { error: ledgerError } = await supabaseAdmin.from('ledger_entries').insert({
-                community_project_id: communityProjectId,
-                type: 'DONATION',
-                amount,
-                description: isAnonymous
-                    ? `Anonymous donation${message ? ': ' + message : ''}`
-                    : `Donation from ${donorName}${message ? ': ' + message : ''}`,
-                reference_id: donation.id,
-                transaction_hash: txHash,
-            });
-
-            if (ledgerError) {
-                console.error('Ledger entry insert failed:', ledgerError);
+            if (rpcError) {
+                const msg = rpcError.message || 'Donation failed';
+                const status = msg.includes('not found') ? 404 : msg.includes('not accepting') ? 400 : 500;
+                return NextResponse.json({ error: msg }, { status });
             }
 
             const { data: refreshed } = await supabaseAdmin
@@ -117,7 +58,7 @@ export async function POST(request: NextRequest) {
                 .single();
 
             return NextResponse.json({
-                donation,
+                donationId,
                 txHash,
                 newFunding: refreshed?.current_funding ?? amount,
                 newStatus: refreshed?.status ?? 'ACTIVE',
@@ -138,37 +79,82 @@ export async function POST(request: NextRequest) {
                 return NextResponse.json({ error: 'communityProjectId, positive amount, and non-empty description required' }, { status: 400 });
             }
 
-            const { data: expProject, error: expProjError } = await supabaseAdmin
+            const { data: result, error: rpcError } = await supabaseAdmin.rpc('record_community_expense', {
+                p_project_id: communityProjectId,
+                p_creator_id: caller.id,
+                p_amount: amount,
+                p_description: description.trim(),
+            });
+
+            if (rpcError) {
+                const msg = rpcError.message || 'Failed to record expense';
+                const status = msg.includes('not found') ? 404 : msg.includes('creator') ? 403 : msg.includes('Insufficient') ? 400 : 500;
+                return NextResponse.json({ error: msg }, { status });
+            }
+
+            return NextResponse.json(result);
+        }
+
+        if (action === 'post-to-marketplace') {
+            const caller = await getAuthenticatedUser(request);
+            if (!caller) {
+                return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+            }
+
+            const communityProjectId = body.communityProjectId as string | undefined;
+            const jobTitle = typeof body.jobTitle === 'string' ? body.jobTitle : undefined;
+            const jobDescription = typeof body.jobDescription === 'string' ? body.jobDescription : '';
+            const jobCategory = typeof body.jobCategory === 'string' ? body.jobCategory : 'Other';
+            const industryVertical = typeof body.industryVertical === 'string' ? body.industryVertical : 'Other';
+            const subcategory = typeof body.subcategory === 'string' ? body.subcategory : 'Other';
+
+            if (!communityProjectId || !jobTitle || !jobTitle.trim()) {
+                return NextResponse.json({ error: 'communityProjectId and jobTitle required' }, { status: 400 });
+            }
+
+            const { data: cpProject, error: cpError } = await supabaseAdmin
                 .from('community_projects')
-                .select('creator_id')
+                .select('creator_id, title, location, current_funding, goal_amount, status')
                 .eq('id', communityProjectId)
                 .single();
 
-            if (expProjError || !expProject) {
+            if (cpError || !cpProject) {
                 return NextResponse.json({ error: 'Community project not found' }, { status: 404 });
             }
 
-            if (expProject.creator_id !== caller.id) {
-                return NextResponse.json({ error: 'Only the project creator can record expenses' }, { status: 403 });
+            if (cpProject.creator_id !== caller.id) {
+                return NextResponse.json({ error: 'Only the project creator can post jobs to marketplace' }, { status: 403 });
             }
 
-            const txHash = `0x${Date.now().toString(16)}${Math.random().toString(16).slice(2, 10)}`;
+            const allowedStatuses = ['ACTIVE', 'FUNDED', 'IN_PROGRESS'];
+            if (!allowedStatuses.includes(cpProject.status)) {
+                return NextResponse.json({ error: `Cannot post to marketplace: project status is ${cpProject.status}` }, { status: 400 });
+            }
 
-            const { data: entry, error: ledgerError } = await supabaseAdmin
-                .from('ledger_entries')
+            const { data: job, error: jobError } = await supabaseAdmin
+                .from('jobs')
                 .insert({
+                    user_id: caller.id,
+                    title: jobTitle,
+                    category: jobCategory,
+                    description: jobDescription || `Community project: ${cpProject.title}`,
+                    location: cpProject.location || '',
+                    tags: ['community-funded'],
+                    is_public: true,
+                    requires_permit: false,
+                    budget: cpProject.goal_amount ? String(cpProject.goal_amount) : undefined,
+                    industry_vertical: industryVertical,
+                    subcategory,
+                    urgency: 'flexible',
                     community_project_id: communityProjectId,
-                    type: 'EXPENSE',
-                    amount,
-                    description,
-                    transaction_hash: txHash,
+                    status: 'OPEN',
                 })
                 .select()
                 .single();
 
-            if (ledgerError) throw ledgerError;
+            if (jobError) throw jobError;
 
-            return NextResponse.json({ entry, txHash });
+            return NextResponse.json({ job });
         }
 
         if (action === 'create-project') {

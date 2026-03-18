@@ -220,6 +220,19 @@
     text-transform: uppercase;
     background: rgba(79,142,247,0.12);
     color: var(--primary-light);
+}
+
+.communityTag {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.65rem;
+    border-radius: var(--radius-full);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    background: rgba(52,199,89,0.12);
+    color: #34c759;
     border: 1px solid rgba(79,142,247,0.25);
 }
 

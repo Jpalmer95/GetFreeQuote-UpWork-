@@ -168,6 +168,9 @@ export default function Marketplace() {
 
                                 <div className={styles.cardHeader}>
                                     <span className={styles.industryTag}>{job.industryVertical}</span>
+                                    {job.communityProjectId && (
+                                        <span className={styles.communityTag}>Community Funded</span>
+                                    )}
                                     <span className={styles.timeAgo}>
                                         {job.urgency && job.urgency !== 'flexible'
                                             ? URGENCY_LABELS[job.urgency]

@@ -21,6 +21,7 @@ export interface JobRow {
     attachments: string[] | null;
     timeline_start: string | null;
     timeline_end: string | null;
+    community_project_id: string | null;
 }
 
 export interface AgentConfigRow {
@@ -117,6 +118,7 @@ export function mapJobRow(row: JobRow): Job {
         attachments: row.attachments || [],
         timelineStart: row.timeline_start || undefined,
         timelineEnd: row.timeline_end || undefined,
+        communityProjectId: row.community_project_id || undefined,
     };
 }
 

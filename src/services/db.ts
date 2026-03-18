@@ -107,6 +107,7 @@ export const db = {
             attachments: job.attachments || [],
             timeline_start: job.timelineStart,
             timeline_end: job.timelineEnd,
+            community_project_id: job.communityProjectId || null,
             status: 'OPEN'
         }).select().single();
 

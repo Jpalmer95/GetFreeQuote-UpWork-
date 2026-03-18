@@ -49,6 +49,11 @@ export default function CommunityProjectDetail() {
     const [expenseDesc, setExpenseDesc] = useState('');
     const [recordingExpense, setRecordingExpense] = useState(false);
 
+    const [marketplaceTitle, setMarketplaceTitle] = useState('');
+    const [marketplaceDesc, setMarketplaceDesc] = useState('');
+    const [postingToMarketplace, setPostingToMarketplace] = useState(false);
+    const [marketplaceSuccess, setMarketplaceSuccess] = useState('');
+
     const loadData = useCallback(async () => {
         if (!id) return;
         const [proj, dons, upd, led] = await Promise.all([
@@ -131,7 +136,7 @@ export default function CommunityProjectDetail() {
 
     const handleRecordExpense = async () => {
         const amount = parseFloat(expenseAmount);
-        if (!amount || !expenseDesc) return;
+        if (!amount || amount <= 0 || !expenseDesc) return;
         setRecordingExpense(true);
         try {
             const res = await fetch('/api/community', {
@@ -154,6 +159,34 @@ export default function CommunityProjectDetail() {
             alert(message);
         } finally {
             setRecordingExpense(false);
+        }
+    };
+
+    const handlePostToMarketplace = async () => {
+        if (!marketplaceTitle) return;
+        setPostingToMarketplace(true);
+        setMarketplaceSuccess('');
+        try {
+            const res = await fetch('/api/community', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+                body: JSON.stringify({
+                    action: 'post-to-marketplace',
+                    communityProjectId: id,
+                    jobTitle: marketplaceTitle,
+                    jobDescription: marketplaceDesc || undefined,
+                }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+            setMarketplaceTitle('');
+            setMarketplaceDesc('');
+            setMarketplaceSuccess(`Job posted! Vendors can now submit bids.`);
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Failed to post to marketplace';
+            alert(message);
+        } finally {
+            setPostingToMarketplace(false);
         }
     };
 
@@ -313,6 +346,9 @@ export default function CommunityProjectDetail() {
                                 {isCreator && (
                                     <div className={styles.expenseForm}>
                                         <div className={styles.cardTitle}>Record an Expense</div>
+                                        <p style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.4)', marginBottom: '0.5rem' }}>
+                                            Available balance: <strong>{formatCurrency(totalDonations - totalExpenses)}</strong>
+                                        </p>
                                         <div className={styles.inputRow}>
                                             <input
                                                 type="number"
@@ -320,7 +356,8 @@ export default function CommunityProjectDetail() {
                                                 className={styles.amountInput}
                                                 value={expenseAmount}
                                                 onChange={e => setExpenseAmount(e.target.value)}
-                                                min="0"
+                                                min="0.01"
+                                                max={totalDonations - totalExpenses}
                                                 step="0.01"
                                             />
                                         </div>
@@ -334,7 +371,7 @@ export default function CommunityProjectDetail() {
                                         <button
                                             className={styles.btnSmall}
                                             onClick={handleRecordExpense}
-                                            disabled={recordingExpense || !expenseAmount || !expenseDesc}
+                                            disabled={recordingExpense || !expenseAmount || !expenseDesc || parseFloat(expenseAmount) <= 0 || parseFloat(expenseAmount) > (totalDonations - totalExpenses)}
                                         >
                                             {recordingExpense ? 'Recording...' : 'Record Expense'}
                                         </button>
@@ -407,10 +444,21 @@ export default function CommunityProjectDetail() {
 
                         {project.contractAddress && (
                             <div className={styles.card}>
-                                <div className={styles.cardTitle}>Smart Contract</div>
+                                <div className={styles.cardTitle}>Smart Contract Escrow</div>
                                 <div className={styles.contractInfo}>
-                                    <span className={styles.contractLabel}>Escrow Address:</span><br />
+                                    <span className={styles.contractLabel}>Contract Address:</span><br />
                                     {project.contractAddress}
+                                </div>
+                                <div className={styles.contractInfo} style={{ marginTop: '0.5rem' }}>
+                                    <span className={styles.contractLabel}>Network:</span> Testnet (Simulated)
+                                </div>
+                                <div className={styles.contractInfo} style={{ marginTop: '0.5rem' }}>
+                                    <span className={styles.contractLabel}>Escrow Balance:</span>{' '}
+                                    <span style={{ color: '#34c759' }}>{formatCurrency(project.currentFunding - totalExpenses)}</span>
+                                </div>
+                                <div className={styles.contractInfo} style={{ marginTop: '0.5rem' }}>
+                                    <span className={styles.contractLabel}>Status:</span>{' '}
+                                    {project.currentFunding >= project.goalAmount ? 'Funded - Ready for release' : 'Accepting deposits'}
                                 </div>
                             </div>
                         )}
@@ -421,8 +469,46 @@ export default function CommunityProjectDetail() {
                                 <div>Total Donors: <strong>{donations.length}</strong></div>
                                 <div>Updates Posted: <strong>{updates.length}</strong></div>
                                 <div>Ledger Entries: <strong>{ledger.length}</strong></div>
+                                <div>Total Donated: <strong className={styles.ledgerDonation}>{formatCurrency(totalDonations)}</strong></div>
+                                <div>Total Spent: <strong className={styles.ledgerExpense}>{formatCurrency(totalExpenses)}</strong></div>
+                                <div>Available Balance: <strong>{formatCurrency(totalDonations - totalExpenses)}</strong></div>
                             </div>
                         </div>
+
+                        {isCreator && (project.status === 'FUNDED' || project.status === 'ACTIVE' || project.status === 'IN_PROGRESS') && (
+                            <div className={styles.card}>
+                                <div className={styles.cardTitle}>Post to Marketplace</div>
+                                <p style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.45)', marginBottom: '0.75rem' }}>
+                                    Create a job listing so vendors can submit bids for work on this community project.
+                                </p>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                    <input
+                                        type="text"
+                                        placeholder="Job title for vendors"
+                                        className={styles.formInput}
+                                        value={marketplaceTitle}
+                                        onChange={e => setMarketplaceTitle(e.target.value)}
+                                    />
+                                    <textarea
+                                        placeholder="Describe the work needed..."
+                                        className={styles.messageInput}
+                                        value={marketplaceDesc}
+                                        onChange={e => setMarketplaceDesc(e.target.value)}
+                                        rows={3}
+                                    />
+                                    <button
+                                        className={styles.btnSmall}
+                                        onClick={handlePostToMarketplace}
+                                        disabled={postingToMarketplace || !marketplaceTitle}
+                                    >
+                                        {postingToMarketplace ? 'Posting...' : 'Post Job to Marketplace'}
+                                    </button>
+                                    {marketplaceSuccess && (
+                                        <div className={styles.donateSuccess}>{marketplaceSuccess}</div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

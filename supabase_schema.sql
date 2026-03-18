@@ -567,23 +567,6 @@ alter table public.quotes add constraint quotes_phase_id_fkey foreign key (phase
 alter table public.project_phases add constraint project_phases_accepted_quote_id_fkey foreign key (accepted_quote_id) references public.quotes(id);
 
 
--- RPC: Atomic funding increment for community projects (prevents race conditions)
-create or replace function public.increment_community_funding(p_project_id uuid, p_amount numeric)
-returns void as $$
-begin
-  update public.community_projects
-  set
-    current_funding = current_funding + p_amount,
-    status = case
-      when (current_funding + p_amount) >= goal_amount then 'FUNDED'
-      else status
-    end,
-    updated_at = now()
-  where id = p_project_id;
-end;
-$$ language plpgsql security definer;
-
-
 -- COMMUNITY PROJECTS (public community improvement initiatives with transparent funding)
 create table public.community_projects (
   id uuid default gen_random_uuid() primary key,
@@ -683,3 +666,116 @@ create policy "Ledger entries are viewable by everyone." on public.ledger_entrie
 
 create policy "Ledger entries created by service role only." on public.ledger_entries
   for insert with check (false);
+
+
+-- RPC: Atomic funding increment for community projects (prevents race conditions)
+create or replace function public.increment_community_funding(p_project_id uuid, p_amount numeric)
+returns void as $$
+begin
+  update public.community_projects
+  set
+    current_funding = current_funding + p_amount,
+    status = case
+      when (current_funding + p_amount) >= goal_amount then 'FUNDED'
+      else status
+    end,
+    updated_at = now()
+  where id = p_project_id;
+end;
+$$ language plpgsql security definer;
+
+create or replace function public.process_donation(
+  p_project_id uuid,
+  p_donor_id uuid,
+  p_donor_name text,
+  p_amount numeric,
+  p_is_anonymous boolean,
+  p_tx_hash text,
+  p_message text default null
+)
+returns uuid as $$
+declare
+  v_donation_id uuid;
+  v_status text;
+begin
+  select status into v_status from public.community_projects where id = p_project_id for update;
+  if v_status is null then
+    raise exception 'Project not found';
+  end if;
+  if v_status <> 'ACTIVE' then
+    raise exception 'Project is not accepting donations';
+  end if;
+
+  insert into public.donations (community_project_id, donor_id, donor_name, amount, is_anonymous, transaction_hash, message)
+  values (p_project_id, p_donor_id, p_donor_name, p_amount, p_is_anonymous, p_tx_hash, p_message)
+  returning id into v_donation_id;
+
+  update public.community_projects
+  set
+    current_funding = current_funding + p_amount,
+    status = case when (current_funding + p_amount) >= goal_amount then 'FUNDED' else status end,
+    updated_at = now()
+  where id = p_project_id;
+
+  insert into public.ledger_entries (community_project_id, type, amount, description, reference_id, transaction_hash)
+  values (
+    p_project_id,
+    'DONATION',
+    p_amount,
+    case when p_is_anonymous then 'Anonymous donation' else 'Donation from ' || p_donor_name end
+      || case when p_message is not null and p_message <> '' then ': ' || p_message else '' end,
+    v_donation_id,
+    p_tx_hash
+  );
+
+  return v_donation_id;
+end;
+$$ language plpgsql security definer;
+
+create or replace function public.record_community_expense(
+  p_project_id uuid,
+  p_creator_id uuid,
+  p_amount numeric,
+  p_description text
+)
+returns json as $$
+declare
+  v_current_funding numeric;
+  v_total_expenses numeric;
+  v_available numeric;
+  v_tx_hash text;
+  v_entry_id uuid;
+  v_creator uuid;
+begin
+  select creator_id, current_funding into v_creator, v_current_funding
+  from public.community_projects where id = p_project_id for update;
+
+  if v_creator is null then
+    raise exception 'Project not found';
+  end if;
+  if v_creator <> p_creator_id then
+    raise exception 'Only the project creator can record expenses';
+  end if;
+
+  select coalesce(sum(amount), 0) into v_total_expenses
+  from public.ledger_entries
+  where community_project_id = p_project_id and type = 'EXPENSE';
+
+  v_available := v_current_funding - v_total_expenses;
+  if p_amount > v_available then
+    raise exception 'Insufficient funds. Available: %, Requested: %', round(v_available, 2), round(p_amount, 2);
+  end if;
+
+  v_tx_hash := '0x' || encode(gen_random_bytes(16), 'hex');
+
+  insert into public.ledger_entries (community_project_id, type, amount, description, transaction_hash)
+  values (p_project_id, 'EXPENSE', p_amount, p_description, v_tx_hash)
+  returning id into v_entry_id;
+
+  return json_build_object('entryId', v_entry_id, 'txHash', v_tx_hash, 'availableBalance', v_available - p_amount);
+end;
+$$ language plpgsql security definer;
+
+
+-- Cross-reference: Link jobs to community projects for marketplace integration
+alter table public.jobs add column community_project_id uuid references public.community_projects(id);

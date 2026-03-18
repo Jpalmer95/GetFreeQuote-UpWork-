@@ -82,6 +82,7 @@ export interface Job {
     attachments?: string[];
     timelineStart?: string;
     timelineEnd?: string;
+    communityProjectId?: string;
 }
 
 export interface Quote {
