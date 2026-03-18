@@ -144,6 +144,25 @@ export default function PublicVendorProfile({ params }: { params: Promise<{ id: 
                     </div>
                 )}
 
+                {profile.portfolioImages.length > 0 && (
+                    <div className={`glass-panel ${styles.card}`}>
+                        <div className={styles.cardTitle}>Portfolio</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1rem' }}>
+                            {profile.portfolioImages.map((img, i) => (
+                                <div key={i} style={{ borderRadius: 'var(--radius-sm)', overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>
+                                    <img src={img} alt={profile.portfolioDescriptions[i] || 'Portfolio item'}
+                                        style={{ width: '100%', height: '180px', objectFit: 'cover' }} />
+                                    {profile.portfolioDescriptions[i] && (
+                                        <div style={{ padding: '0.75rem', fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)' }}>
+                                            {profile.portfolioDescriptions[i]}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 <div className={`glass-panel ${styles.card}`}>
                     <div className={styles.cardTitle}>Contact</div>
                     <div className={styles.detailGrid}>

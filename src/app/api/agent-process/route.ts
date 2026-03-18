@@ -19,6 +19,22 @@ async function addMessage(jobId: string, senderId: string, senderType: string, c
     });
 }
 
+function evaluateFormula(formula: string, vars: Record<string, number>, fallback: number): number {
+    try {
+        const sanitized = formula.replace(/[^0-9+\-*/().%\s a-zA-Z_]/g, '');
+        let expr = sanitized;
+        for (const [key, val] of Object.entries(vars)) {
+            expr = expr.replace(new RegExp(`\\b${key}\\b`, 'g'), val.toString());
+        }
+        if (/[a-zA-Z_]/.test(expr)) return fallback;
+        const result = Function(`"use strict"; return (${expr})`)();
+        if (typeof result !== 'number' || !isFinite(result) || result < 0) return fallback;
+        return result;
+    } catch {
+        return fallback;
+    }
+}
+
 function calculateFromTemplate(template: EstimatingTemplate, job: Job, hours: number): { amount: number; breakdown: string[] } {
     const breakdown: string[] = [];
     let total = 0;
@@ -46,6 +62,15 @@ function calculateFromTemplate(template: EstimatingTemplate, job: Job, hours: nu
                 const tier = (item.tiers || []).find(t => qty >= t.minQty && qty <= t.maxQty);
                 itemTotal = tier ? tier.rate * qty : item.rate * qty;
                 breakdown.push(`${item.name}: ${qty} units @ tier rate = $${Math.round(itemTotal)}`);
+                break;
+            }
+            case 'formula': {
+                const formulaVars: Record<string, number> = {
+                    hours, sqft, units: sqft > 0 ? sqft : hours,
+                    rate: item.rate || template.laborRate,
+                };
+                itemTotal = evaluateFormula(item.formula || '', formulaVars, item.rate * hours);
+                breakdown.push(`${item.name}: formula "${item.formula}" = $${Math.round(itemTotal)}`);
                 break;
             }
             default:
@@ -330,7 +355,7 @@ export async function POST(request: NextRequest) {
             await createNotification(vc.userId, job.id, 'job_match', 'medium', 'New Project Match',
                 `A new ${job.industryVertical} project "${job.title}" matches your expertise.`, false, '/vendor');
 
-            if (vc.autoQuote && vc.baseRate) {
+            if (vc.autoQuote) {
                 const hours = estimateHours(job);
                 const urgencyMult = job.urgency === 'urgent' ? 1.5 : job.urgency === 'within_week' ? 1.25 : 1.0;
 
@@ -347,10 +372,12 @@ export async function POST(request: NextRequest) {
                         result.breakdown.join('\n') +
                         (urgencyMult > 1 ? `\nUrgency multiplier: ${urgencyMult}x` : '') +
                         `\nTotal: $${amount}`;
-                } else {
+                } else if (vc.baseRate) {
                     const baseRate = vc.baseRate;
                     amount = Math.round(baseRate * hours * urgencyMult);
                     detailsText = `Automated estimate for ${job.industryVertical} / ${job.subcategory}. Based on vendor rate of $${baseRate}/hr. ${job.urgency === 'urgent' ? 'Rush fee included. ' : ''}This is a preliminary estimate.`;
+                } else {
+                    continue;
                 }
 
                 const estimatedDays = Math.max(1, Math.ceil(hours / 8));

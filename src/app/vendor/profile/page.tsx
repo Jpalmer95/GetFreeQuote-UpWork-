@@ -261,6 +261,48 @@ export default function VendorProfileEdit() {
                 </div>
 
                 <div className={`glass-panel ${styles.card}`}>
+                    <div className={styles.cardTitle}>Portfolio / Past Work</div>
+                    <div className={styles.cardDesc}>Showcase your best projects with images and descriptions</div>
+                    <div className={styles.certList}>
+                        {form.portfolioImages.map((img, i) => (
+                            <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '0.75rem', borderRadius: 'var(--radius-sm)', background: 'var(--surface-100)', border: '1px solid var(--border-subtle)' }}>
+                                <div className={styles.certRow}>
+                                    <input className={styles.certInput} value={img}
+                                        onChange={e => {
+                                            const imgs = [...form.portfolioImages];
+                                            imgs[i] = e.target.value;
+                                            setForm(p => ({ ...p, portfolioImages: imgs }));
+                                        }}
+                                        placeholder="Image URL (https://...)" />
+                                    <button className={styles.removeBtn} onClick={() => {
+                                        setForm(p => ({
+                                            ...p,
+                                            portfolioImages: p.portfolioImages.filter((_, idx) => idx !== i),
+                                            portfolioDescriptions: p.portfolioDescriptions.filter((_, idx) => idx !== i),
+                                        }));
+                                    }}>Remove</button>
+                                </div>
+                                <input className={styles.input} style={{ width: '100%' }}
+                                    value={form.portfolioDescriptions[i] || ''}
+                                    onChange={e => {
+                                        const descs = [...form.portfolioDescriptions];
+                                        descs[i] = e.target.value;
+                                        setForm(p => ({ ...p, portfolioDescriptions: descs }));
+                                    }}
+                                    placeholder="Description of this project..." />
+                            </div>
+                        ))}
+                        <button className={styles.addBtn} onClick={() => {
+                            setForm(p => ({
+                                ...p,
+                                portfolioImages: [...p.portfolioImages, ''],
+                                portfolioDescriptions: [...p.portfolioDescriptions, ''],
+                            }));
+                        }}>+ Add Portfolio Item</button>
+                    </div>
+                </div>
+
+                <div className={`glass-panel ${styles.card}`}>
                     <div className={styles.cardTitle}>Insurance</div>
                     <div className={styles.cardDesc}>Insurance coverage details</div>
                     <div className={styles.formGrid}>
