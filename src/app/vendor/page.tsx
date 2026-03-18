@@ -4,12 +4,20 @@ import Link from 'next/link';
 import { jobService } from '@/services/jobService';
 import { Job, Notification, INDUSTRY_VERTICALS, IndustryVertical } from '@/types';
 import { db } from '@/services/db';
+import { vendorApi } from '@/services/vendorApi';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import styles from './page.module.css';
 import Navbar from '@/components/Navbar';
 
 type VendorTab = 'opportunities' | 'reviews';
+
+interface PendingInvite {
+    id: string;
+    companyName: string;
+    role: string;
+    invitedAt: string;
+}
 
 export default function VendorDashboard() {
     const { user, isLoading } = useAuth();
@@ -19,6 +27,8 @@ export default function VendorDashboard() {
     const [industryFilter, setIndustryFilter] = useState<IndustryVertical | ''>('');
     const [activeTab, setActiveTab] = useState<VendorTab>('opportunities');
     const [agentActive, setAgentActive] = useState(true);
+    const [pendingInvites, setPendingInvites] = useState<PendingInvite[]>([]);
+    const [acceptingId, setAcceptingId] = useState<string | null>(null);
 
     useEffect(() => {
         if (!isLoading && !user) {
@@ -28,17 +38,31 @@ export default function VendorDashboard() {
         if (!user) return;
 
         const load = async () => {
-            const [allJobs, config, notifs] = await Promise.all([
+            const [allJobs, config, notifs, invites] = await Promise.all([
                 jobService.searchJobs({ industryVertical: industryFilter || undefined }),
                 db.getAgentConfig(user.id),
                 db.getNotifications(user.id),
+                vendorApi.getPendingInvitations(),
             ]);
             setAvailableJobs(allJobs);
             setNotifications(notifs.filter(n => n.actionRequired));
             if (config) setAgentActive(config.isActive);
+            setPendingInvites(invites);
         };
         load();
     }, [industryFilter, user, isLoading, router]);
+
+    const handleAcceptInvite = async (memberId: string) => {
+        setAcceptingId(memberId);
+        try {
+            await vendorApi.acceptInvitation(memberId);
+            setPendingInvites(prev => prev.filter(inv => inv.id !== memberId));
+        } catch (error) {
+            console.error('Error accepting invitation:', error);
+        } finally {
+            setAcceptingId(null);
+        }
+    };
 
     if (isLoading || !user) {
         return <div className="loading-screen">Loading...</div>;
@@ -59,6 +83,31 @@ export default function VendorDashboard() {
                     <Link href="/agent-settings" className={styles.settingsLink}>Agent Settings</Link>
                 </div>
             </div>
+
+            {pendingInvites.length > 0 && (
+                <div style={{ padding: '1rem 1.5rem', margin: '0 1.5rem', borderRadius: 'var(--radius-md)', background: 'rgba(99, 102, 241, 0.15)', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
+                    <div style={{ fontWeight: 600, marginBottom: '0.75rem', color: 'rgba(255,255,255,0.9)' }}>
+                        Team Invitations ({pendingInvites.length})
+                    </div>
+                    {pendingInvites.map(inv => (
+                        <div key={inv.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', borderRadius: 'var(--radius-sm)', background: 'rgba(0,0,0,0.2)', marginBottom: '0.5rem' }}>
+                            <div>
+                                <span style={{ fontWeight: 500 }}>{inv.companyName}</span>
+                                <span style={{ color: 'rgba(255,255,255,0.5)', marginLeft: '0.75rem', fontSize: '0.85rem' }}>
+                                    as {inv.role.replace('_', ' ')}
+                                </span>
+                            </div>
+                            <button
+                                onClick={() => handleAcceptInvite(inv.id)}
+                                disabled={acceptingId === inv.id}
+                                style={{ padding: '0.4rem 1rem', borderRadius: 'var(--radius-sm)', background: 'var(--primary)', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 500, opacity: acceptingId === inv.id ? 0.6 : 1 }}
+                            >
+                                {acceptingId === inv.id ? 'Accepting...' : 'Accept'}
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            )}
 
             <div className={styles.statsBar}>
                 <div className={styles.statTile}>
