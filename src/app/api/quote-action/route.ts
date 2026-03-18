@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
                 read: false,
             });
 
-            if (jobUserId) {
+            if (jobId && jobUserId) {
                 await supabaseAdmin.from('agent_actions').insert({
                     job_id: jobId,
                     user_id: jobUserId,
@@ -164,7 +164,7 @@ export async function POST(request: NextRequest) {
                 read: false,
             });
 
-            if (jobUserId) {
+            if (jobId && jobUserId) {
                 await supabaseAdmin.from('agent_actions').insert({
                     job_id: jobId,
                     user_id: jobUserId,

@@ -324,5 +324,57 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ member: mapTeamMemberRow(data as TeamMemberRow) });
     }
 
+    if (action === 'submit-phase-quote') {
+        const ctx = await resolveVendorContext(user.id, user.email || '');
+        if (!ctx) return NextResponse.json({ error: 'Vendor profile required' }, { status: 403 });
+
+        const { phaseId, amount, estimatedDays, details } = body;
+        if (!phaseId || !amount || !estimatedDays) {
+            return NextResponse.json({ error: 'phaseId, amount, and estimatedDays required' }, { status: 400 });
+        }
+
+        const { data: phase, error: phaseErr } = await supabaseAdmin
+            .from('project_phases')
+            .select('id, project_id')
+            .eq('id', phaseId)
+            .single();
+        if (phaseErr || !phase) {
+            return NextResponse.json({ error: 'Phase not found' }, { status: 404 });
+        }
+
+        const { data: vendorProfile } = await supabaseAdmin
+            .from('vendor_profiles')
+            .select('company_name')
+            .eq('id', ctx.profileId)
+            .single();
+        const vendorName = vendorProfile?.company_name || 'Unknown Vendor';
+
+        const { data: quote, error: quoteErr } = await supabaseAdmin
+            .from('quotes')
+            .insert({
+                phase_id: phaseId,
+                vendor_id: user.id,
+                vendor_name: vendorName,
+                amount: parseFloat(amount),
+                estimated_days: parseInt(estimatedDays),
+                details: details || null,
+                status: 'PENDING',
+            })
+            .select()
+            .single();
+
+        if (quoteErr) {
+            return NextResponse.json({ error: quoteErr.message }, { status: 500 });
+        }
+
+        await supabaseAdmin
+            .from('project_phases')
+            .update({ status: 'WAITING_QUOTES' })
+            .eq('id', phaseId)
+            .in('status', ['NOT_STARTED']);
+
+        return NextResponse.json({ quote });
+    }
+
     return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
 }
