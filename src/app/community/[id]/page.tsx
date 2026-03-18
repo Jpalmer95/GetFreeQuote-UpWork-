@@ -43,6 +43,7 @@ export default function CommunityProjectDetail() {
 
     const [updateTitle, setUpdateTitle] = useState('');
     const [updateContent, setUpdateContent] = useState('');
+    const [updateImageUrl, setUpdateImageUrl] = useState('');
     const [postingUpdate, setPostingUpdate] = useState(false);
 
     const [expenseAmount, setExpenseAmount] = useState('');
@@ -119,12 +120,14 @@ export default function CommunityProjectDetail() {
                     communityProjectId: id,
                     title: updateTitle,
                     content: updateContent,
+                    imageUrl: updateImageUrl || undefined,
                 }),
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error);
             setUpdateTitle('');
             setUpdateContent('');
+            setUpdateImageUrl('');
             await loadData();
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Failed to post update';
@@ -261,6 +264,11 @@ export default function CommunityProjectDetail() {
                                     <div key={u.id} className={styles.updateItem}>
                                         <div className={styles.updateTitle}>{u.title}</div>
                                         <div className={styles.updateMeta}>{u.authorName} &middot; {formatDate(u.createdAt)}</div>
+                                        {u.imageUrl && (
+                                            <div className={styles.updateImage}>
+                                                <img src={u.imageUrl} alt={u.title} className={styles.updateImg} />
+                                            </div>
+                                        )}
                                         <div className={styles.updateContent}>{u.content}</div>
                                     </div>
                                 ))}
@@ -279,6 +287,13 @@ export default function CommunityProjectDetail() {
                                             className={styles.messageInput}
                                             value={updateContent}
                                             onChange={e => setUpdateContent(e.target.value)}
+                                        />
+                                        <input
+                                            type="url"
+                                            placeholder="Photo URL (optional)"
+                                            className={styles.formInput}
+                                            value={updateImageUrl}
+                                            onChange={e => setUpdateImageUrl(e.target.value)}
                                         />
                                         <button
                                             className={styles.btnSmall}

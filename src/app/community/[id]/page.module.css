@@ -313,6 +313,20 @@
     margin-bottom: 0.5rem;
 }
 
+.updateImage {
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    margin: 0.75rem 0;
+    max-height: 280px;
+}
+
+.updateImg {
+    width: 100%;
+    max-height: 280px;
+    object-fit: cover;
+    display: block;
+}
+
 .updateContent {
     font-size: 0.9rem;
     color: rgba(255,255,255,0.7);
