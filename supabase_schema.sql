@@ -698,6 +698,10 @@ declare
   v_donation_id uuid;
   v_status text;
 begin
+  if p_amount is null or p_amount <= 0 then
+    raise exception 'Donation amount must be positive';
+  end if;
+
   select status into v_status from public.community_projects where id = p_project_id for update;
   if v_status is null then
     raise exception 'Project not found';
@@ -755,6 +759,10 @@ declare
   v_entry_id uuid;
   v_creator uuid;
 begin
+  if p_amount is null or p_amount <= 0 then
+    raise exception 'Expense amount must be positive';
+  end if;
+
   select creator_id, current_funding into v_creator, v_current_funding
   from public.community_projects where id = p_project_id for update;
 
