@@ -46,9 +46,24 @@ export async function POST(request: NextRequest) {
         const jobTitle = quote.jobs?.title || 'Unknown';
         const jobUserId = quote.jobs?.user_id;
         const vendorId = quote.vendor_id;
+        const phaseId = quote.phase_id;
 
         if (action === 'accept') {
             await supabaseAdmin.from('jobs').update({ status: 'IN_PROGRESS' }).eq('id', jobId);
+
+            if (phaseId) {
+                await supabaseAdmin.from('project_phases').update({
+                    status: 'QUOTED',
+                    accepted_quote_id: quoteId,
+                    actual_cost: quote.amount,
+                }).eq('id', phaseId);
+
+                await supabaseAdmin.from('quotes')
+                    .update({ status: 'REJECTED' })
+                    .eq('phase_id', phaseId)
+                    .neq('id', quoteId)
+                    .eq('status', 'PENDING');
+            }
 
             await supabaseAdmin.from('messages').insert({
                 job_id: jobId,
@@ -80,6 +95,22 @@ export async function POST(request: NextRequest) {
                 });
             }
         } else {
+            if (phaseId) {
+                const { data: remainingPending } = await supabaseAdmin
+                    .from('quotes')
+                    .select('id')
+                    .eq('phase_id', phaseId)
+                    .eq('status', 'PENDING');
+
+                if (!remainingPending || remainingPending.length === 0) {
+                    await supabaseAdmin.from('project_phases').update({
+                        status: 'WAITING_QUOTES',
+                        accepted_quote_id: null,
+                        actual_cost: null,
+                    }).eq('id', phaseId);
+                }
+            }
+
             await supabaseAdmin.from('messages').insert({
                 job_id: jobId,
                 sender_id: 'system-agent',

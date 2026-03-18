@@ -56,6 +56,7 @@ export interface QuoteRow {
     details: string | null;
     status: string;
     created_at: string;
+    phase_id: string | null;
 }
 
 export interface MessageRow {

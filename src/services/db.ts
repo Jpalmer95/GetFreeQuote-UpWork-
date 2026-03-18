@@ -127,18 +127,29 @@ export const db = {
     },
 
     createQuote: async (quote: Omit<Quote, 'id' | 'createdAt' | 'status'>): Promise<Quote> => {
-        const { data, error } = await supabase.from('quotes').insert({
+        const payload: Record<string, unknown> = {
             job_id: quote.jobId,
             vendor_id: quote.vendorId,
             vendor_name: quote.vendorName,
             amount: quote.amount,
             estimated_days: quote.estimatedDays,
             details: quote.details,
-            status: 'PENDING'
-        }).select().single();
+            status: 'PENDING',
+        };
+        if (quote.phaseId) payload.phase_id = quote.phaseId;
+        const { data, error } = await supabase.from('quotes').insert(payload).select().single();
 
         if (error) throw error;
         return mapQuote(data);
+    },
+
+    getQuotesByPhase: async (phaseId: string): Promise<Quote[]> => {
+        const { data, error } = await supabase.from('quotes').select('*').eq('phase_id', phaseId);
+        if (error) {
+            console.error('Error fetching phase quotes:', error);
+            return [];
+        }
+        return data.map(mapQuote);
     },
 
     updateQuoteStatus: async (quoteId: string, status: string): Promise<void> => {
@@ -702,7 +713,8 @@ function mapQuote(row: QuoteRow): Quote {
         estimatedDays: row.estimated_days,
         details: row.details || '',
         status: row.status as Quote['status'],
-        createdAt: row.created_at
+        createdAt: row.created_at,
+        phaseId: row.phase_id || undefined,
     };
 }
 

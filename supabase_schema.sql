@@ -82,7 +82,8 @@ create table public.quotes (
   estimated_days integer not null,
   details text,
   status text check (status in ('PENDING', 'ACCEPTED', 'REJECTED')) default 'PENDING',
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  phase_id uuid references public.project_phases(id)
 );
 
 alter table public.quotes enable row level security;

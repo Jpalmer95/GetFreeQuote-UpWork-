@@ -94,6 +94,7 @@ export interface Quote {
     details: string;
     status: 'PENDING' | 'ACCEPTED' | 'REJECTED';
     createdAt: string;
+    phaseId?: string;
 }
 
 export interface Message {

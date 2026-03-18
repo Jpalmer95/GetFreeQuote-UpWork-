@@ -1,10 +1,10 @@
 'use client';
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/services/db';
-import { Project, ProjectPhase, PhaseStatus } from '@/types';
+import { Project, ProjectPhase, Quote, PhaseStatus } from '@/types';
 import Navbar from '@/components/Navbar';
 import styles from './page.module.css';
 
@@ -37,9 +37,11 @@ export default function ProjectDetailPage() {
 
     const [project, setProject] = useState<Project | null>(null);
     const [phases, setPhases] = useState<ProjectPhase[]>([]);
+    const [quotesByPhase, setQuotesByPhase] = useState<Record<string, Quote[]>>({});
     const [activeTab, setActiveTab] = useState<ViewTab>('gantt');
     const [loading, setLoading] = useState(true);
     const [editingPhase, setEditingPhase] = useState<string | null>(null);
+    const [expandedPhaseQuotes, setExpandedPhaseQuotes] = useState<string | null>(null);
 
     const loadData = useCallback(async () => {
         if (!id) return;
@@ -48,6 +50,12 @@ export default function ProjectDetailPage() {
         setProject(proj);
         const ph = await db.getProjectPhases(id);
         setPhases(ph);
+
+        const qMap: Record<string, Quote[]> = {};
+        await Promise.all(ph.map(async (phase) => {
+            qMap[phase.id] = await db.getQuotesByPhase(phase.id);
+        }));
+        setQuotesByPhase(qMap);
         setLoading(false);
     }, [id, router]);
 
@@ -86,6 +94,38 @@ export default function ProjectDetailPage() {
             setPhases(prev => prev.filter(p => p.id !== phaseId));
         } catch (err) {
             console.error('Failed to delete phase:', err);
+            loadData();
+        }
+    };
+
+    const callQuoteAction = async (quoteId: string, action: 'accept' | 'reject') => {
+        const res = await fetch('/api/quote-action', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ quoteId, action }),
+        });
+        if (!res.ok) {
+            const body = await res.json().catch(() => ({}));
+            throw new Error(body.error || 'Quote action failed');
+        }
+    };
+
+    const acceptPhaseQuote = async (phaseId: string, quoteId: string) => {
+        try {
+            await callQuoteAction(quoteId, 'accept');
+            await loadData();
+        } catch (err) {
+            console.error('Failed to accept quote:', err);
+            loadData();
+        }
+    };
+
+    const rejectPhaseQuote = async (quoteId: string) => {
+        try {
+            await callQuoteAction(quoteId, 'reject');
+            await loadData();
+        } catch (err) {
+            console.error('Failed to reject quote:', err);
             loadData();
         }
     };
@@ -151,15 +191,11 @@ export default function ProjectDetailPage() {
         if (project?.endDate) dates.push(project.endDate);
         if (dates.length === 0) {
             const now = new Date();
-            return {
-                start: now,
-                end: new Date(now.getTime() + 90 * 86400000),
-                totalDays: 90,
-            };
+            return { start: now, end: new Date(now.getTime() + 90 * 86400000), totalDays: 90 };
         }
         const sorted = dates.map(d => new Date(d)).sort((a, b) => a.getTime() - b.getTime());
-        const start = sorted[0];
-        const end = sorted[sorted.length - 1];
+        const start = new Date(sorted[0].getTime() - 7 * 86400000);
+        const end = new Date(sorted[sorted.length - 1].getTime() + 7 * 86400000);
         const totalDays = Math.max(Math.ceil((end.getTime() - start.getTime()) / 86400000), 14);
         return { start, end, totalDays };
     }, [phases, project]);
@@ -239,204 +275,135 @@ export default function ProjectDetailPage() {
 
             <main className={styles.mainContent}>
                 {activeTab === 'gantt' && (
-                    <div className={`glass-panel ${styles.ganttContainer}`}>
-                        <div className={styles.ganttHeader}>
-                            <div className={styles.ganttLabelCol}>Phase</div>
-                            <div className={styles.ganttTimelineCol}>
-                                <div className={styles.ganttMonths}>
-                                    {(() => {
-                                        const months: { label: string; width: number }[] = [];
-                                        const cur = new Date(ganttRange.start);
-                                        while (cur <= ganttRange.end) {
-                                            const monthStart = new Date(cur.getFullYear(), cur.getMonth(), 1);
-                                            const monthEnd = new Date(cur.getFullYear(), cur.getMonth() + 1, 0);
-                                            const clampStart = monthStart < ganttRange.start ? ganttRange.start : monthStart;
-                                            const clampEnd = monthEnd > ganttRange.end ? ganttRange.end : monthEnd;
-                                            const days = Math.ceil((clampEnd.getTime() - clampStart.getTime()) / 86400000) + 1;
-                                            const width = (days / ganttRange.totalDays) * 100;
-                                            months.push({
-                                                label: cur.toLocaleString('default', { month: 'short', year: '2-digit' }),
-                                                width,
-                                            });
-                                            cur.setMonth(cur.getMonth() + 1);
-                                            cur.setDate(1);
-                                        }
-                                        return months.map((m, i) => (
-                                            <div key={i} className={styles.ganttMonth} style={{ width: `${m.width}%` }}>
-                                                {m.label}
-                                            </div>
-                                        ));
-                                    })()}
-                                </div>
-                            </div>
-                        </div>
-
-                        {phases.map(phase => {
-                            const hasRange = phase.startDate && phase.endDate;
-                            let left = 0;
-                            let width = 10;
-
-                            if (hasRange) {
-                                const ps = new Date(phase.startDate!).getTime();
-                                const pe = new Date(phase.endDate!).getTime();
-                                const gs = ganttRange.start.getTime();
-                                left = ((ps - gs) / (ganttRange.totalDays * 86400000)) * 100;
-                                width = Math.max(((pe - ps) / (ganttRange.totalDays * 86400000)) * 100, 2);
+                    <GanttView
+                        phases={phases}
+                        ganttRange={ganttRange}
+                        onUpdateDates={async (phaseId, startDate, endDate) => {
+                            try {
+                                await db.updateProjectPhase(phaseId, { startDate, endDate });
+                                setPhases(prev => prev.map(p =>
+                                    p.id === phaseId ? { ...p, startDate, endDate } : p
+                                ));
+                            } catch (err) {
+                                console.error('Failed to update dates:', err);
+                                loadData();
                             }
-
-                            return (
-                                <div key={phase.id} className={styles.ganttRow}>
-                                    <div className={styles.ganttLabelCol}>
-                                        <span className={styles.ganttPhaseName}>{phase.name}</span>
-                                        <span
-                                            className={styles.ganttPhaseStatus}
-                                            style={{ color: STATUS_COLORS[phase.status] }}
-                                        >
-                                            {STATUS_LABELS[phase.status]}
-                                        </span>
-                                    </div>
-                                    <div className={styles.ganttTimelineCol}>
-                                        <div className={styles.ganttTrack}>
-                                            {hasRange && (
-                                                <div
-                                                    className={styles.ganttBar}
-                                                    style={{
-                                                        left: `${Math.max(0, left)}%`,
-                                                        width: `${width}%`,
-                                                        background: STATUS_COLORS[phase.status],
-                                                    }}
-                                                    title={`${phase.startDate} - ${phase.endDate}`}
-                                                >
-                                                    <span className={styles.ganttBarLabel}>{phase.name}</span>
-                                                </div>
-                                            )}
-                                            {!hasRange && (
-                                                <div className={styles.ganttNoDate}>No dates set</div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })}
-
-                        {phases.length === 0 && (
-                            <div className={styles.emptyMsg}>No phases yet. Add phases to see the timeline.</div>
-                        )}
-
-                        <div className={styles.ganttLegend}>
-                            {(Object.keys(STATUS_COLORS) as PhaseStatus[]).map(s => (
-                                <div key={s} className={styles.legendItem}>
-                                    <span className={styles.legendDot} style={{ background: STATUS_COLORS[s] }} />
-                                    <span>{STATUS_LABELS[s]}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+                        }}
+                    />
                 )}
 
                 {activeTab === 'phases' && (
                     <div className={styles.phaseListView}>
-                        {phases.map((phase, idx) => (
-                            <div key={phase.id} className={`glass-panel ${styles.phaseCard}`}>
-                                <div className={styles.phaseCardHeader}>
-                                    <div className={styles.phaseNumBadge}>{idx + 1}</div>
-                                    <div className={styles.phaseInfo}>
-                                        <h3 className={styles.phaseCardName}>{phase.name}</h3>
-                                        {phase.tradeCategory && (
-                                            <span className={styles.phaseTrade}>{phase.tradeCategory}</span>
+                        {phases.map((phase, idx) => {
+                            const phaseQuotes = quotesByPhase[phase.id] || [];
+                            const pendingQuotes = phaseQuotes.filter(q => q.status === 'PENDING').length;
+                            const acceptedQuote = phaseQuotes.find(q => q.status === 'ACCEPTED');
+
+                            return (
+                                <div key={phase.id} className={`glass-panel ${styles.phaseCard}`}>
+                                    <div className={styles.phaseCardHeader}>
+                                        <div className={styles.phaseNumBadge}>{idx + 1}</div>
+                                        <div className={styles.phaseInfo}>
+                                            <h3 className={styles.phaseCardName}>{phase.name}</h3>
+                                            {phase.tradeCategory && (
+                                                <span className={styles.phaseTrade}>{phase.tradeCategory}</span>
+                                            )}
+                                        </div>
+                                        <div className={styles.phaseCardActions}>
+                                            <button className={styles.iconBtn} onClick={() => movePhaseOrder(phase.id, -1)} disabled={idx === 0}>&uarr;</button>
+                                            <button className={styles.iconBtn} onClick={() => movePhaseOrder(phase.id, 1)} disabled={idx === phases.length - 1}>&darr;</button>
+                                            <select
+                                                className={styles.statusSelectSmall}
+                                                value={phase.status}
+                                                onChange={(e) => updatePhaseStatus(phase.id, e.target.value as PhaseStatus)}
+                                            >
+                                                {(Object.keys(STATUS_LABELS) as PhaseStatus[]).map(s => (
+                                                    <option key={s} value={s}>{STATUS_LABELS[s]}</option>
+                                                ))}
+                                            </select>
+                                            <button className={styles.editBtn} onClick={() => setEditingPhase(editingPhase === phase.id ? null : phase.id)}>
+                                                {editingPhase === phase.id ? 'Close' : 'Edit'}
+                                            </button>
+                                            <button className={styles.deleteBtn} onClick={() => deletePhase(phase.id)}>Delete</button>
+                                        </div>
+                                    </div>
+
+                                    {phase.description && <p className={styles.phaseDesc}>{phase.description}</p>}
+
+                                    <div className={styles.phaseMetaRow}>
+                                        {phase.startDate && <span className={styles.phaseDateTag}>Start: {new Date(phase.startDate).toLocaleDateString()}</span>}
+                                        {phase.endDate && <span className={styles.phaseDateTag}>End: {new Date(phase.endDate).toLocaleDateString()}</span>}
+                                        {phase.estimatedCost !== undefined && <span className={styles.phaseCostTag}>Est: ${phase.estimatedCost.toLocaleString()}</span>}
+                                        {phase.actualCost !== undefined && phase.actualCost > 0 && <span className={styles.phaseCostTag}>Actual: ${phase.actualCost.toLocaleString()}</span>}
+                                    </div>
+
+                                    {phase.dependsOn.length > 0 && (
+                                        <div className={styles.phaseDeps}>
+                                            Depends on: {phase.dependsOn.map(depId => phases.find(p => p.id === depId)?.name || 'Unknown').join(', ')}
+                                        </div>
+                                    )}
+
+                                    <div className={styles.quoteSection}>
+                                        <button
+                                            className={styles.quoteSectionToggle}
+                                            onClick={() => setExpandedPhaseQuotes(expandedPhaseQuotes === phase.id ? null : phase.id)}
+                                        >
+                                            Quotes ({phaseQuotes.length})
+                                            {pendingQuotes > 0 && <span className={styles.pendingBadge}>{pendingQuotes} pending</span>}
+                                            {acceptedQuote && <span className={styles.acceptedBadge}>Vendor: {acceptedQuote.vendorName}</span>}
+                                            <span className={styles.toggleArrow}>{expandedPhaseQuotes === phase.id ? '\u25B2' : '\u25BC'}</span>
+                                        </button>
+
+                                        {expandedPhaseQuotes === phase.id && (
+                                            <div className={styles.quoteList}>
+                                                {phaseQuotes.length === 0 && (
+                                                    <p className={styles.emptyMsg}>No quotes for this phase yet.</p>
+                                                )}
+                                                {phaseQuotes.map(quote => (
+                                                    <div key={quote.id} className={styles.quoteCard}>
+                                                        <div className={styles.quoteHeader}>
+                                                            <span className={styles.vendorName}>{quote.vendorName}</span>
+                                                            <span className={styles.quotePrice}>${quote.amount.toLocaleString()}</span>
+                                                        </div>
+                                                        <p className={styles.quoteTimeline}>{quote.estimatedDays} day estimate</p>
+                                                        {quote.details && <p className={styles.quoteDetails}>{quote.details}</p>}
+                                                        {quote.status === 'PENDING' && (
+                                                            <div className={styles.quoteActions}>
+                                                                <button className={styles.acceptBtn} onClick={() => acceptPhaseQuote(phase.id, quote.id)}>Accept</button>
+                                                                <button className={styles.rejectBtn} onClick={() => rejectPhaseQuote(quote.id)}>Reject</button>
+                                                            </div>
+                                                        )}
+                                                        {quote.status !== 'PENDING' && (
+                                                            <span className={`badge ${quote.status === 'ACCEPTED' ? 'badge-green' : 'badge-muted'}`}>
+                                                                {quote.status}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
                                         )}
                                     </div>
-                                    <div className={styles.phaseCardActions}>
-                                        <button
-                                            className={styles.iconBtn}
-                                            onClick={() => movePhaseOrder(phase.id, -1)}
-                                            disabled={idx === 0}
-                                        >
-                                            &uarr;
-                                        </button>
-                                        <button
-                                            className={styles.iconBtn}
-                                            onClick={() => movePhaseOrder(phase.id, 1)}
-                                            disabled={idx === phases.length - 1}
-                                        >
-                                            &darr;
-                                        </button>
-                                        <select
-                                            className={styles.statusSelectSmall}
-                                            value={phase.status}
-                                            onChange={(e) => updatePhaseStatus(phase.id, e.target.value as PhaseStatus)}
-                                        >
-                                            {(Object.keys(STATUS_LABELS) as PhaseStatus[]).map(s => (
-                                                <option key={s} value={s}>{STATUS_LABELS[s]}</option>
-                                            ))}
-                                        </select>
-                                        <button
-                                            className={styles.editBtn}
-                                            onClick={() => setEditingPhase(editingPhase === phase.id ? null : phase.id)}
-                                        >
-                                            {editingPhase === phase.id ? 'Close' : 'Edit'}
-                                        </button>
-                                        <button className={styles.deleteBtn} onClick={() => deletePhase(phase.id)}>
-                                            Delete
-                                        </button>
-                                    </div>
-                                </div>
 
-                                {phase.description && (
-                                    <p className={styles.phaseDesc}>{phase.description}</p>
-                                )}
-
-                                <div className={styles.phaseMetaRow}>
-                                    {phase.startDate && (
-                                        <span className={styles.phaseDateTag}>
-                                            Start: {new Date(phase.startDate).toLocaleDateString()}
-                                        </span>
-                                    )}
-                                    {phase.endDate && (
-                                        <span className={styles.phaseDateTag}>
-                                            End: {new Date(phase.endDate).toLocaleDateString()}
-                                        </span>
-                                    )}
-                                    {phase.estimatedCost !== undefined && (
-                                        <span className={styles.phaseCostTag}>
-                                            Est: ${phase.estimatedCost.toLocaleString()}
-                                        </span>
-                                    )}
-                                    {phase.actualCost !== undefined && phase.actualCost > 0 && (
-                                        <span className={styles.phaseCostTag}>
-                                            Actual: ${phase.actualCost.toLocaleString()}
-                                        </span>
+                                    {editingPhase === phase.id && (
+                                        <PhaseEditor
+                                            phase={phase}
+                                            onSave={async (updates) => {
+                                                try {
+                                                    await db.updateProjectPhase(phase.id, updates);
+                                                    await loadData();
+                                                    setEditingPhase(null);
+                                                } catch (err) {
+                                                    console.error('Failed to save phase:', err);
+                                                }
+                                            }}
+                                            onCancel={() => setEditingPhase(null)}
+                                        />
                                     )}
                                 </div>
+                            );
+                        })}
 
-                                {phase.dependsOn.length > 0 && (
-                                    <div className={styles.phaseDeps}>
-                                        Depends on: {phase.dependsOn.map(depId => {
-                                            const dep = phases.find(p => p.id === depId);
-                                            return dep?.name || 'Unknown';
-                                        }).join(', ')}
-                                    </div>
-                                )}
-
-                                {editingPhase === phase.id && (
-                                    <PhaseEditor
-                                        phase={phase}
-                                        onSave={async (updates) => {
-                                            await db.updateProjectPhase(phase.id, updates);
-                                            await loadData();
-                                            setEditingPhase(null);
-                                        }}
-                                        onCancel={() => setEditingPhase(null)}
-                                    />
-                                )}
-                            </div>
-                        ))}
-
-                        <AddPhaseInline
-                            projectId={project.id}
-                            sortOrder={phases.length}
-                            onAdded={loadData}
-                        />
+                        <AddPhaseInline projectId={project.id} sortOrder={phases.length} onAdded={loadData} />
                     </div>
                 )}
 
@@ -473,6 +440,7 @@ export default function ProjectDetailPage() {
                                 <tr>
                                     <th>Phase</th>
                                     <th>Status</th>
+                                    <th>Vendor</th>
                                     <th>Estimated</th>
                                     <th>Actual</th>
                                     <th>Variance</th>
@@ -483,21 +451,18 @@ export default function ProjectDetailPage() {
                                     const est = phase.estimatedCost || 0;
                                     const act = phase.actualCost || 0;
                                     const variance = act - est;
+                                    const acceptedQuote = (quotesByPhase[phase.id] || []).find(q => q.status === 'ACCEPTED');
                                     return (
                                         <tr key={phase.id}>
                                             <td>
                                                 <div className={styles.budgetPhaseName}>{phase.name}</div>
-                                                {phase.tradeCategory && (
-                                                    <div className={styles.budgetPhaseTrade}>{phase.tradeCategory}</div>
-                                                )}
+                                                {phase.tradeCategory && <div className={styles.budgetPhaseTrade}>{phase.tradeCategory}</div>}
                                             </td>
                                             <td>
-                                                <span
-                                                    className={styles.budgetStatusDot}
-                                                    style={{ background: STATUS_COLORS[phase.status] }}
-                                                />
+                                                <span className={styles.budgetStatusDot} style={{ background: STATUS_COLORS[phase.status] }} />
                                                 {STATUS_LABELS[phase.status]}
                                             </td>
+                                            <td>{acceptedQuote ? acceptedQuote.vendorName : '-'}</td>
                                             <td>{est > 0 ? `$${est.toLocaleString()}` : '-'}</td>
                                             <td>{act > 0 ? `$${act.toLocaleString()}` : '-'}</td>
                                             <td className={variance > 0 ? styles.overBudget : variance < 0 ? styles.underBudget : ''}>
@@ -511,6 +476,272 @@ export default function ProjectDetailPage() {
                     </div>
                 )}
             </main>
+        </div>
+    );
+}
+
+function GanttView({ phases, ganttRange, onUpdateDates }: {
+    phases: ProjectPhase[];
+    ganttRange: { start: Date; end: Date; totalDays: number };
+    onUpdateDates: (phaseId: string, startDate: string, endDate: string) => Promise<void>;
+}) {
+    const trackRef = useRef<HTMLDivElement>(null);
+    const [dragState, setDragState] = useState<{
+        phaseId: string;
+        type: 'move' | 'resize-end';
+        startX: number;
+        origStart: Date;
+        origEnd: Date;
+    } | null>(null);
+
+    const dayToX = (date: Date) => {
+        return ((date.getTime() - ganttRange.start.getTime()) / (ganttRange.totalDays * 86400000)) * 100;
+    };
+
+    const xToDay = useCallback((pxOffset: number) => {
+        if (!trackRef.current) return new Date();
+        const trackWidth = trackRef.current.getBoundingClientRect().width;
+        const pct = pxOffset / trackWidth;
+        return new Date(ganttRange.start.getTime() + pct * ganttRange.totalDays * 86400000);
+    }, [ganttRange]);
+
+    const handleMouseMove = useCallback((e: MouseEvent) => {
+        if (!dragState || !trackRef.current) return;
+        const rect = trackRef.current.getBoundingClientRect();
+        const dx = e.clientX - dragState.startX;
+        const daysDelta = Math.round((dx / rect.width) * ganttRange.totalDays);
+
+        if (dragState.type === 'move') {
+            const newStart = new Date(dragState.origStart.getTime() + daysDelta * 86400000);
+            const newEnd = new Date(dragState.origEnd.getTime() + daysDelta * 86400000);
+            const bar = document.querySelector(`[data-gantt-id="${dragState.phaseId}"]`) as HTMLElement;
+            if (bar) {
+                bar.style.left = `${dayToX(newStart)}%`;
+            }
+        } else if (dragState.type === 'resize-end') {
+            const newEnd = new Date(dragState.origEnd.getTime() + daysDelta * 86400000);
+            const bar = document.querySelector(`[data-gantt-id="${dragState.phaseId}"]`) as HTMLElement;
+            if (bar) {
+                const left = dayToX(dragState.origStart);
+                const right = dayToX(newEnd);
+                bar.style.width = `${Math.max(right - left, 1)}%`;
+            }
+        }
+    }, [dragState, ganttRange, dayToX]);
+
+    const handleMouseUp = useCallback(async (e: MouseEvent) => {
+        if (!dragState || !trackRef.current) return;
+        const rect = trackRef.current.getBoundingClientRect();
+        const dx = e.clientX - dragState.startX;
+        const daysDelta = Math.round((dx / rect.width) * ganttRange.totalDays);
+
+        let newStart: Date, newEnd: Date;
+        if (dragState.type === 'move') {
+            newStart = new Date(dragState.origStart.getTime() + daysDelta * 86400000);
+            newEnd = new Date(dragState.origEnd.getTime() + daysDelta * 86400000);
+        } else {
+            newStart = dragState.origStart;
+            newEnd = new Date(dragState.origEnd.getTime() + daysDelta * 86400000);
+            if (newEnd <= newStart) newEnd = new Date(newStart.getTime() + 86400000);
+        }
+
+        setDragState(null);
+        const fmt = (d: Date) => d.toISOString().split('T')[0];
+        await onUpdateDates(dragState.phaseId, fmt(newStart), fmt(newEnd));
+    }, [dragState, ganttRange, onUpdateDates]);
+
+    useEffect(() => {
+        if (dragState) {
+            window.addEventListener('mousemove', handleMouseMove);
+            window.addEventListener('mouseup', handleMouseUp);
+            return () => {
+                window.removeEventListener('mousemove', handleMouseMove);
+                window.removeEventListener('mouseup', handleMouseUp);
+            };
+        }
+    }, [dragState, handleMouseMove, handleMouseUp]);
+
+    const depArrows = useMemo(() => {
+        const arrows: { from: number; to: number; fromPhase: ProjectPhase; toPhase: ProjectPhase }[] = [];
+        phases.forEach((phase, toIdx) => {
+            phase.dependsOn.forEach(depId => {
+                const fromIdx = phases.findIndex(p => p.id === depId);
+                if (fromIdx >= 0) {
+                    arrows.push({ from: fromIdx, to: toIdx, fromPhase: phases[fromIdx], toPhase: phase });
+                }
+            });
+        });
+        return arrows;
+    }, [phases]);
+
+    const ROW_HEIGHT = 40;
+    const HEADER_HEIGHT = 28;
+
+    return (
+        <div className={`glass-panel ${styles.ganttContainer}`}>
+            <div className={styles.ganttHeader}>
+                <div className={styles.ganttLabelCol}>Phase</div>
+                <div className={styles.ganttTimelineCol}>
+                    <div className={styles.ganttMonths}>
+                        {(() => {
+                            const months: { label: string; width: number }[] = [];
+                            const cur = new Date(ganttRange.start);
+                            while (cur <= ganttRange.end) {
+                                const monthStart = new Date(cur.getFullYear(), cur.getMonth(), 1);
+                                const monthEnd = new Date(cur.getFullYear(), cur.getMonth() + 1, 0);
+                                const clampStart = monthStart < ganttRange.start ? ganttRange.start : monthStart;
+                                const clampEnd = monthEnd > ganttRange.end ? ganttRange.end : monthEnd;
+                                const days = Math.ceil((clampEnd.getTime() - clampStart.getTime()) / 86400000) + 1;
+                                const width = (days / ganttRange.totalDays) * 100;
+                                months.push({
+                                    label: cur.toLocaleString('default', { month: 'short', year: '2-digit' }),
+                                    width,
+                                });
+                                cur.setMonth(cur.getMonth() + 1);
+                                cur.setDate(1);
+                            }
+                            return months.map((m, i) => (
+                                <div key={i} className={styles.ganttMonth} style={{ width: `${m.width}%` }}>
+                                    {m.label}
+                                </div>
+                            ));
+                        })()}
+                    </div>
+                </div>
+            </div>
+
+            <div className={styles.ganttBody} ref={trackRef} style={{ position: 'relative' }}>
+                <svg
+                    className={styles.ganttArrows}
+                    style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: '200px',
+                        width: 'calc(100% - 200px)',
+                        height: `${phases.length * ROW_HEIGHT}px`,
+                        pointerEvents: 'none',
+                        zIndex: 1,
+                    }}
+                >
+                    <defs>
+                        <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                            <polygon points="0 0, 8 3, 0 6" fill="rgba(139,92,246,0.6)" />
+                        </marker>
+                    </defs>
+                    {depArrows.map((arrow, i) => {
+                        const fromPhase = arrow.fromPhase;
+                        const toPhase = arrow.toPhase;
+                        if (!fromPhase.endDate || !toPhase.startDate) return null;
+
+                        const fromX = dayToX(new Date(fromPhase.endDate));
+                        const toX = dayToX(new Date(toPhase.startDate));
+                        const fromY = arrow.from * ROW_HEIGHT + ROW_HEIGHT / 2;
+                        const toY = arrow.to * ROW_HEIGHT + ROW_HEIGHT / 2;
+
+                        const fromPx = `${fromX}%`;
+                        const toPx = `${toX}%`;
+
+                        return (
+                            <line
+                                key={i}
+                                x1={fromPx}
+                                y1={fromY}
+                                x2={toPx}
+                                y2={toY}
+                                stroke="rgba(139,92,246,0.5)"
+                                strokeWidth="2"
+                                strokeDasharray="5,3"
+                                markerEnd="url(#arrowhead)"
+                            />
+                        );
+                    })}
+                </svg>
+
+                {phases.map((phase, idx) => {
+                    const hasRange = phase.startDate && phase.endDate;
+                    let left = 0;
+                    let width = 10;
+
+                    if (hasRange) {
+                        const ps = new Date(phase.startDate!).getTime();
+                        const pe = new Date(phase.endDate!).getTime();
+                        const gs = ganttRange.start.getTime();
+                        left = ((ps - gs) / (ganttRange.totalDays * 86400000)) * 100;
+                        width = Math.max(((pe - ps) / (ganttRange.totalDays * 86400000)) * 100, 2);
+                    }
+
+                    return (
+                        <div key={phase.id} className={styles.ganttRow} style={{ height: `${ROW_HEIGHT}px` }}>
+                            <div className={styles.ganttLabelCol}>
+                                <span className={styles.ganttPhaseName}>{phase.name}</span>
+                                <span className={styles.ganttPhaseStatus} style={{ color: STATUS_COLORS[phase.status] }}>
+                                    {STATUS_LABELS[phase.status]}
+                                </span>
+                            </div>
+                            <div className={styles.ganttTimelineCol}>
+                                <div className={styles.ganttTrack}>
+                                    {hasRange ? (
+                                        <div
+                                            className={styles.ganttBar}
+                                            data-gantt-id={phase.id}
+                                            style={{
+                                                left: `${Math.max(0, left)}%`,
+                                                width: `${width}%`,
+                                                background: STATUS_COLORS[phase.status],
+                                                cursor: 'grab',
+                                            }}
+                                            title={`${phase.startDate} - ${phase.endDate} (drag to move)`}
+                                            onMouseDown={(e) => {
+                                                e.preventDefault();
+                                                setDragState({
+                                                    phaseId: phase.id,
+                                                    type: 'move',
+                                                    startX: e.clientX,
+                                                    origStart: new Date(phase.startDate!),
+                                                    origEnd: new Date(phase.endDate!),
+                                                });
+                                            }}
+                                        >
+                                            <span className={styles.ganttBarLabel}>{phase.name}</span>
+                                            <div
+                                                className={styles.ganttResizeHandle}
+                                                onMouseDown={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    setDragState({
+                                                        phaseId: phase.id,
+                                                        type: 'resize-end',
+                                                        startX: e.clientX,
+                                                        origStart: new Date(phase.startDate!),
+                                                        origEnd: new Date(phase.endDate!),
+                                                    });
+                                                }}
+                                            />
+                                        </div>
+                                    ) : (
+                                        <div className={styles.ganttNoDate}>No dates set</div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+
+            {phases.length === 0 && (
+                <div className={styles.emptyMsg}>No phases yet. Add phases to see the timeline.</div>
+            )}
+
+            <div className={styles.ganttLegend}>
+                {(Object.keys(STATUS_COLORS) as PhaseStatus[]).map(s => (
+                    <div key={s} className={styles.legendItem}>
+                        <span className={styles.legendDot} style={{ background: STATUS_COLORS[s] }} />
+                        <span>{STATUS_LABELS[s]}</span>
+                    </div>
+                ))}
+            </div>
+
+            <p className={styles.ganttHint}>Drag bars to adjust dates. Drag the right edge to resize duration.</p>
         </div>
     );
 }
