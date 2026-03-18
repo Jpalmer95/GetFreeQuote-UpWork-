@@ -181,6 +181,11 @@ a {
   background-position: right 1rem center;
   padding-right: 2.5rem;
 }
+.field-select option,
+select option {
+  background: #1a1a2e;
+  color: #ffffff;
+}
 .field-textarea { resize: vertical; min-height: 120px; line-height: 1.6; }
 
 /* ─── Badges ─── */
