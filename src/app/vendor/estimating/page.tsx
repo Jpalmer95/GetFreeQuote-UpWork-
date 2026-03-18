@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { EstimatingTemplate, EstimatingLineItem, PricingModel, INDUSTRY_VERTICALS, INDUSTRY_SUBCATEGORIES, KnownIndustryVertical, IndustryVertical } from '@/types';
-import { db } from '@/services/db';
+import { vendorApi } from '@/services/vendorApi';
 import { hasPermission, VendorRole, getRoleLabel } from '@/services/vendorAuth';
 import Navbar from '@/components/Navbar';
 import styles from './page.module.css';
@@ -49,12 +49,17 @@ export default function EstimatingPage() {
         if (!isLoading && !user) { router.push('/login'); return; }
         if (!user) return;
         const load = async () => {
-            const result = await db.getVendorProfileByOwnerOrTeam(user.id, user.email || '');
-            if (result) {
-                setVendorProfileId(result.profile.id);
+            const result = await vendorApi.getTemplates();
+            if (result.templates.length > 0 || result.role !== 'owner') {
+                setVendorProfileId('resolved');
                 setUserRole(result.role);
-                const tpls = await db.getEstimatingTemplates(result.profile.id);
-                setTemplates(tpls);
+                setTemplates(result.templates);
+            } else {
+                const ctx = await vendorApi.getContext();
+                if (ctx) {
+                    setVendorProfileId(ctx.profile.id);
+                    setUserRole(ctx.role);
+                }
             }
         };
         load();
@@ -145,30 +150,22 @@ export default function EstimatingPage() {
                     formula: li.pricingModel === 'formula' ? li.formula : undefined,
                 }));
 
+            const templateData = {
+                name: form.name,
+                serviceCategory: form.serviceCategory,
+                industryVertical: form.industryVertical,
+                laborRate: parseFloat(form.laborRate) || 0,
+                materialMarkupPercent: parseFloat(form.materialMarkupPercent) || 0,
+                minimumCharge: parseFloat(form.minimumCharge) || 0,
+                isDefault: form.isDefault,
+                lineItems: cleanItems,
+            };
+
             if (editing) {
-                const updated = await db.updateEstimatingTemplate(editing.id, {
-                    name: form.name,
-                    serviceCategory: form.serviceCategory,
-                    industryVertical: form.industryVertical as IndustryVertical,
-                    laborRate: parseFloat(form.laborRate) || 0,
-                    materialMarkupPercent: parseFloat(form.materialMarkupPercent) || 0,
-                    minimumCharge: parseFloat(form.minimumCharge) || 0,
-                    isDefault: form.isDefault,
-                    lineItems: cleanItems,
-                });
+                const updated = await vendorApi.updateTemplate(editing.id, templateData);
                 setTemplates(prev => prev.map(t => t.id === editing.id ? updated : t));
             } else {
-                const created = await db.createEstimatingTemplate({
-                    vendorProfileId,
-                    name: form.name,
-                    serviceCategory: form.serviceCategory,
-                    industryVertical: form.industryVertical as IndustryVertical,
-                    laborRate: parseFloat(form.laborRate) || 0,
-                    materialMarkupPercent: parseFloat(form.materialMarkupPercent) || 0,
-                    minimumCharge: parseFloat(form.minimumCharge) || 0,
-                    isDefault: form.isDefault,
-                    lineItems: cleanItems,
-                });
+                const created = await vendorApi.createTemplate(templateData);
                 setTemplates(prev => [...prev, created]);
             }
             setIsNew(false);
@@ -182,7 +179,7 @@ export default function EstimatingPage() {
 
     const handleDelete = async (id: string) => {
         try {
-            await db.deleteEstimatingTemplate(id);
+            await vendorApi.deleteTemplate(id);
             setTemplates(prev => prev.filter(t => t.id !== id));
         } catch (error) {
             console.error('Error deleting template:', error);

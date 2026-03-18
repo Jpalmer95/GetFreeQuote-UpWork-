@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { INDUSTRY_VERTICALS, IndustryVertical } from '@/types';
-import { db } from '@/services/db';
+import { vendorApi } from '@/services/vendorApi';
 import { hasPermission, VendorRole, getRoleLabel } from '@/services/vendorAuth';
 import Navbar from '@/components/Navbar';
 import styles from './page.module.css';
@@ -15,7 +15,6 @@ export default function VendorProfileEdit() {
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
     const [profileId, setProfileId] = useState<string | null>(null);
-    const [profileOwnerId, setProfileOwnerId] = useState<string | null>(null);
     const [userRole, setUserRole] = useState<VendorRole>('owner');
     const canEdit = hasPermission(userRole, 'profile.edit');
 
@@ -43,10 +42,9 @@ export default function VendorProfileEdit() {
         if (!isLoading && !user) { router.push('/login'); return; }
         if (!user) return;
         const load = async () => {
-            const result = await db.getVendorProfileByOwnerOrTeam(user.id, user.email || '');
+            const result = await vendorApi.getContext();
             if (result) {
                 setProfileId(result.profile.id);
-                setProfileOwnerId(result.profile.userId);
                 setUserRole(result.role);
                 const profile = result.profile;
                 setForm({
@@ -108,8 +106,7 @@ export default function VendorProfileEdit() {
         setSaved(false);
 
         try {
-            const result = await db.upsertVendorProfile({
-                userId: profileOwnerId || user.id,
+            const result = await vendorApi.upsertProfile({
                 companyName: form.companyName,
                 companyDescription: form.companyDescription,
                 contactEmail: form.contactEmail,
@@ -171,31 +168,31 @@ export default function VendorProfileEdit() {
                             <label className={styles.label}>Company Name *</label>
                             <input className={styles.input} value={form.companyName}
                                 onChange={e => setForm(p => ({ ...p, companyName: e.target.value }))}
-                                placeholder="Acme Services LLC" />
+                                placeholder="Acme Services LLC" disabled={!canEdit} />
                         </div>
                         <div className={styles.formGroup}>
                             <label className={styles.label}>Year Established</label>
                             <input className={styles.input} type="number" value={form.yearEstablished}
                                 onChange={e => setForm(p => ({ ...p, yearEstablished: e.target.value }))}
-                                placeholder="2015" />
+                                placeholder="2015" disabled={!canEdit} />
                         </div>
                         <div className={styles.formGroupFull}>
                             <label className={styles.label}>Company Description</label>
                             <textarea className={styles.textarea} value={form.companyDescription}
                                 onChange={e => setForm(p => ({ ...p, companyDescription: e.target.value }))}
-                                placeholder="Tell customers about your company, experience, and what makes you different..." />
+                                placeholder="Tell customers about your company, experience, and what makes you different..." disabled={!canEdit} />
                         </div>
                         <div className={styles.formGroup}>
                             <label className={styles.label}>Team Size</label>
                             <input className={styles.input} type="number" value={form.teamSize}
                                 onChange={e => setForm(p => ({ ...p, teamSize: e.target.value }))}
-                                placeholder="1" min="1" />
+                                placeholder="1" min="1" disabled={!canEdit} />
                         </div>
                         <div className={styles.formGroup}>
                             <label className={styles.label}>Logo URL</label>
                             <input className={styles.input} value={form.logoUrl}
                                 onChange={e => setForm(p => ({ ...p, logoUrl: e.target.value }))}
-                                placeholder="https://..." />
+                                placeholder="https://..." disabled={!canEdit} />
                         </div>
                     </div>
                 </div>
@@ -208,25 +205,25 @@ export default function VendorProfileEdit() {
                             <label className={styles.label}>Contact Email</label>
                             <input className={styles.input} type="email" value={form.contactEmail}
                                 onChange={e => setForm(p => ({ ...p, contactEmail: e.target.value }))}
-                                placeholder="contact@company.com" />
+                                placeholder="contact@company.com" disabled={!canEdit} />
                         </div>
                         <div className={styles.formGroup}>
                             <label className={styles.label}>Phone</label>
                             <input className={styles.input} value={form.contactPhone}
                                 onChange={e => setForm(p => ({ ...p, contactPhone: e.target.value }))}
-                                placeholder="(555) 123-4567" />
+                                placeholder="(555) 123-4567" disabled={!canEdit} />
                         </div>
                         <div className={styles.formGroup}>
                             <label className={styles.label}>Website</label>
                             <input className={styles.input} value={form.website}
                                 onChange={e => setForm(p => ({ ...p, website: e.target.value }))}
-                                placeholder="https://yourcompany.com" />
+                                placeholder="https://yourcompany.com" disabled={!canEdit} />
                         </div>
                         <div className={styles.formGroup}>
                             <label className={styles.label}>Service Areas</label>
                             <input className={styles.input} value={form.serviceAreas}
                                 onChange={e => setForm(p => ({ ...p, serviceAreas: e.target.value }))}
-                                placeholder="New York, Brooklyn, Queens" />
+                                placeholder="New York, Brooklyn, Queens" disabled={!canEdit} />
                         </div>
                     </div>
                 </div>
@@ -238,7 +235,8 @@ export default function VendorProfileEdit() {
                         {INDUSTRY_VERTICALS.map(v => (
                             <button key={v}
                                 className={`${styles.pill} ${form.industries.includes(v) ? styles.pillActive : ''}`}
-                                onClick={() => toggleIndustry(v)}>
+                                onClick={() => canEdit && toggleIndustry(v)}
+                                disabled={!canEdit}>
                                 {v}
                             </button>
                         ))}
@@ -247,7 +245,7 @@ export default function VendorProfileEdit() {
                         <label className={styles.label}>Specialties</label>
                         <input className={styles.input} value={form.specialties}
                             onChange={e => setForm(p => ({ ...p, specialties: e.target.value }))}
-                            placeholder="Plumbing, HVAC, Emergency Repairs" />
+                            placeholder="Plumbing, HVAC, Emergency Repairs" disabled={!canEdit} />
                     </div>
                 </div>
 
@@ -259,18 +257,18 @@ export default function VendorProfileEdit() {
                             <div key={i} className={styles.certRow}>
                                 <input className={styles.certInput} value={cert}
                                     onChange={e => updateCert(i, e.target.value)}
-                                    placeholder="Licensed Master Plumber, EPA Certified..." />
-                                <button className={styles.removeBtn} onClick={() => removeCert(i)}>Remove</button>
+                                    placeholder="Licensed Master Plumber, EPA Certified..." disabled={!canEdit} />
+                                {canEdit && <button className={styles.removeBtn} onClick={() => removeCert(i)}>Remove</button>}
                             </div>
                         ))}
-                        <button className={styles.addBtn} onClick={addCert}>+ Add Certification</button>
+                        {canEdit && <button className={styles.addBtn} onClick={addCert}>+ Add Certification</button>}
                     </div>
                     <div className={styles.formGrid} style={{ marginTop: '1rem' }}>
                         <div className={styles.formGroup}>
                             <label className={styles.label}>License Number</label>
                             <input className={styles.input} value={form.licenseNumber}
                                 onChange={e => setForm(p => ({ ...p, licenseNumber: e.target.value }))}
-                                placeholder="LIC-12345" />
+                                placeholder="LIC-12345" disabled={!canEdit} />
                         </div>
                     </div>
                 </div>
@@ -288,14 +286,14 @@ export default function VendorProfileEdit() {
                                             imgs[i] = e.target.value;
                                             setForm(p => ({ ...p, portfolioImages: imgs }));
                                         }}
-                                        placeholder="Image URL (https://...)" />
-                                    <button className={styles.removeBtn} onClick={() => {
+                                        placeholder="Image URL (https://...)" disabled={!canEdit} />
+                                    {canEdit && <button className={styles.removeBtn} onClick={() => {
                                         setForm(p => ({
                                             ...p,
                                             portfolioImages: p.portfolioImages.filter((_, idx) => idx !== i),
                                             portfolioDescriptions: p.portfolioDescriptions.filter((_, idx) => idx !== i),
                                         }));
-                                    }}>Remove</button>
+                                    }}>Remove</button>}
                                 </div>
                                 <input className={styles.input} style={{ width: '100%' }}
                                     value={form.portfolioDescriptions[i] || ''}
@@ -304,16 +302,16 @@ export default function VendorProfileEdit() {
                                         descs[i] = e.target.value;
                                         setForm(p => ({ ...p, portfolioDescriptions: descs }));
                                     }}
-                                    placeholder="Description of this project..." />
+                                    placeholder="Description of this project..." disabled={!canEdit} />
                             </div>
                         ))}
-                        <button className={styles.addBtn} onClick={() => {
+                        {canEdit && <button className={styles.addBtn} onClick={() => {
                             setForm(p => ({
                                 ...p,
                                 portfolioImages: [...p.portfolioImages, ''],
                                 portfolioDescriptions: [...p.portfolioDescriptions, ''],
                             }));
-                        }}>+ Add Portfolio Item</button>
+                        }}>+ Add Portfolio Item</button>}
                     </div>
                 </div>
 
@@ -325,12 +323,13 @@ export default function VendorProfileEdit() {
                             <label className={styles.label}>Insurance Details</label>
                             <textarea className={styles.textarea} value={form.insuranceDetails}
                                 onChange={e => setForm(p => ({ ...p, insuranceDetails: e.target.value }))}
-                                placeholder="General Liability, Workers Comp, $1M coverage..." />
+                                placeholder="General Liability, Workers Comp, $1M coverage..." disabled={!canEdit} />
                         </div>
                         <div className={styles.formGroup}>
                             <label className={styles.label}>Insurance Expiry Date</label>
                             <input className={styles.input} type="date" value={form.insuranceExpiry}
-                                onChange={e => setForm(p => ({ ...p, insuranceExpiry: e.target.value }))} />
+                                onChange={e => setForm(p => ({ ...p, insuranceExpiry: e.target.value }))}
+                                disabled={!canEdit} />
                         </div>
                     </div>
                 </div>

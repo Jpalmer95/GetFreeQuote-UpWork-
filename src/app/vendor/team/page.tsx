@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { TeamMember, TeamMemberRole } from '@/types';
-import { db } from '@/services/db';
+import { vendorApi } from '@/services/vendorApi';
 import { hasPermission, VendorRole, getRoleLabel } from '@/services/vendorAuth';
 import Navbar from '@/components/Navbar';
 import styles from './page.module.css';
@@ -36,12 +36,17 @@ export default function TeamManagement() {
         if (!isLoading && !user) { router.push('/login'); return; }
         if (!user) return;
         const load = async () => {
-            const result = await db.getVendorProfileByOwnerOrTeam(user.id, user.email || '');
-            if (result) {
-                setVendorProfileId(result.profile.id);
+            const result = await vendorApi.getTeam();
+            if (result.members.length > 0 || result.role !== 'owner') {
+                setVendorProfileId('resolved');
                 setUserRole(result.role);
-                const m = await db.getTeamMembers(result.profile.id);
-                setMembers(m);
+                setMembers(result.members);
+            } else {
+                const ctx = await vendorApi.getContext();
+                if (ctx) {
+                    setVendorProfileId(ctx.profile.id);
+                    setUserRole(ctx.role);
+                }
             }
         };
         load();
@@ -66,15 +71,13 @@ export default function TeamManagement() {
         setSaving(true);
         try {
             if (editingId) {
-                const updated = await db.updateTeamMember(editingId, { name: form.name, role: form.role });
+                const updated = await vendorApi.updateTeamMember(editingId, { name: form.name, role: form.role });
                 setMembers(prev => prev.map(m => m.id === editingId ? updated : m));
             } else {
-                const created = await db.addTeamMember({
-                    vendorProfileId,
+                const created = await vendorApi.addTeamMember({
                     email: form.email,
                     name: form.name,
                     role: form.role,
-                    isActive: true,
                 });
                 setMembers(prev => [...prev, created]);
             }
@@ -89,7 +92,7 @@ export default function TeamManagement() {
 
     const handleRemove = async (id: string) => {
         try {
-            await db.removeTeamMember(id);
+            await vendorApi.removeTeamMember(id);
             setMembers(prev => prev.filter(m => m.id !== id));
         } catch (error) {
             console.error('Error removing team member:', error);
@@ -98,7 +101,7 @@ export default function TeamManagement() {
 
     const toggleActive = async (member: TeamMember) => {
         try {
-            const updated = await db.updateTeamMember(member.id, { isActive: !member.isActive });
+            const updated = await vendorApi.updateTeamMember(member.id, { isActive: !member.isActive });
             setMembers(prev => prev.map(m => m.id === member.id ? updated : m));
         } catch (error) {
             console.error('Error toggling team member:', error);
