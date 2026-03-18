@@ -1,11 +1,13 @@
 import { supabase } from '@/lib/supabase';
-import { Job, Quote, Message, AgentConfig, AgentAction, Notification, IndustryVertical, VendorProfile, EstimatingTemplate, TeamMember, TeamMemberRole, VendorReview, Project, ProjectPhase } from '@/types';
+import { Job, Quote, Message, AgentConfig, AgentAction, Notification, IndustryVertical, VendorProfile, EstimatingTemplate, TeamMember, TeamMemberRole, VendorReview, Project, ProjectPhase, CommunityProject, Donation, CommunityProjectUpdate, LedgerEntry } from '@/types';
 import {
     JobRow, AgentConfigRow, QuoteRow, MessageRow, AgentActionRow, NotificationRow,
     VendorProfileRow, EstimatingTemplateRow, TeamMemberRow, VendorReviewRow,
     ProjectRow, ProjectPhaseRow,
+    CommunityProjectRow, DonationRow, CommunityProjectUpdateRow, LedgerEntryRow,
     mapJobRow, mapAgentConfigRow, mapVendorProfileRow, mapEstimatingTemplateRow,
     mapTeamMemberRow, mapVendorReviewRow, mapProjectRow, mapProjectPhaseRow,
+    mapCommunityProjectRow, mapDonationRow, mapCommunityProjectUpdateRow, mapLedgerEntryRow,
 } from './serverMappers';
 
 export const db = {
@@ -696,6 +698,114 @@ export const db = {
     deleteProjectPhase: async (id: string): Promise<void> => {
         const { error } = await supabase.from('project_phases').delete().eq('id', id);
         if (error) throw error;
+    },
+
+    getCommunityProjects: async (filters?: { category?: string; status?: string; query?: string }): Promise<CommunityProject[]> => {
+        let query = supabase.from('community_projects').select('*').order('created_at', { ascending: false });
+        if (filters?.category) query = query.eq('category', filters.category);
+        if (filters?.status) query = query.eq('status', filters.status);
+        if (filters?.query) {
+            query = query.or(`title.ilike.%${filters.query}%,description.ilike.%${filters.query}%`);
+        }
+        const { data, error } = await query;
+        if (error) { console.error('Error fetching community projects:', error); return []; }
+        return data.map((r) => mapCommunityProjectRow(r as CommunityProjectRow));
+    },
+
+    getCommunityProject: async (id: string): Promise<CommunityProject | undefined> => {
+        const { data, error } = await supabase.from('community_projects').select('*').eq('id', id).single();
+        if (error || !data) return undefined;
+        return mapCommunityProjectRow(data as CommunityProjectRow);
+    },
+
+    createCommunityProject: async (project: Omit<CommunityProject, 'id' | 'currentFunding' | 'status' | 'createdAt' | 'updatedAt'>): Promise<CommunityProject> => {
+        const { data, error } = await supabase.from('community_projects').insert({
+            creator_id: project.creatorId,
+            creator_name: project.creatorName,
+            title: project.title,
+            description: project.description,
+            category: project.category,
+            location: project.location,
+            goal_amount: project.goalAmount,
+            image_url: project.imageUrl || null,
+            contract_address: project.contractAddress || null,
+            status: 'ACTIVE',
+            current_funding: 0,
+        }).select().single();
+        if (error) throw error;
+        return mapCommunityProjectRow(data as CommunityProjectRow);
+    },
+
+    updateCommunityProject: async (id: string, updates: Partial<Pick<CommunityProject, 'title' | 'description' | 'category' | 'location' | 'goalAmount' | 'status' | 'imageUrl' | 'contractAddress'>>): Promise<CommunityProject> => {
+        const payload: Record<string, unknown> = { updated_at: new Date().toISOString() };
+        if (updates.title !== undefined) payload.title = updates.title;
+        if (updates.description !== undefined) payload.description = updates.description;
+        if (updates.category !== undefined) payload.category = updates.category;
+        if (updates.location !== undefined) payload.location = updates.location;
+        if (updates.goalAmount !== undefined) payload.goal_amount = updates.goalAmount;
+        if (updates.status !== undefined) payload.status = updates.status;
+        if (updates.imageUrl !== undefined) payload.image_url = updates.imageUrl;
+        if (updates.contractAddress !== undefined) payload.contract_address = updates.contractAddress;
+        const { data, error } = await supabase.from('community_projects').update(payload).eq('id', id).select().single();
+        if (error) throw error;
+        return mapCommunityProjectRow(data as CommunityProjectRow);
+    },
+
+    getDonations: async (communityProjectId: string): Promise<Donation[]> => {
+        const { data, error } = await supabase
+            .from('donations')
+            .select('*')
+            .eq('community_project_id', communityProjectId)
+            .order('created_at', { ascending: false });
+        if (error) { console.error('Error fetching donations:', error); return []; }
+        return data.map((r) => mapDonationRow(r as DonationRow));
+    },
+
+    createDonation: async (donation: Omit<Donation, 'id' | 'createdAt'>): Promise<Donation> => {
+        const { data, error } = await supabase.from('donations').insert({
+            community_project_id: donation.communityProjectId,
+            donor_id: donation.donorId || null,
+            donor_name: donation.donorName,
+            amount: donation.amount,
+            is_anonymous: donation.isAnonymous,
+            transaction_hash: donation.transactionHash || null,
+            message: donation.message || null,
+        }).select().single();
+        if (error) throw error;
+        return mapDonationRow(data as DonationRow);
+    },
+
+    getCommunityProjectUpdates: async (communityProjectId: string): Promise<CommunityProjectUpdate[]> => {
+        const { data, error } = await supabase
+            .from('community_project_updates')
+            .select('*')
+            .eq('community_project_id', communityProjectId)
+            .order('created_at', { ascending: false });
+        if (error) { console.error('Error fetching project updates:', error); return []; }
+        return data.map((r) => mapCommunityProjectUpdateRow(r as CommunityProjectUpdateRow));
+    },
+
+    createCommunityProjectUpdate: async (update: Omit<CommunityProjectUpdate, 'id' | 'createdAt'>): Promise<CommunityProjectUpdate> => {
+        const { data, error } = await supabase.from('community_project_updates').insert({
+            community_project_id: update.communityProjectId,
+            author_id: update.authorId,
+            author_name: update.authorName,
+            title: update.title,
+            content: update.content,
+            image_url: update.imageUrl || null,
+        }).select().single();
+        if (error) throw error;
+        return mapCommunityProjectUpdateRow(data as CommunityProjectUpdateRow);
+    },
+
+    getLedgerEntries: async (communityProjectId: string): Promise<LedgerEntry[]> => {
+        const { data, error } = await supabase
+            .from('ledger_entries')
+            .select('*')
+            .eq('community_project_id', communityProjectId)
+            .order('created_at', { ascending: false });
+        if (error) { console.error('Error fetching ledger:', error); return []; }
+        return data.map((r) => mapLedgerEntryRow(r as LedgerEntryRow));
     },
 };
 

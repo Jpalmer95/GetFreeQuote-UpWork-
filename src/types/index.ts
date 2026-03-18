@@ -277,6 +277,82 @@ export interface ProjectPhase {
     updatedAt: string;
 }
 
+export type CommunityProjectStatus = 'ACTIVE' | 'FUNDED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+
+export type CommunityProjectCategory =
+    | 'Parks & Recreation'
+    | 'Infrastructure'
+    | 'Education'
+    | 'Arts & Culture'
+    | 'Environment'
+    | 'Public Safety'
+    | 'Community Spaces'
+    | 'Open Source'
+    | 'Other';
+
+export const COMMUNITY_CATEGORIES: CommunityProjectCategory[] = [
+    'Parks & Recreation',
+    'Infrastructure',
+    'Education',
+    'Arts & Culture',
+    'Environment',
+    'Public Safety',
+    'Community Spaces',
+    'Open Source',
+    'Other',
+];
+
+export interface CommunityProject {
+    id: string;
+    creatorId: string;
+    creatorName: string;
+    title: string;
+    description: string;
+    category: CommunityProjectCategory;
+    location: string;
+    goalAmount: number;
+    currentFunding: number;
+    status: CommunityProjectStatus;
+    imageUrl?: string;
+    contractAddress?: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface Donation {
+    id: string;
+    communityProjectId: string;
+    donorId?: string;
+    donorName: string;
+    amount: number;
+    isAnonymous: boolean;
+    transactionHash?: string;
+    message?: string;
+    createdAt: string;
+}
+
+export interface CommunityProjectUpdate {
+    id: string;
+    communityProjectId: string;
+    authorId: string;
+    authorName: string;
+    title: string;
+    content: string;
+    imageUrl?: string;
+    createdAt: string;
+}
+
+export interface LedgerEntry {
+    id: string;
+    communityProjectId: string;
+    type: 'DONATION' | 'EXPENSE';
+    amount: number;
+    description: string;
+    referenceId?: string;
+    transactionHash?: string;
+    createdAt: string;
+}
+
 export type NotificationType =
     | 'quote_ready'
     | 'approval_needed'

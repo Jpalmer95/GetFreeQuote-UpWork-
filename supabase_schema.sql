@@ -565,3 +565,121 @@ create policy "Users can delete phases of own projects." on public.project_phase
 -- Cross-referencing FKs (added after both tables exist to avoid circular dependency)
 alter table public.quotes add constraint quotes_phase_id_fkey foreign key (phase_id) references public.project_phases(id);
 alter table public.project_phases add constraint project_phases_accepted_quote_id_fkey foreign key (accepted_quote_id) references public.quotes(id);
+
+
+-- RPC: Atomic funding increment for community projects (prevents race conditions)
+create or replace function public.increment_community_funding(p_project_id uuid, p_amount numeric)
+returns void as $$
+begin
+  update public.community_projects
+  set
+    current_funding = current_funding + p_amount,
+    status = case
+      when (current_funding + p_amount) >= goal_amount then 'FUNDED'
+      else status
+    end,
+    updated_at = now()
+  where id = p_project_id;
+end;
+$$ language plpgsql security definer;
+
+
+-- COMMUNITY PROJECTS (public community improvement initiatives with transparent funding)
+create table public.community_projects (
+  id uuid default gen_random_uuid() primary key,
+  creator_id uuid references public.profiles(id) not null,
+  creator_name text not null,
+  title text not null,
+  description text not null default '',
+  category text not null default 'Other',
+  location text not null default '',
+  goal_amount numeric not null default 0,
+  current_funding numeric not null default 0,
+  status text check (status in ('ACTIVE', 'FUNDED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED')) default 'ACTIVE',
+  image_url text,
+  contract_address text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.community_projects enable row level security;
+
+create policy "Community projects are viewable by everyone." on public.community_projects
+  for select using (true);
+
+create policy "Users can create community projects." on public.community_projects
+  for insert with check (auth.uid() = creator_id);
+
+create policy "Creators can update own community projects." on public.community_projects
+  for update using (auth.uid() = creator_id);
+
+
+-- DONATIONS (contributions to community projects)
+create table public.donations (
+  id uuid default gen_random_uuid() primary key,
+  community_project_id uuid references public.community_projects(id) on delete cascade not null,
+  donor_id uuid references public.profiles(id),
+  donor_name text not null default 'Anonymous',
+  amount numeric not null,
+  is_anonymous boolean default false,
+  transaction_hash text,
+  message text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.donations enable row level security;
+
+create policy "Donations are viewable by everyone." on public.donations
+  for select using (true);
+
+create policy "Authenticated users can donate." on public.donations
+  for insert with check (auth.uid() = donor_id);
+
+
+-- COMMUNITY PROJECT UPDATES (progress reports from project creators)
+create table public.community_project_updates (
+  id uuid default gen_random_uuid() primary key,
+  community_project_id uuid references public.community_projects(id) on delete cascade not null,
+  author_id uuid references public.profiles(id) not null,
+  author_name text not null,
+  title text not null,
+  content text not null default '',
+  image_url text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.community_project_updates enable row level security;
+
+create policy "Community project updates are viewable by everyone." on public.community_project_updates
+  for select using (true);
+
+create policy "Creators can post updates to own projects." on public.community_project_updates
+  for insert with check (
+    auth.uid() = author_id
+    AND exists (
+      select 1 from public.community_projects
+      where public.community_projects.id = community_project_id
+      and public.community_projects.creator_id = auth.uid()
+    )
+  );
+
+
+-- LEDGER ENTRIES (transparent transaction log for community project funds)
+create table public.ledger_entries (
+  id uuid default gen_random_uuid() primary key,
+  community_project_id uuid references public.community_projects(id) on delete cascade not null,
+  type text check (type in ('DONATION', 'EXPENSE')) not null,
+  amount numeric not null,
+  description text not null,
+  reference_id uuid,
+  transaction_hash text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.ledger_entries enable row level security;
+
+create policy "Ledger entries are viewable by everyone." on public.ledger_entries
+  for select using (true);
+
+create policy "Ledger entries created by service role only." on public.ledger_entries
+  for insert with check (false);

@@ -26,6 +26,9 @@ src/
     projects/              # Multi-phase project management
       new/                 # Step-by-step project creation wizard (details → phases → review)
       [id]/                # Project detail with Gantt timeline, phase management, budget tracking
+    community/             # Community project funding with smart contract escrow
+      new/                 # Create new community project form
+      [id]/                # Community project detail (donate, updates, ledger, smart contract info)
     vendor/                # Vendor portal (opportunities feed, pending reviews)
       profile/             # Vendor profile editor (company info, certs, insurance, portfolio)
         [id]/              # Public-facing vendor profile view with reviews
@@ -36,6 +39,7 @@ src/
       agent-process/       # Server-side AI agent orchestration (POST) — vendor matching with location, capacity, specialty, budget scoring
       agent-respond/       # Multi-turn conversation handler (POST) — scope updates, escalation, vendor notifications
       quote-action/        # Server-side quote accept/reject (POST)
+      community/           # Community project API (donate, create-project, post-update, record-expense) with smart contract escrow simulation
   components/
     Navbar.tsx             # Sticky glass navbar with notification bell + AI Agent link
     Navbar.module.css
@@ -72,6 +76,10 @@ The platform uses an industry-agnostic data model with AI agent infrastructure:
 - **Team Members**: multi-user company accounts with admin, estimator, field_worker roles
 - **Projects**: multi-phase project coordination with title, description, location, industry, budget, date range, status (PLANNING/ACTIVE/ON_HOLD/COMPLETED/CANCELLED)
 - **Project Phases**: individual trades/sub-jobs with sort order, dependencies, dates, estimated/actual costs, status (NOT_STARTED/WAITING_QUOTES/QUOTED/IN_PROGRESS/COMPLETED/BLOCKED), accepted quote reference
+- **Community Projects**: public funding initiatives with smart contract-backed escrow, categories (Parks & Recreation, Infrastructure, Education, Arts & Culture, Environment, Public Safety, Community Spaces, Open Source), goal/funding tracking, contract address
+- **Donations**: contributions to community projects with anonymous option, transaction hash, optional message
+- **Community Project Updates**: progress reports from project creators
+- **Ledger Entries**: transparent transaction log (DONATION/EXPENSE) with tx hashes for full financial transparency
 - **Vendor Reviews**: rating/comment structure (data model only, collection flow deferred)
 - **Agent Actions**: audit log of all AI agent operations (scope_analysis, job_broadcast, vendor_match, auto_quote, clarification, escalation, etc.)
 - **Notifications**: prioritized alerts (low/medium/high/urgent) with action_required flag, types: quote_ready, approval_needed, scope_change, agent_summary, job_match, negotiation_update

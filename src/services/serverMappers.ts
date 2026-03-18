@@ -1,4 +1,4 @@
-import { Job, AgentConfig, IndustryVertical, VendorProfile, EstimatingTemplate, EstimatingLineItem, TeamMember, VendorReview, Project, ProjectPhase } from '@/types';
+import { Job, AgentConfig, IndustryVertical, VendorProfile, EstimatingTemplate, EstimatingLineItem, TeamMember, VendorReview, Project, ProjectPhase, CommunityProject, Donation, CommunityProjectUpdate, LedgerEntry } from '@/types';
 
 export interface JobRow {
     id: string;
@@ -367,5 +367,115 @@ export function mapProjectPhaseRow(row: ProjectPhaseRow): ProjectPhase {
         acceptedQuoteId: row.accepted_quote_id || undefined,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
+    };
+}
+
+export interface CommunityProjectRow {
+    id: string;
+    creator_id: string;
+    creator_name: string;
+    title: string;
+    description: string;
+    category: string;
+    location: string;
+    goal_amount: number;
+    current_funding: number;
+    status: string;
+    image_url: string | null;
+    contract_address: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export function mapCommunityProjectRow(row: CommunityProjectRow): CommunityProject {
+    return {
+        id: row.id,
+        creatorId: row.creator_id,
+        creatorName: row.creator_name,
+        title: row.title,
+        description: row.description,
+        category: row.category as CommunityProject['category'],
+        location: row.location,
+        goalAmount: row.goal_amount,
+        currentFunding: row.current_funding,
+        status: row.status as CommunityProject['status'],
+        imageUrl: row.image_url || undefined,
+        contractAddress: row.contract_address || undefined,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+    };
+}
+
+export interface DonationRow {
+    id: string;
+    community_project_id: string;
+    donor_id: string | null;
+    donor_name: string;
+    amount: number;
+    is_anonymous: boolean;
+    transaction_hash: string | null;
+    message: string | null;
+    created_at: string;
+}
+
+export function mapDonationRow(row: DonationRow): Donation {
+    return {
+        id: row.id,
+        communityProjectId: row.community_project_id,
+        donorId: row.donor_id || undefined,
+        donorName: row.donor_name,
+        amount: row.amount,
+        isAnonymous: row.is_anonymous,
+        transactionHash: row.transaction_hash || undefined,
+        message: row.message || undefined,
+        createdAt: row.created_at,
+    };
+}
+
+export interface CommunityProjectUpdateRow {
+    id: string;
+    community_project_id: string;
+    author_id: string;
+    author_name: string;
+    title: string;
+    content: string;
+    image_url: string | null;
+    created_at: string;
+}
+
+export function mapCommunityProjectUpdateRow(row: CommunityProjectUpdateRow): CommunityProjectUpdate {
+    return {
+        id: row.id,
+        communityProjectId: row.community_project_id,
+        authorId: row.author_id,
+        authorName: row.author_name,
+        title: row.title,
+        content: row.content,
+        imageUrl: row.image_url || undefined,
+        createdAt: row.created_at,
+    };
+}
+
+export interface LedgerEntryRow {
+    id: string;
+    community_project_id: string;
+    type: string;
+    amount: number;
+    description: string;
+    reference_id: string | null;
+    transaction_hash: string | null;
+    created_at: string;
+}
+
+export function mapLedgerEntryRow(row: LedgerEntryRow): LedgerEntry {
+    return {
+        id: row.id,
+        communityProjectId: row.community_project_id,
+        type: row.type as LedgerEntry['type'],
+        amount: row.amount,
+        description: row.description,
+        referenceId: row.reference_id || undefined,
+        transactionHash: row.transaction_hash || undefined,
+        createdAt: row.created_at,
     };
 }

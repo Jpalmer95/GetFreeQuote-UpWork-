@@ -24,6 +24,12 @@ export default function Navbar() {
                     >
                         Marketplace
                     </Link>
+                    <Link
+                        href="/community"
+                        className={`${styles.link} ${pathname?.startsWith('/community') ? styles.active : ''}`}
+                    >
+                        Community
+                    </Link>
                     {user && (
                         <>
                             <Link

@@ -1,0 +1,140 @@
+.container {
+    min-height: 100vh;
+    background: var(--background);
+}
+
+.content {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 4rem;
+}
+
+.backLink {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: rgba(255,255,255,0.5);
+    font-size: 0.88rem;
+    margin-bottom: 1.5rem;
+    text-decoration: none;
+    transition: color var(--dur-fast) ease;
+}
+
+.backLink:hover {
+    color: var(--foreground);
+}
+
+.title {
+    font-size: 1.8rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+}
+
+.subtitle {
+    font-size: 0.95rem;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 2rem;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.fieldGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: rgba(255,255,255,0.6);
+}
+
+.input {
+    width: 100%;
+    padding: 0.7rem 0.9rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-mid);
+    background: var(--surface-100);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: 0.95rem;
+}
+
+.input:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.textarea {
+    width: 100%;
+    padding: 0.7rem 0.9rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-mid);
+    background: var(--surface-100);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: 0.95rem;
+    resize: vertical;
+    min-height: 120px;
+}
+
+.textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.select {
+    width: 100%;
+    padding: 0.7rem 0.9rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-mid);
+    background: var(--surface-100);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: 0.95rem;
+    appearance: none;
+}
+
+.select:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.btnSubmit {
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius-md);
+    background: var(--primary);
+    color: #fff;
+    font-weight: 700;
+    font-size: 1rem;
+    border: none;
+    cursor: pointer;
+    font-family: var(--font-sans);
+    transition: opacity var(--dur-fast) ease;
+    margin-top: 0.5rem;
+}
+
+.btnSubmit:hover {
+    opacity: 0.85;
+}
+
+.btnSubmit:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.error {
+    color: #ff6b6b;
+    font-size: 0.88rem;
+}

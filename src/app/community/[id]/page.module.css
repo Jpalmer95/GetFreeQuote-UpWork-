@@ -1,0 +1,465 @@
+.container {
+    min-height: 100vh;
+    background: var(--background);
+}
+
+.content {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 4rem;
+}
+
+.backLink {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: rgba(255,255,255,0.5);
+    font-size: 0.88rem;
+    margin-bottom: 1.5rem;
+    text-decoration: none;
+    transition: color var(--dur-fast) ease;
+}
+
+.backLink:hover {
+    color: var(--foreground);
+}
+
+.header {
+    margin-bottom: 2rem;
+}
+
+.badge {
+    display: inline-block;
+    padding: 0.25rem 0.7rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.75rem;
+}
+
+.badgeActive {
+    background: rgba(52,199,89,0.15);
+    color: #34c759;
+}
+
+.badgeFunded {
+    background: rgba(79,142,247,0.15);
+    color: var(--primary-light);
+}
+
+.badgeCompleted {
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.5);
+}
+
+.title {
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+    line-height: 1.2;
+}
+
+.meta {
+    display: flex;
+    gap: 1.5rem;
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.45);
+    flex-wrap: wrap;
+}
+
+.twoCol {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 2rem;
+}
+
+.mainCol {
+    min-width: 0;
+}
+
+.sideCol {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.card {
+    background: var(--surface-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+}
+
+.cardTitle {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.description {
+    font-size: 0.95rem;
+    color: rgba(255,255,255,0.7);
+    line-height: 1.7;
+    white-space: pre-wrap;
+}
+
+.progressSection {
+    margin-bottom: 1.25rem;
+}
+
+.progressBar {
+    height: 10px;
+    background: var(--surface-200);
+    border-radius: 5px;
+    overflow: hidden;
+    margin-bottom: 0.6rem;
+}
+
+.progressFill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--primary-light));
+    border-radius: 5px;
+    transition: width 0.5s ease;
+}
+
+.progressStats {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+}
+
+.progressFunded {
+    font-weight: 700;
+    font-size: 1.2rem;
+}
+
+.progressGoal {
+    color: rgba(255,255,255,0.45);
+}
+
+.progressPct {
+    color: var(--primary-light);
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+.donateSection {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.inputRow {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.amountInput {
+    flex: 1;
+    padding: 0.6rem 0.85rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-mid);
+    background: var(--surface-100);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: 0.95rem;
+}
+
+.amountInput:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.messageInput {
+    width: 100%;
+    padding: 0.6rem 0.85rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-mid);
+    background: var(--surface-100);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: 0.88rem;
+    resize: vertical;
+    min-height: 60px;
+}
+
+.messageInput:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.checkRow {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.6);
+}
+
+.checkRow input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--primary);
+}
+
+.btnDonate {
+    padding: 0.7rem 1.2rem;
+    border-radius: var(--radius-md);
+    background: var(--primary);
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.95rem;
+    border: none;
+    cursor: pointer;
+    font-family: var(--font-sans);
+    transition: opacity var(--dur-fast) ease;
+    width: 100%;
+}
+
+.btnDonate:hover {
+    opacity: 0.85;
+}
+
+.btnDonate:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.donateSuccess {
+    background: rgba(52,199,89,0.1);
+    border: 1px solid rgba(52,199,89,0.3);
+    border-radius: var(--radius-sm);
+    padding: 0.75rem;
+    font-size: 0.85rem;
+    color: #34c759;
+}
+
+.contractInfo {
+    font-size: 0.78rem;
+    color: rgba(255,255,255,0.35);
+    word-break: break-all;
+}
+
+.contractLabel {
+    font-weight: 600;
+    color: rgba(255,255,255,0.5);
+}
+
+.tabs {
+    display: flex;
+    gap: 0.25rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.tab {
+    padding: 0.6rem 1.2rem;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: rgba(255,255,255,0.45);
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-family: var(--font-sans);
+    border-bottom: 2px solid transparent;
+    transition: color var(--dur-fast) ease, border-color var(--dur-fast) ease;
+    margin-bottom: -1px;
+}
+
+.tab:hover {
+    color: var(--foreground);
+}
+
+.tabActive {
+    color: var(--primary-light);
+    border-bottom-color: var(--primary);
+}
+
+.updateItem {
+    padding: 1.25rem 0;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.updateItem:last-child {
+    border-bottom: none;
+}
+
+.updateTitle {
+    font-weight: 700;
+    margin-bottom: 0.35rem;
+}
+
+.updateMeta {
+    font-size: 0.78rem;
+    color: rgba(255,255,255,0.4);
+    margin-bottom: 0.5rem;
+}
+
+.updateContent {
+    font-size: 0.9rem;
+    color: rgba(255,255,255,0.7);
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
+
+.ledgerTable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+
+.ledgerTable th {
+    text-align: left;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(255,255,255,0.35);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.ledgerTable td {
+    padding: 0.6rem 0.75rem;
+    border-bottom: 1px solid var(--border-subtle);
+    color: rgba(255,255,255,0.7);
+}
+
+.ledgerDonation {
+    color: #34c759;
+}
+
+.ledgerExpense {
+    color: #ff6b6b;
+}
+
+.txHash {
+    font-family: monospace;
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.3);
+    word-break: break-all;
+}
+
+.donationList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.donationItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.donationItem:last-child {
+    border-bottom: none;
+}
+
+.donorInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.donorName {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.donorMessage {
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.45);
+    font-style: italic;
+}
+
+.donationAmount {
+    font-weight: 700;
+    color: #34c759;
+    font-size: 0.95rem;
+}
+
+.donationDate {
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.3);
+}
+
+.empty {
+    text-align: center;
+    padding: 2rem;
+    color: rgba(255,255,255,0.4);
+    font-size: 0.9rem;
+}
+
+.updateForm {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-subtle);
+}
+
+.formInput {
+    width: 100%;
+    padding: 0.6rem 0.85rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-mid);
+    background: var(--surface-100);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: 0.88rem;
+}
+
+.formInput:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.btnSmall {
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-sm);
+    background: var(--primary);
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.85rem;
+    border: none;
+    cursor: pointer;
+    font-family: var(--font-sans);
+    align-self: flex-start;
+}
+
+.btnSmall:hover {
+    opacity: 0.85;
+}
+
+.expenseForm {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-subtle);
+}
+
+.loginPrompt {
+    text-align: center;
+    padding: 1rem;
+    font-size: 0.88rem;
+    color: rgba(255,255,255,0.5);
+}
+
+.loginPrompt a {
+    color: var(--primary-light);
+    text-decoration: none;
+}
+
+@media (max-width: 900px) {
+    .twoCol {
+        grid-template-columns: 1fr;
+    }
+}

@@ -1,0 +1,304 @@
+.container {
+    min-height: 100vh;
+    background: var(--background);
+}
+
+.hero {
+    text-align: center;
+    padding: 3rem 1.5rem 2rem;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.heroTitle {
+    font-size: 2.4rem;
+    font-weight: 800;
+    margin-bottom: 0.75rem;
+}
+
+.heroSub {
+    font-size: 1.05rem;
+    color: rgba(255,255,255,0.55);
+    line-height: 1.6;
+    max-width: 600px;
+    margin: 0 auto 1.5rem;
+}
+
+.heroActions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.btnPrimary {
+    padding: 0.7rem 1.6rem;
+    border-radius: var(--radius-md);
+    background: var(--primary);
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.95rem;
+    border: none;
+    cursor: pointer;
+    font-family: var(--font-sans);
+    transition: opacity var(--dur-fast) ease;
+    text-decoration: none;
+}
+
+.btnPrimary:hover {
+    opacity: 0.85;
+}
+
+.layout {
+    display: flex;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 1.5rem 3rem;
+    gap: 2.5rem;
+}
+
+.sidebar {
+    width: 240px;
+    flex-shrink: 0;
+}
+
+.filterSection {
+    margin-bottom: 2rem;
+    padding-bottom: 1.75rem;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.filterLabel {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: rgba(255,255,255,0.35);
+    margin-bottom: 0.85rem;
+    display: block;
+}
+
+.pillGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.pill {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 0.75rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: rgba(255,255,255,0.55);
+    cursor: pointer;
+    transition: background var(--dur-fast) ease, color var(--dur-fast) ease;
+    border: none;
+    background: transparent;
+    font-family: var(--font-sans);
+    text-align: left;
+    width: 100%;
+}
+
+.pill:hover {
+    background: var(--surface-100);
+    color: var(--foreground);
+}
+
+.pillActive {
+    background: rgba(79,142,247,0.12) !important;
+    color: var(--primary-light) !important;
+    font-weight: 700;
+}
+
+.searchInput {
+    width: 100%;
+    padding: 0.6rem 0.85rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-mid);
+    background: var(--surface-100);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: 0.88rem;
+    transition: border-color var(--dur-base) ease;
+}
+
+.searchInput:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.main {
+    flex: 1;
+    min-width: 0;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.5rem;
+}
+
+.card {
+    background: var(--surface-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition: border-color var(--dur-base) ease, transform var(--dur-base) ease;
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+}
+
+.card:hover {
+    border-color: var(--primary);
+    transform: translateY(-2px);
+}
+
+.cardImage {
+    height: 160px;
+    background: linear-gradient(135deg, var(--surface-200), var(--surface-100));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    color: rgba(255,255,255,0.15);
+    position: relative;
+}
+
+.cardBadge {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.badgeActive {
+    background: rgba(52,199,89,0.15);
+    color: #34c759;
+}
+
+.badgeFunded {
+    background: rgba(79,142,247,0.15);
+    color: var(--primary-light);
+}
+
+.badgeCompleted {
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.5);
+}
+
+.cardBody {
+    padding: 1.25rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.cardCategory {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--primary-light);
+    margin-bottom: 0.4rem;
+}
+
+.cardTitle {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    line-height: 1.3;
+}
+
+.cardDesc {
+    font-size: 0.88rem;
+    color: rgba(255,255,255,0.55);
+    line-height: 1.5;
+    margin-bottom: 1rem;
+    flex: 1;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.cardLocation {
+    font-size: 0.78rem;
+    color: rgba(255,255,255,0.4);
+    margin-bottom: 1rem;
+}
+
+.progressBar {
+    height: 6px;
+    background: var(--surface-200);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 0.6rem;
+}
+
+.progressFill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--primary-light));
+    border-radius: 3px;
+    transition: width 0.5s ease;
+}
+
+.cardStats {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.82rem;
+}
+
+.cardFunded {
+    font-weight: 700;
+    color: var(--foreground);
+}
+
+.cardGoal {
+    color: rgba(255,255,255,0.4);
+}
+
+.cardPercent {
+    color: var(--primary-light);
+    font-weight: 600;
+}
+
+.empty {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: rgba(255,255,255,0.4);
+}
+
+.emptyIcon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.emptyTitle {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: rgba(255,255,255,0.55);
+    margin-bottom: 0.5rem;
+}
+
+@media (max-width: 900px) {
+    .layout {
+        flex-direction: column;
+    }
+    .sidebar {
+        width: 100%;
+    }
+    .grid {
+        grid-template-columns: 1fr;
+    }
+}
