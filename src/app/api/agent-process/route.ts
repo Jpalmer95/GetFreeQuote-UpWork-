@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getAuthenticatedUser } from '@/lib/serverAuth';
-import { Job, AgentConfig } from '@/types';
+import { Job, AgentConfig, EstimatingTemplate, EstimatingLineItem } from '@/types';
 import {
-    JobRow, AgentConfigRow,
-    mapJobRow, mapAgentConfigRow,
+    JobRow, AgentConfigRow, VendorProfileRow, EstimatingTemplateRow,
+    mapJobRow, mapAgentConfigRow, mapVendorProfileRow, mapEstimatingTemplateRow,
     customerAgentId, vendorAgentId, SYSTEM_AGENT_ID,
     estimateHours,
 } from '@/services/serverMappers';
@@ -17,6 +17,95 @@ async function addMessage(jobId: string, senderId: string, senderType: string, c
         content,
         is_agent_action: true,
     });
+}
+
+function calculateFromTemplate(template: EstimatingTemplate, job: Job, hours: number): { amount: number; breakdown: string[] } {
+    const breakdown: string[] = [];
+    let total = 0;
+    const sqft = job.squareFootage ? parseFloat(String(job.squareFootage).replace(/[^0-9.]/g, '')) : 0;
+
+    for (const item of template.lineItems) {
+        let itemTotal = 0;
+        switch (item.pricingModel) {
+            case 'hourly':
+                itemTotal = (item.rate || template.laborRate) * hours;
+                breakdown.push(`${item.name}: ${hours}hrs x $${item.rate || template.laborRate}/hr = $${Math.round(itemTotal)}`);
+                break;
+            case 'per_unit': {
+                const units = sqft > 0 ? sqft : hours;
+                itemTotal = item.rate * units;
+                breakdown.push(`${item.name}: ${units} ${item.unit || 'units'} x $${item.rate} = $${Math.round(itemTotal)}`);
+                break;
+            }
+            case 'flat_fee':
+                itemTotal = item.rate;
+                breakdown.push(`${item.name}: $${item.rate} (flat)`);
+                break;
+            case 'tiered': {
+                const qty = sqft > 0 ? sqft : hours;
+                const tier = (item.tiers || []).find(t => qty >= t.minQty && qty <= t.maxQty);
+                itemTotal = tier ? tier.rate * qty : item.rate * qty;
+                breakdown.push(`${item.name}: ${qty} units @ tier rate = $${Math.round(itemTotal)}`);
+                break;
+            }
+            default:
+                itemTotal = item.rate * hours;
+                breakdown.push(`${item.name}: $${Math.round(itemTotal)}`);
+        }
+
+        const markup = item.materialMarkupPercent ?? template.materialMarkupPercent;
+        if (markup > 0 && item.pricingModel !== 'flat_fee') {
+            const markupAmt = itemTotal * (markup / 100);
+            itemTotal += markupAmt;
+            breakdown.push(`  + ${markup}% material markup: $${Math.round(markupAmt)}`);
+        }
+
+        if (item.minimumCharge && itemTotal < item.minimumCharge) {
+            itemTotal = item.minimumCharge;
+            breakdown.push(`  (minimum charge applied: $${item.minimumCharge})`);
+        }
+
+        total += itemTotal;
+    }
+
+    if (total < template.minimumCharge) {
+        total = template.minimumCharge;
+        breakdown.push(`Minimum charge applied: $${template.minimumCharge}`);
+    }
+
+    return { amount: Math.round(total), breakdown };
+}
+
+async function findBestTemplate(vendorUserId: string, job: Job): Promise<EstimatingTemplate | null> {
+    const { data: profileData } = await supabaseAdmin
+        .from('vendor_profiles')
+        .select('id')
+        .eq('user_id', vendorUserId)
+        .maybeSingle();
+
+    if (!profileData) return null;
+
+    const { data: templateData } = await supabaseAdmin
+        .from('estimating_templates')
+        .select('*')
+        .eq('vendor_profile_id', profileData.id);
+
+    if (!templateData || templateData.length === 0) return null;
+
+    const templates = templateData.map((r) => mapEstimatingTemplateRow(r as EstimatingTemplateRow));
+
+    const exactMatch = templates.find(t =>
+        t.industryVertical === job.industryVertical && t.serviceCategory === job.subcategory
+    );
+    if (exactMatch) return exactMatch;
+
+    const industryMatch = templates.find(t => t.industryVertical === job.industryVertical && t.isDefault);
+    if (industryMatch) return industryMatch;
+
+    const defaultTemplate = templates.find(t => t.isDefault);
+    if (defaultTemplate) return defaultTemplate;
+
+    return templates[0];
 }
 
 async function logAction(jobId: string, userId: string, actionType: string, summary: string, details: Record<string, unknown> = {}, agentConfigId?: string): Promise<void> {
@@ -242,29 +331,54 @@ export async function POST(request: NextRequest) {
                 `A new ${job.industryVertical} project "${job.title}" matches your expertise.`, false, '/vendor');
 
             if (vc.autoQuote && vc.baseRate) {
-                const baseRate = vc.baseRate;
-                const urgencyMult = job.urgency === 'urgent' ? 1.5 : job.urgency === 'within_week' ? 1.25 : 1.0;
                 const hours = estimateHours(job);
-                const amount = Math.round(baseRate * hours * urgencyMult);
+                const urgencyMult = job.urgency === 'urgent' ? 1.5 : job.urgency === 'within_week' ? 1.25 : 1.0;
+
+                const template = await findBestTemplate(vc.userId, job);
+                let amount: number;
+                let detailsText: string;
+                let templateName: string | undefined;
+
+                if (template && template.lineItems.length > 0) {
+                    const result = calculateFromTemplate(template, job, hours);
+                    amount = Math.round(result.amount * urgencyMult);
+                    templateName = template.name;
+                    detailsText = `Estimate from template "${template.name}" for ${job.industryVertical} / ${job.subcategory}.\n` +
+                        result.breakdown.join('\n') +
+                        (urgencyMult > 1 ? `\nUrgency multiplier: ${urgencyMult}x` : '') +
+                        `\nTotal: $${amount}`;
+                } else {
+                    const baseRate = vc.baseRate;
+                    amount = Math.round(baseRate * hours * urgencyMult);
+                    detailsText = `Automated estimate for ${job.industryVertical} / ${job.subcategory}. Based on vendor rate of $${baseRate}/hr. ${job.urgency === 'urgent' ? 'Rush fee included. ' : ''}This is a preliminary estimate.`;
+                }
+
                 const estimatedDays = Math.max(1, Math.ceil(hours / 8));
+
+                const { data: profileRow } = await supabaseAdmin
+                    .from('vendor_profiles')
+                    .select('company_name')
+                    .eq('user_id', vc.userId)
+                    .maybeSingle();
+                const vendorDisplayName = profileRow?.company_name || 'Vendor Agent';
 
                 const { data: insertedQuote, error: quoteError } = await supabaseAdmin.from('quotes').insert({
                     job_id: job.id,
                     vendor_id: vc.userId,
-                    vendor_name: 'Vendor Agent',
+                    vendor_name: vendorDisplayName,
                     amount,
                     estimated_days: estimatedDays,
-                    details: `Automated estimate for ${job.industryVertical} / ${job.subcategory}. Based on vendor rate of $${baseRate}/hr. Estimated timeline: ${estimatedDays} business day(s). ${job.urgency === 'urgent' ? 'Rush fee included. ' : ''}This is a preliminary estimate.`,
+                    details: detailsText,
                     status: 'PENDING',
                 }).select('id').single();
 
                 if (!quoteError && insertedQuote) {
                     await addMessage(job.id, vendorAgentId(vc.userId), 'vendor_agent',
-                        `Automated quote submitted: $${amount} for an estimated ${estimatedDays} day(s).`);
+                        `Automated quote submitted: $${amount} for an estimated ${estimatedDays} day(s).${templateName ? ` (Using template: ${templateName})` : ''}`);
 
                     await logAction(job.id, vc.userId, 'auto_quote',
-                        `Auto-generated quote: $${amount} / ${estimatedDays} day(s)`,
-                        { amount, estimatedDays, baseRate, urgencyMult, hours }, vc.id);
+                        `Auto-generated quote: $${amount} / ${estimatedDays} day(s)${templateName ? ` (template: ${templateName})` : ''}`,
+                        { amount, estimatedDays, baseRate: vc.baseRate, urgencyMult, hours, templateName }, vc.id);
 
                     if (customerConfig?.autoApproveBelow && amount <= customerConfig.autoApproveBelow) {
                         await supabaseAdmin.from('quotes')

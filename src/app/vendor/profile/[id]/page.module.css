@@ -1,0 +1,212 @@
+.container {
+    min-height: 100vh;
+    background: var(--background);
+    padding-top: 80px;
+}
+
+.content {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.backLink {
+    display: inline-block;
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.5);
+    text-decoration: none;
+    margin-bottom: 1.5rem;
+    transition: color var(--dur-base) ease;
+}
+.backLink:hover { color: var(--primary-light); }
+
+.profileHeader {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+    margin-bottom: 2rem;
+}
+
+.avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: var(--radius-md);
+    background: var(--surface-200);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary-light);
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.headerInfo { flex: 1; }
+
+.companyName {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--foreground);
+    margin-bottom: 0.25rem;
+}
+
+.meta {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    margin-top: 0.5rem;
+}
+
+.metaItem {
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.5);
+}
+
+.metaLabel {
+    color: rgba(255,255,255,0.35);
+    margin-right: 0.35rem;
+}
+
+.badges {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 0.75rem;
+}
+
+.verifiedBadge {
+    padding: 0.3rem 0.7rem;
+    border-radius: var(--radius-full);
+    font-size: 0.72rem;
+    font-weight: 600;
+    background: rgba(34, 197, 94, 0.15);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    color: var(--accent);
+}
+
+.ratingBadge {
+    padding: 0.3rem 0.7rem;
+    border-radius: var(--radius-full);
+    font-size: 0.72rem;
+    font-weight: 600;
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    color: var(--accent-amber);
+}
+
+.card {
+    padding: 1.5rem;
+    border-radius: var(--radius-md);
+    margin-bottom: 1.5rem;
+}
+
+.cardTitle {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--foreground);
+    margin-bottom: 0.75rem;
+}
+
+.description {
+    font-size: 0.9rem;
+    line-height: 1.65;
+    color: rgba(255,255,255,0.7);
+}
+
+.tagList {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.tag {
+    padding: 0.3rem 0.7rem;
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    font-weight: 500;
+    border: 1px solid var(--border-subtle);
+    color: rgba(255,255,255,0.6);
+}
+
+.detailGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.detailItem {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.detailLabel {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: rgba(255,255,255,0.35);
+}
+
+.detailValue {
+    font-size: 0.88rem;
+    color: rgba(255,255,255,0.7);
+}
+
+.reviewCard {
+    padding: 1rem;
+    border-radius: var(--radius-sm);
+    background: var(--surface-100);
+    border: 1px solid var(--border-subtle);
+    margin-bottom: 0.75rem;
+}
+
+.reviewHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.reviewerName {
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: var(--foreground);
+}
+
+.stars {
+    color: var(--accent-amber);
+    font-size: 0.85rem;
+}
+
+.reviewComment {
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: rgba(255,255,255,0.6);
+}
+
+.emptyMsg {
+    font-size: 0.88rem;
+    color: rgba(255,255,255,0.4);
+    text-align: center;
+    padding: 2rem 0;
+}
+
+.notFound {
+    text-align: center;
+    padding: 4rem 2rem;
+}
+
+.notFoundTitle {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--foreground);
+    margin-bottom: 0.5rem;
+}

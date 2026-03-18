@@ -52,7 +52,12 @@ export default function VendorDashboard() {
 
             <div className={styles.header}>
                 <h2 className="gradient-text">Vendor Portal</h2>
-                <Link href="/agent-settings" className={styles.settingsLink}>Agent Settings</Link>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    <Link href="/vendor/profile" className={styles.settingsLink}>Company Profile</Link>
+                    <Link href="/vendor/estimating" className={styles.settingsLink}>Estimating</Link>
+                    <Link href="/vendor/team" className={styles.settingsLink}>Team</Link>
+                    <Link href="/agent-settings" className={styles.settingsLink}>Agent Settings</Link>
+                </div>
             </div>
 
             <div className={styles.statsBar}>

@@ -1,8 +1,10 @@
 import { supabase } from '@/lib/supabase';
-import { Job, Quote, Message, AgentConfig, AgentAction, Notification, IndustryVertical } from '@/types';
+import { Job, Quote, Message, AgentConfig, AgentAction, Notification, IndustryVertical, VendorProfile, EstimatingTemplate, TeamMember, VendorReview } from '@/types';
 import {
     JobRow, AgentConfigRow, QuoteRow, MessageRow, AgentActionRow, NotificationRow,
-    mapJobRow, mapAgentConfigRow,
+    VendorProfileRow, EstimatingTemplateRow, TeamMemberRow, VendorReviewRow,
+    mapJobRow, mapAgentConfigRow, mapVendorProfileRow, mapEstimatingTemplateRow,
+    mapTeamMemberRow, mapVendorReviewRow,
 } from './serverMappers';
 
 export const db = {
@@ -321,6 +323,185 @@ export const db = {
             .eq('user_id', userId)
             .eq('read', false);
         if (error) console.error('Error marking all notifications read:', error);
+    },
+
+    getVendorProfile: async (userId: string): Promise<VendorProfile | undefined> => {
+        const { data, error } = await supabase
+            .from('vendor_profiles')
+            .select('*')
+            .eq('user_id', userId)
+            .maybeSingle();
+        if (error || !data) return undefined;
+        return mapVendorProfileRow(data as VendorProfileRow);
+    },
+
+    getVendorProfileById: async (id: string): Promise<VendorProfile | undefined> => {
+        const { data, error } = await supabase
+            .from('vendor_profiles')
+            .select('*')
+            .eq('id', id)
+            .maybeSingle();
+        if (error || !data) return undefined;
+        return mapVendorProfileRow(data as VendorProfileRow);
+    },
+
+    upsertVendorProfile: async (profile: Omit<VendorProfile, 'id' | 'createdAt' | 'updatedAt' | 'isVerified' | 'avgRating' | 'totalReviews'>): Promise<VendorProfile> => {
+        const existing = await db.getVendorProfile(profile.userId);
+        const payload = {
+            user_id: profile.userId,
+            company_name: profile.companyName,
+            company_description: profile.companyDescription,
+            contact_email: profile.contactEmail,
+            contact_phone: profile.contactPhone,
+            website: profile.website,
+            logo_url: profile.logoUrl,
+            service_areas: profile.serviceAreas,
+            industries: profile.industries,
+            specialties: profile.specialties,
+            certifications: profile.certifications,
+            insurance_details: profile.insuranceDetails,
+            insurance_expiry: profile.insuranceExpiry,
+            license_number: profile.licenseNumber,
+            year_established: profile.yearEstablished,
+            team_size: profile.teamSize,
+            portfolio_images: profile.portfolioImages,
+            portfolio_descriptions: profile.portfolioDescriptions,
+            updated_at: new Date().toISOString(),
+        };
+
+        if (existing) {
+            const { data, error } = await supabase
+                .from('vendor_profiles')
+                .update(payload)
+                .eq('id', existing.id)
+                .select()
+                .single();
+            if (error) throw error;
+            return mapVendorProfileRow(data as VendorProfileRow);
+        } else {
+            const { data, error } = await supabase
+                .from('vendor_profiles')
+                .insert(payload)
+                .select()
+                .single();
+            if (error) throw error;
+            return mapVendorProfileRow(data as VendorProfileRow);
+        }
+    },
+
+    getEstimatingTemplates: async (vendorProfileId: string): Promise<EstimatingTemplate[]> => {
+        const { data, error } = await supabase
+            .from('estimating_templates')
+            .select('*')
+            .eq('vendor_profile_id', vendorProfileId)
+            .order('created_at', { ascending: true });
+        if (error) {
+            console.error('Error fetching estimating templates:', error);
+            return [];
+        }
+        return data.map((row) => mapEstimatingTemplateRow(row as EstimatingTemplateRow));
+    },
+
+    createEstimatingTemplate: async (template: Omit<EstimatingTemplate, 'id' | 'createdAt' | 'updatedAt'>): Promise<EstimatingTemplate> => {
+        const { data, error } = await supabase.from('estimating_templates').insert({
+            vendor_profile_id: template.vendorProfileId,
+            name: template.name,
+            service_category: template.serviceCategory,
+            industry_vertical: template.industryVertical,
+            line_items: template.lineItems,
+            labor_rate: template.laborRate,
+            material_markup_percent: template.materialMarkupPercent,
+            minimum_charge: template.minimumCharge,
+            is_default: template.isDefault,
+        }).select().single();
+        if (error) throw error;
+        return mapEstimatingTemplateRow(data as EstimatingTemplateRow);
+    },
+
+    updateEstimatingTemplate: async (id: string, template: Partial<Omit<EstimatingTemplate, 'id' | 'createdAt' | 'updatedAt' | 'vendorProfileId'>>): Promise<EstimatingTemplate> => {
+        const payload: Record<string, unknown> = { updated_at: new Date().toISOString() };
+        if (template.name !== undefined) payload.name = template.name;
+        if (template.serviceCategory !== undefined) payload.service_category = template.serviceCategory;
+        if (template.industryVertical !== undefined) payload.industry_vertical = template.industryVertical;
+        if (template.lineItems !== undefined) payload.line_items = template.lineItems;
+        if (template.laborRate !== undefined) payload.labor_rate = template.laborRate;
+        if (template.materialMarkupPercent !== undefined) payload.material_markup_percent = template.materialMarkupPercent;
+        if (template.minimumCharge !== undefined) payload.minimum_charge = template.minimumCharge;
+        if (template.isDefault !== undefined) payload.is_default = template.isDefault;
+
+        const { data, error } = await supabase
+            .from('estimating_templates')
+            .update(payload)
+            .eq('id', id)
+            .select()
+            .single();
+        if (error) throw error;
+        return mapEstimatingTemplateRow(data as EstimatingTemplateRow);
+    },
+
+    deleteEstimatingTemplate: async (id: string): Promise<void> => {
+        const { error } = await supabase.from('estimating_templates').delete().eq('id', id);
+        if (error) throw error;
+    },
+
+    getTeamMembers: async (vendorProfileId: string): Promise<TeamMember[]> => {
+        const { data, error } = await supabase
+            .from('team_members')
+            .select('*')
+            .eq('vendor_profile_id', vendorProfileId)
+            .order('invited_at', { ascending: true });
+        if (error) {
+            console.error('Error fetching team members:', error);
+            return [];
+        }
+        return data.map((row) => mapTeamMemberRow(row as TeamMemberRow));
+    },
+
+    addTeamMember: async (member: Omit<TeamMember, 'id' | 'invitedAt' | 'acceptedAt'>): Promise<TeamMember> => {
+        const { data, error } = await supabase.from('team_members').insert({
+            vendor_profile_id: member.vendorProfileId,
+            user_id: member.userId,
+            email: member.email,
+            name: member.name,
+            role: member.role,
+            is_active: member.isActive,
+        }).select().single();
+        if (error) throw error;
+        return mapTeamMemberRow(data as TeamMemberRow);
+    },
+
+    updateTeamMember: async (id: string, updates: Partial<Pick<TeamMember, 'name' | 'role' | 'isActive'>>): Promise<TeamMember> => {
+        const payload: Record<string, unknown> = {};
+        if (updates.name !== undefined) payload.name = updates.name;
+        if (updates.role !== undefined) payload.role = updates.role;
+        if (updates.isActive !== undefined) payload.is_active = updates.isActive;
+
+        const { data, error } = await supabase
+            .from('team_members')
+            .update(payload)
+            .eq('id', id)
+            .select()
+            .single();
+        if (error) throw error;
+        return mapTeamMemberRow(data as TeamMemberRow);
+    },
+
+    removeTeamMember: async (id: string): Promise<void> => {
+        const { error } = await supabase.from('team_members').delete().eq('id', id);
+        if (error) throw error;
+    },
+
+    getVendorReviews: async (vendorProfileId: string): Promise<VendorReview[]> => {
+        const { data, error } = await supabase
+            .from('vendor_reviews')
+            .select('*')
+            .eq('vendor_profile_id', vendorProfileId)
+            .order('created_at', { ascending: false });
+        if (error) {
+            console.error('Error fetching vendor reviews:', error);
+            return [];
+        }
+        return data.map((row) => mapVendorReviewRow(row as VendorReviewRow));
     },
 };
 

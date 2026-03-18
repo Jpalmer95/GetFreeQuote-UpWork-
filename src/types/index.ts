@@ -158,6 +158,87 @@ export interface AgentAction {
     createdAt: string;
 }
 
+export type PricingModel = 'hourly' | 'per_unit' | 'flat_fee' | 'tiered' | 'formula';
+
+export interface EstimatingLineItem {
+    name: string;
+    description?: string;
+    pricingModel: PricingModel;
+    rate: number;
+    unit?: string;
+    materialMarkupPercent?: number;
+    minimumCharge?: number;
+    tiers?: { minQty: number; maxQty: number; rate: number }[];
+    formula?: string;
+}
+
+export interface EstimatingTemplate {
+    id: string;
+    vendorProfileId: string;
+    name: string;
+    serviceCategory: string;
+    industryVertical: IndustryVertical;
+    lineItems: EstimatingLineItem[];
+    laborRate: number;
+    materialMarkupPercent: number;
+    minimumCharge: number;
+    isDefault: boolean;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface VendorProfile {
+    id: string;
+    userId: string;
+    companyName: string;
+    companyDescription: string;
+    contactEmail: string;
+    contactPhone: string;
+    website?: string;
+    logoUrl?: string;
+    serviceAreas: string[];
+    industries: IndustryVertical[];
+    specialties: string[];
+    certifications: string[];
+    insuranceDetails?: string;
+    insuranceExpiry?: string;
+    licenseNumber?: string;
+    yearEstablished?: number;
+    teamSize: number;
+    portfolioImages: string[];
+    portfolioDescriptions: string[];
+    isVerified: boolean;
+    avgRating?: number;
+    totalReviews: number;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export type TeamMemberRole = 'admin' | 'estimator' | 'field_worker';
+
+export interface TeamMember {
+    id: string;
+    vendorProfileId: string;
+    userId?: string;
+    email: string;
+    name: string;
+    role: TeamMemberRole;
+    isActive: boolean;
+    invitedAt: string;
+    acceptedAt?: string;
+}
+
+export interface VendorReview {
+    id: string;
+    vendorProfileId: string;
+    reviewerId: string;
+    reviewerName: string;
+    jobId: string;
+    rating: number;
+    comment: string;
+    createdAt: string;
+}
+
 export type NotificationType =
     | 'quote_ready'
     | 'approval_needed'

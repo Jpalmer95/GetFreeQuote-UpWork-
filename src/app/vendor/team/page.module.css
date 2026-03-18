@@ -1,0 +1,291 @@
+.container {
+    min-height: 100vh;
+    background: var(--background);
+    padding-top: 80px;
+}
+
+.pageHeader {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem 2rem 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.backLink {
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.5);
+    text-decoration: none;
+    transition: color var(--dur-base) ease;
+}
+.backLink:hover { color: var(--primary-light); }
+
+.content {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 1.5rem 2rem 3rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.card {
+    padding: 1.5rem;
+    border-radius: var(--radius-md);
+}
+
+.cardTitle {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--foreground);
+    margin-bottom: 0.25rem;
+}
+
+.cardDesc {
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.45);
+    margin-bottom: 1rem;
+}
+
+.memberList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.memberCard {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.25rem;
+    border-radius: var(--radius-sm);
+    background: var(--surface-100);
+    border: 1px solid var(--border-subtle);
+    transition: border-color var(--dur-base) ease;
+}
+.memberCard:hover { border-color: var(--border-mid); }
+
+.memberInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.memberName {
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--foreground);
+}
+
+.memberEmail {
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.45);
+}
+
+.memberMeta {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 0.25rem;
+}
+
+.roleBadge {
+    padding: 0.2rem 0.55rem;
+    border-radius: var(--radius-full);
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.roleAdmin {
+    background: rgba(168, 85, 247, 0.15);
+    border: 1px solid rgba(168, 85, 247, 0.3);
+    color: #c084fc;
+}
+
+.roleEstimator {
+    background: rgba(59, 130, 246, 0.15);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    color: var(--primary-light);
+}
+
+.roleFieldWorker {
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    color: var(--accent-amber);
+}
+
+.statusBadge {
+    padding: 0.2rem 0.55rem;
+    border-radius: var(--radius-full);
+    font-size: 0.68rem;
+    font-weight: 600;
+}
+
+.statusActive {
+    background: rgba(34, 197, 94, 0.15);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    color: var(--accent);
+}
+
+.statusInactive {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: var(--accent-red);
+}
+
+.statusPending {
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    color: var(--accent-amber);
+}
+
+.memberActions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.editBtn {
+    padding: 0.35rem 0.75rem;
+    border-radius: var(--radius-sm);
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.25);
+    color: var(--primary-light);
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all var(--dur-base) ease;
+}
+.editBtn:hover { background: rgba(59, 130, 246, 0.2); }
+
+.removeBtn {
+    padding: 0.35rem 0.75rem;
+    border-radius: var(--radius-sm);
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    color: var(--accent-red);
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all var(--dur-base) ease;
+}
+.removeBtn:hover { background: rgba(239, 68, 68, 0.2); }
+
+.formGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.formGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: rgba(255,255,255,0.5);
+}
+
+.input {
+    background: var(--surface-100);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 0.6rem 0.75rem;
+    color: var(--foreground);
+    font-size: 0.88rem;
+    transition: border-color var(--dur-base) ease;
+}
+.input:focus { outline: none; border-color: var(--primary); }
+
+.select {
+    composes: input;
+    cursor: pointer;
+}
+
+.btnRow {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+    margin-top: 1rem;
+}
+
+.addBtn {
+    padding: 0.55rem 1.5rem;
+    border-radius: var(--radius-sm);
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.25);
+    color: var(--primary-light);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--dur-base) ease;
+}
+.addBtn:hover { background: rgba(59, 130, 246, 0.2); }
+
+.saveBtn {
+    padding: 0.55rem 1.5rem;
+    border-radius: var(--radius-sm);
+    background: var(--primary);
+    border: none;
+    color: white;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all var(--dur-base) ease;
+}
+.saveBtn:hover { background: var(--primary-hover); }
+.saveBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.cancelBtn {
+    padding: 0.55rem 1.5rem;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    border: 1px solid var(--border-subtle);
+    color: rgba(255,255,255,0.6);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all var(--dur-base) ease;
+}
+.cancelBtn:hover { border-color: var(--border-mid); }
+
+.emptyMsg {
+    text-align: center;
+    padding: 2rem;
+    color: rgba(255,255,255,0.4);
+    font-size: 0.9rem;
+}
+
+.noProfile {
+    text-align: center;
+    padding: 3rem;
+}
+
+.noProfileTitle {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--foreground);
+    margin-bottom: 0.5rem;
+}
+
+.noProfileDesc {
+    color: rgba(255,255,255,0.5);
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+}
+
+.linkBtn {
+    display: inline-block;
+    padding: 0.55rem 1.5rem;
+    border-radius: var(--radius-sm);
+    background: var(--primary);
+    color: white;
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-decoration: none;
+    transition: all var(--dur-base) ease;
+}
+.linkBtn:hover { background: var(--primary-hover); }

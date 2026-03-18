@@ -24,6 +24,10 @@ src/
     marketplace/           # Public project marketplace (industry/subcategory/tag filters)
     post-job/              # Post a new project form (dynamic fields per industry)
     vendor/                # Vendor portal (opportunities feed, pending reviews)
+      profile/             # Vendor profile editor (company info, certs, insurance, portfolio)
+        [id]/              # Public-facing vendor profile view with reviews
+      estimating/          # Estimating template management (hourly, per-unit, flat, tiered, formula)
+      team/                # Team member management (admin, estimator, field_worker roles)
     agent-settings/        # AI Agent configuration page
     api/
       agent-process/       # Server-side AI agent orchestration (POST) — vendor matching with location, capacity, specialty, budget scoring
@@ -60,6 +64,10 @@ The platform uses an industry-agnostic data model with AI agent infrastructure:
 - **Quotes**: vendor bids with amount, estimated days, details, accept/reject workflow
 - **Messages**: conversation thread per job with `senderType` (user/vendor/customer_agent/vendor_agent/system)
 - **Agent Configs**: per-user AI agent settings (role, auto-respond, auto-quote, budget thresholds, industries, specialties, service area, max active jobs/capacity, escalation triggers, communication style)
+- **Vendor Profiles**: company info, certifications, insurance, service areas, portfolio, team size, avg rating, verified status
+- **Estimating Templates**: per-vendor service catalogs with line items supporting hourly, per-unit, flat fee, tiered, and formula pricing models
+- **Team Members**: multi-user company accounts with admin, estimator, field_worker roles
+- **Vendor Reviews**: rating/comment structure (data model only, collection flow deferred)
 - **Agent Actions**: audit log of all AI agent operations (scope_analysis, job_broadcast, vendor_match, auto_quote, clarification, escalation, etc.)
 - **Notifications**: prioritized alerts (low/medium/high/urgent) with action_required flag, types: quote_ready, approval_needed, scope_change, agent_summary, job_match, negotiation_update
 

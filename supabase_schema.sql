@@ -293,3 +293,171 @@ create policy "Users can insert own notifications." on public.notifications
 
 -- Note: System/agent notifications for other users are inserted server-side via
 -- supabaseAdmin (service_role), which bypasses RLS.
+
+
+-- VENDOR PROFILES
+create table public.vendor_profiles (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references public.profiles(id) not null unique,
+  company_name text not null,
+  company_description text not null default '',
+  contact_email text not null default '',
+  contact_phone text not null default '',
+  website text,
+  logo_url text,
+  service_areas text[] default '{}',
+  industries text[] default '{}',
+  specialties text[] default '{}',
+  certifications text[] default '{}',
+  insurance_details text,
+  insurance_expiry date,
+  license_number text,
+  year_established integer,
+  team_size integer default 1,
+  portfolio_images text[] default '{}',
+  portfolio_descriptions text[] default '{}',
+  is_verified boolean default false,
+  avg_rating numeric default 0,
+  total_reviews integer default 0,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.vendor_profiles enable row level security;
+
+create policy "Vendor profiles are viewable by everyone." on public.vendor_profiles
+  for select using (true);
+
+create policy "Users can insert own vendor profile." on public.vendor_profiles
+  for insert with check (auth.uid() = user_id);
+
+create policy "Users can update own vendor profile." on public.vendor_profiles
+  for update using (auth.uid() = user_id);
+
+
+-- ESTIMATING TEMPLATES
+create table public.estimating_templates (
+  id uuid default gen_random_uuid() primary key,
+  vendor_profile_id uuid references public.vendor_profiles(id) not null,
+  name text not null,
+  service_category text not null,
+  industry_vertical text not null default 'Other',
+  line_items jsonb not null default '[]',
+  labor_rate numeric not null default 0,
+  material_markup_percent numeric not null default 0,
+  minimum_charge numeric not null default 0,
+  is_default boolean default false,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.estimating_templates enable row level security;
+
+create policy "Estimating templates are viewable by owner." on public.estimating_templates
+  for select using (
+    exists (
+      select 1 from public.vendor_profiles
+      where public.vendor_profiles.id = vendor_profile_id
+      and public.vendor_profiles.user_id = auth.uid()
+    )
+  );
+
+create policy "Users can insert own estimating templates." on public.estimating_templates
+  for insert with check (
+    exists (
+      select 1 from public.vendor_profiles
+      where public.vendor_profiles.id = vendor_profile_id
+      and public.vendor_profiles.user_id = auth.uid()
+    )
+  );
+
+create policy "Users can update own estimating templates." on public.estimating_templates
+  for update using (
+    exists (
+      select 1 from public.vendor_profiles
+      where public.vendor_profiles.id = vendor_profile_id
+      and public.vendor_profiles.user_id = auth.uid()
+    )
+  );
+
+create policy "Users can delete own estimating templates." on public.estimating_templates
+  for delete using (
+    exists (
+      select 1 from public.vendor_profiles
+      where public.vendor_profiles.id = vendor_profile_id
+      and public.vendor_profiles.user_id = auth.uid()
+    )
+  );
+
+
+-- TEAM MEMBERS
+create table public.team_members (
+  id uuid default gen_random_uuid() primary key,
+  vendor_profile_id uuid references public.vendor_profiles(id) not null,
+  user_id uuid references public.profiles(id),
+  email text not null,
+  name text not null,
+  role text check (role in ('admin', 'estimator', 'field_worker')) not null default 'field_worker',
+  is_active boolean default true,
+  invited_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  accepted_at timestamp with time zone
+);
+
+alter table public.team_members enable row level security;
+
+create policy "Team members viewable by vendor owner." on public.team_members
+  for select using (
+    exists (
+      select 1 from public.vendor_profiles
+      where public.vendor_profiles.id = vendor_profile_id
+      and public.vendor_profiles.user_id = auth.uid()
+    )
+  );
+
+create policy "Vendor owner can insert team members." on public.team_members
+  for insert with check (
+    exists (
+      select 1 from public.vendor_profiles
+      where public.vendor_profiles.id = vendor_profile_id
+      and public.vendor_profiles.user_id = auth.uid()
+    )
+  );
+
+create policy "Vendor owner can update team members." on public.team_members
+  for update using (
+    exists (
+      select 1 from public.vendor_profiles
+      where public.vendor_profiles.id = vendor_profile_id
+      and public.vendor_profiles.user_id = auth.uid()
+    )
+  );
+
+create policy "Vendor owner can delete team members." on public.team_members
+  for delete using (
+    exists (
+      select 1 from public.vendor_profiles
+      where public.vendor_profiles.id = vendor_profile_id
+      and public.vendor_profiles.user_id = auth.uid()
+    )
+  );
+
+
+-- VENDOR REVIEWS (placeholder structure, review collection flow is out of scope)
+create table public.vendor_reviews (
+  id uuid default gen_random_uuid() primary key,
+  vendor_profile_id uuid references public.vendor_profiles(id) not null,
+  reviewer_id uuid references public.profiles(id) not null,
+  reviewer_name text not null,
+  job_id uuid references public.jobs(id) not null,
+  rating integer not null check (rating >= 1 and rating <= 5),
+  comment text not null default '',
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.vendor_reviews enable row level security;
+
+create policy "Reviews are viewable by everyone." on public.vendor_reviews
+  for select using (true);
+
+create policy "Users can insert reviews for completed jobs." on public.vendor_reviews
+  for insert with check (auth.uid() = reviewer_id);
