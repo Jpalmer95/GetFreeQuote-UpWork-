@@ -793,8 +793,8 @@ end;
 $$ language plpgsql security definer;
 
 
-revoke execute on function public.process_donation from anon, authenticated;
-revoke execute on function public.record_community_expense from anon, authenticated;
+revoke execute on function public.process_donation(uuid, uuid, text, numeric, boolean, text, text) from public;
+revoke execute on function public.record_community_expense(uuid, uuid, numeric, text) from public;
 
 -- Cross-reference: Link jobs to community projects for marketplace integration
 alter table public.jobs add column community_project_id uuid references public.community_projects(id);
