@@ -132,8 +132,9 @@ export default function EstimatingPage() {
     };
 
     const handleSave = async () => {
-        if (!canCreate && isNew) return;
-        if (!canEditTemplate && !isNew) return;
+        const isCreating = !editing;
+        if (isCreating && !canCreate) return;
+        if (!isCreating && !canEditTemplate) return;
         if (!hasVendorContext || !form.name.trim()) return;
         setSaving(true);
         try {
