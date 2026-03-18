@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { EstimatingTemplate, EstimatingLineItem, PricingModel, INDUSTRY_VERTICALS, INDUSTRY_SUBCATEGORIES, KnownIndustryVertical, IndustryVertical } from '@/types';
 import { db } from '@/services/db';
+import { hasPermission, VendorRole, getRoleLabel } from '@/services/vendorAuth';
 import Navbar from '@/components/Navbar';
 import styles from './page.module.css';
 
@@ -28,6 +29,10 @@ export default function EstimatingPage() {
     const [editing, setEditing] = useState<EstimatingTemplate | null>(null);
     const [isNew, setIsNew] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [userRole, setUserRole] = useState<VendorRole>('owner');
+    const canCreate = hasPermission(userRole, 'estimating.create');
+    const canEditTemplate = hasPermission(userRole, 'estimating.edit');
+    const canDelete = hasPermission(userRole, 'estimating.delete');
 
     const [form, setForm] = useState({
         name: '',
@@ -44,10 +49,11 @@ export default function EstimatingPage() {
         if (!isLoading && !user) { router.push('/login'); return; }
         if (!user) return;
         const load = async () => {
-            const profile = await db.getVendorProfile(user.id);
-            if (profile) {
-                setVendorProfileId(profile.id);
-                const tpls = await db.getEstimatingTemplates(profile.id);
+            const result = await db.getVendorProfileByOwnerOrTeam(user.id, user.email || '');
+            if (result) {
+                setVendorProfileId(result.profile.id);
+                setUserRole(result.role);
+                const tpls = await db.getEstimatingTemplates(result.profile.id);
                 setTemplates(tpls);
             }
         };
@@ -126,6 +132,8 @@ export default function EstimatingPage() {
     };
 
     const handleSave = async () => {
+        if (!canCreate && isNew) return;
+        if (!canEditTemplate && !isNew) return;
         if (!vendorProfileId || !form.name.trim()) return;
         setSaving(true);
         try {
@@ -211,9 +219,16 @@ export default function EstimatingPage() {
             <div className={styles.content}>
                 {!isNew && (
                     <>
-                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                            <button className={styles.createBtn} onClick={startCreate}>+ New Template</button>
-                        </div>
+                        {canCreate && (
+                            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                <button className={styles.createBtn} onClick={startCreate}>+ New Template</button>
+                            </div>
+                        )}
+                        {userRole !== 'owner' && (
+                            <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', marginBottom: '0.5rem' }}>
+                                Viewing as {getRoleLabel(userRole)}
+                            </div>
+                        )}
 
                         {templates.length === 0 ? (
                             <div className={`glass-panel ${styles.card}`}>
@@ -234,8 +249,8 @@ export default function EstimatingPage() {
                                                 </div>
                                             </div>
                                             <div className={styles.templateActions}>
-                                                <button className={styles.editBtn} onClick={() => startEdit(t)}>Edit</button>
-                                                <button className={styles.deleteBtn} onClick={() => handleDelete(t.id)}>Delete</button>
+                                                {canEditTemplate && <button className={styles.editBtn} onClick={() => startEdit(t)}>Edit</button>}
+                                                {canDelete && <button className={styles.deleteBtn} onClick={() => handleDelete(t.id)}>Delete</button>}
                                             </div>
                                         </div>
                                         <div className={styles.lineItemSummary}>

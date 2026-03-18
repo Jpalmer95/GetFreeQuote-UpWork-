@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { TeamMember, TeamMemberRole } from '@/types';
 import { db } from '@/services/db';
+import { hasPermission, VendorRole, getRoleLabel } from '@/services/vendorAuth';
 import Navbar from '@/components/Navbar';
 import styles from './page.module.css';
 
@@ -22,6 +23,8 @@ export default function TeamManagement() {
     const [showForm, setShowForm] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
+    const [userRole, setUserRole] = useState<VendorRole>('owner');
+    const canManage = hasPermission(userRole, 'team.manage');
 
     const [form, setForm] = useState({
         name: '',
@@ -33,10 +36,11 @@ export default function TeamManagement() {
         if (!isLoading && !user) { router.push('/login'); return; }
         if (!user) return;
         const load = async () => {
-            const profile = await db.getVendorProfile(user.id);
-            if (profile) {
-                setVendorProfileId(profile.id);
-                const m = await db.getTeamMembers(profile.id);
+            const result = await db.getVendorProfileByOwnerOrTeam(user.id, user.email || '');
+            if (result) {
+                setVendorProfileId(result.profile.id);
+                setUserRole(result.role);
+                const m = await db.getTeamMembers(result.profile.id);
                 setMembers(m);
             }
         };
@@ -58,7 +62,7 @@ export default function TeamManagement() {
     const cancelForm = () => { setShowForm(false); setEditingId(null); };
 
     const handleSave = async () => {
-        if (!vendorProfileId || !form.name.trim() || !form.email.trim()) return;
+        if (!canManage || !vendorProfileId || !form.name.trim() || !form.email.trim()) return;
         setSaving(true);
         try {
             if (editingId) {
@@ -134,9 +138,11 @@ export default function TeamManagement() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                         <div>
                             <div className={styles.cardTitle}>Team Members</div>
-                            <div className={styles.cardDesc}>Manage your company's team and their roles</div>
+                            <div className={styles.cardDesc}>
+                                {canManage ? 'Manage your company\'s team and their roles' : `Viewing as ${getRoleLabel(userRole)}`}
+                            </div>
                         </div>
-                        {!showForm && <button className={styles.addBtn} onClick={startAdd}>+ Add Member</button>}
+                        {canManage && !showForm && <button className={styles.addBtn} onClick={startAdd}>+ Add Member</button>}
                     </div>
 
                     {showForm && (
@@ -190,13 +196,15 @@ export default function TeamManagement() {
                                             </span>
                                         </div>
                                     </div>
-                                    <div className={styles.memberActions}>
-                                        <button className={styles.editBtn} onClick={() => startEdit(m)}>Edit</button>
-                                        <button className={styles.editBtn} onClick={() => toggleActive(m)}>
-                                            {m.isActive ? 'Deactivate' : 'Activate'}
-                                        </button>
-                                        <button className={styles.removeBtn} onClick={() => handleRemove(m.id)}>Remove</button>
-                                    </div>
+                                    {canManage && (
+                                        <div className={styles.memberActions}>
+                                            <button className={styles.editBtn} onClick={() => startEdit(m)}>Edit</button>
+                                            <button className={styles.editBtn} onClick={() => toggleActive(m)}>
+                                                {m.isActive ? 'Deactivate' : 'Activate'}
+                                            </button>
+                                            <button className={styles.removeBtn} onClick={() => handleRemove(m.id)}>Remove</button>
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                         </div>

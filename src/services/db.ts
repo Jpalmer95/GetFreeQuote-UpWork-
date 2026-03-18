@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { Job, Quote, Message, AgentConfig, AgentAction, Notification, IndustryVertical, VendorProfile, EstimatingTemplate, TeamMember, VendorReview } from '@/types';
+import { Job, Quote, Message, AgentConfig, AgentAction, Notification, IndustryVertical, VendorProfile, EstimatingTemplate, TeamMember, TeamMemberRole, VendorReview } from '@/types';
 import {
     JobRow, AgentConfigRow, QuoteRow, MessageRow, AgentActionRow, NotificationRow,
     VendorProfileRow, EstimatingTemplateRow, TeamMemberRow, VendorReviewRow,
@@ -489,6 +489,63 @@ export const db = {
     removeTeamMember: async (id: string): Promise<void> => {
         const { error } = await supabase.from('team_members').delete().eq('id', id);
         if (error) throw error;
+    },
+
+    getTeamMemberByUserEmail: async (email: string): Promise<(TeamMember & { vendorOwnerId: string })[]> => {
+        const { data, error } = await supabase
+            .from('team_members')
+            .select('*, vendor_profiles!inner(user_id)')
+            .eq('email', email)
+            .eq('is_active', true);
+        if (error) {
+            console.error('Error fetching team membership by email:', error);
+            return [];
+        }
+        return (data || []).map((row) => ({
+            ...mapTeamMemberRow(row as unknown as TeamMemberRow),
+            vendorOwnerId: ((row as Record<string, unknown>).vendor_profiles as Record<string, unknown>).user_id as string,
+        }));
+    },
+
+    getTeamMemberByUserId: async (userId: string): Promise<(TeamMember & { vendorOwnerId: string })[]> => {
+        const { data, error } = await supabase
+            .from('team_members')
+            .select('*, vendor_profiles!inner(user_id)')
+            .eq('user_id', userId)
+            .eq('is_active', true);
+        if (error) {
+            console.error('Error fetching team membership by userId:', error);
+            return [];
+        }
+        return (data || []).map((row) => ({
+            ...mapTeamMemberRow(row as unknown as TeamMemberRow),
+            vendorOwnerId: ((row as Record<string, unknown>).vendor_profiles as Record<string, unknown>).user_id as string,
+        }));
+    },
+
+    acceptTeamInvitation: async (memberId: string, userId: string): Promise<TeamMember> => {
+        const { data, error } = await supabase
+            .from('team_members')
+            .update({ user_id: userId, accepted_at: new Date().toISOString() })
+            .eq('id', memberId)
+            .select()
+            .single();
+        if (error) throw error;
+        return mapTeamMemberRow(data as TeamMemberRow);
+    },
+
+    getVendorProfileByOwnerOrTeam: async (userId: string, userEmail: string): Promise<{ profile: VendorProfile; role: TeamMemberRole | 'owner' } | null> => {
+        const ownerProfile = await db.getVendorProfile(userId);
+        if (ownerProfile) return { profile: ownerProfile, role: 'owner' };
+
+        const memberships = await db.getTeamMemberByUserEmail(userEmail);
+        const accepted = memberships.find(m => m.acceptedAt && m.userId === userId);
+        const pending = accepted || memberships[0];
+        if (!pending) return null;
+
+        const profile = await db.getVendorProfile(pending.vendorOwnerId);
+        if (!profile) return null;
+        return { profile, role: pending.role };
     },
 
     getVendorReviews: async (vendorProfileId: string): Promise<VendorReview[]> => {

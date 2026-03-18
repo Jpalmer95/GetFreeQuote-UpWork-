@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { INDUSTRY_VERTICALS, IndustryVertical } from '@/types';
 import { db } from '@/services/db';
+import { hasPermission, VendorRole, getRoleLabel } from '@/services/vendorAuth';
 import Navbar from '@/components/Navbar';
 import styles from './page.module.css';
 
@@ -14,6 +15,9 @@ export default function VendorProfileEdit() {
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
     const [profileId, setProfileId] = useState<string | null>(null);
+    const [profileOwnerId, setProfileOwnerId] = useState<string | null>(null);
+    const [userRole, setUserRole] = useState<VendorRole>('owner');
+    const canEdit = hasPermission(userRole, 'profile.edit');
 
     const [form, setForm] = useState({
         companyName: '',
@@ -39,9 +43,12 @@ export default function VendorProfileEdit() {
         if (!isLoading && !user) { router.push('/login'); return; }
         if (!user) return;
         const load = async () => {
-            const profile = await db.getVendorProfile(user.id);
-            if (profile) {
-                setProfileId(profile.id);
+            const result = await db.getVendorProfileByOwnerOrTeam(user.id, user.email || '');
+            if (result) {
+                setProfileId(result.profile.id);
+                setProfileOwnerId(result.profile.userId);
+                setUserRole(result.role);
+                const profile = result.profile;
                 setForm({
                     companyName: profile.companyName,
                     companyDescription: profile.companyDescription,
@@ -62,6 +69,7 @@ export default function VendorProfileEdit() {
                     portfolioDescriptions: profile.portfolioDescriptions,
                 });
             } else {
+                setUserRole('owner');
                 setForm(prev => ({ ...prev, contactEmail: user.email || '' }));
             }
         };
@@ -94,14 +102,14 @@ export default function VendorProfileEdit() {
     };
 
     const handleSave = async () => {
-        if (!user) return;
+        if (!user || !canEdit) return;
         if (!form.companyName.trim()) return;
         setSaving(true);
         setSaved(false);
 
         try {
             const result = await db.upsertVendorProfile({
-                userId: user.id,
+                userId: profileOwnerId || user.id,
                 companyName: form.companyName,
                 companyDescription: form.companyDescription,
                 contactEmail: form.contactEmail,
@@ -136,7 +144,14 @@ export default function VendorProfileEdit() {
         <div className={styles.container}>
             <Navbar />
             <header className={styles.pageHeader}>
-                <h2 className="gradient-text">Company Profile</h2>
+                <div>
+                    <h2 className="gradient-text">Company Profile</h2>
+                    {userRole !== 'owner' && (
+                        <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)' }}>
+                            Viewing as {getRoleLabel(userRole)}{!canEdit && ' (read-only)'}
+                        </span>
+                    )}
+                </div>
                 <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
                     {profileId && (
                         <Link href={`/vendor/profile/${profileId}`} className={styles.viewLink}>
@@ -320,12 +335,14 @@ export default function VendorProfileEdit() {
                     </div>
                 </div>
 
-                <div className={styles.saveBar}>
-                    {saved && <span className={styles.savedMsg}>Profile saved</span>}
-                    <button className={styles.saveBtn} onClick={handleSave} disabled={saving || !form.companyName.trim()}>
-                        {saving ? 'Saving...' : 'Save Profile'}
-                    </button>
-                </div>
+                {canEdit && (
+                    <div className={styles.saveBar}>
+                        {saved && <span className={styles.savedMsg}>Profile saved</span>}
+                        <button className={styles.saveBtn} onClick={handleSave} disabled={saving || !form.companyName.trim()}>
+                            {saving ? 'Saving...' : 'Save Profile'}
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );
