@@ -1,10 +1,11 @@
 import { supabase } from '@/lib/supabase';
-import { Job, Quote, Message, AgentConfig, AgentAction, Notification, IndustryVertical, VendorProfile, EstimatingTemplate, TeamMember, TeamMemberRole, VendorReview } from '@/types';
+import { Job, Quote, Message, AgentConfig, AgentAction, Notification, IndustryVertical, VendorProfile, EstimatingTemplate, TeamMember, TeamMemberRole, VendorReview, Project, ProjectPhase } from '@/types';
 import {
     JobRow, AgentConfigRow, QuoteRow, MessageRow, AgentActionRow, NotificationRow,
     VendorProfileRow, EstimatingTemplateRow, TeamMemberRow, VendorReviewRow,
+    ProjectRow, ProjectPhaseRow,
     mapJobRow, mapAgentConfigRow, mapVendorProfileRow, mapEstimatingTemplateRow,
-    mapTeamMemberRow, mapVendorReviewRow,
+    mapTeamMemberRow, mapVendorReviewRow, mapProjectRow, mapProjectPhaseRow,
 } from './serverMappers';
 
 export const db = {
@@ -558,6 +559,132 @@ export const db = {
             return [];
         }
         return data.map((row) => mapVendorReviewRow(row as VendorReviewRow));
+    },
+
+    getProjects: async (userId: string): Promise<Project[]> => {
+        const { data, error } = await supabase
+            .from('projects')
+            .select('*')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false });
+        if (error) {
+            console.error('Error fetching projects:', error);
+            return [];
+        }
+        return data.map((row) => mapProjectRow(row as ProjectRow));
+    },
+
+    getProject: async (id: string): Promise<Project | undefined> => {
+        const { data, error } = await supabase
+            .from('projects')
+            .select('*')
+            .eq('id', id)
+            .single();
+        if (error) return undefined;
+        return mapProjectRow(data as ProjectRow);
+    },
+
+    createProject: async (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt' | 'status'>): Promise<Project> => {
+        const { data, error } = await supabase.from('projects').insert({
+            user_id: project.userId,
+            title: project.title,
+            description: project.description,
+            location: project.location,
+            industry_vertical: project.industryVertical,
+            total_budget: project.totalBudget,
+            start_date: project.startDate,
+            end_date: project.endDate,
+            status: 'PLANNING',
+        }).select().single();
+        if (error) throw error;
+        return mapProjectRow(data as ProjectRow);
+    },
+
+    updateProject: async (id: string, updates: Partial<Omit<Project, 'id' | 'createdAt' | 'updatedAt' | 'userId'>>): Promise<Project> => {
+        const payload: Record<string, unknown> = { updated_at: new Date().toISOString() };
+        if (updates.title !== undefined) payload.title = updates.title;
+        if (updates.description !== undefined) payload.description = updates.description;
+        if (updates.location !== undefined) payload.location = updates.location;
+        if (updates.industryVertical !== undefined) payload.industry_vertical = updates.industryVertical;
+        if (updates.status !== undefined) payload.status = updates.status;
+        if (updates.totalBudget !== undefined) payload.total_budget = updates.totalBudget;
+        if (updates.startDate !== undefined) payload.start_date = updates.startDate;
+        if (updates.endDate !== undefined) payload.end_date = updates.endDate;
+
+        const { data, error } = await supabase
+            .from('projects')
+            .update(payload)
+            .eq('id', id)
+            .select()
+            .single();
+        if (error) throw error;
+        return mapProjectRow(data as ProjectRow);
+    },
+
+    deleteProject: async (id: string): Promise<void> => {
+        const { error } = await supabase.from('projects').delete().eq('id', id);
+        if (error) throw error;
+    },
+
+    getProjectPhases: async (projectId: string): Promise<ProjectPhase[]> => {
+        const { data, error } = await supabase
+            .from('project_phases')
+            .select('*')
+            .eq('project_id', projectId)
+            .order('sort_order', { ascending: true });
+        if (error) {
+            console.error('Error fetching project phases:', error);
+            return [];
+        }
+        return data.map((row) => mapProjectPhaseRow(row as ProjectPhaseRow));
+    },
+
+    createProjectPhase: async (phase: Omit<ProjectPhase, 'id' | 'createdAt' | 'updatedAt'>): Promise<ProjectPhase> => {
+        const { data, error } = await supabase.from('project_phases').insert({
+            project_id: phase.projectId,
+            name: phase.name,
+            description: phase.description,
+            trade_category: phase.tradeCategory,
+            status: phase.status || 'NOT_STARTED',
+            sort_order: phase.sortOrder,
+            depends_on: phase.dependsOn,
+            start_date: phase.startDate,
+            end_date: phase.endDate,
+            estimated_cost: phase.estimatedCost,
+            actual_cost: phase.actualCost,
+            accepted_quote_id: phase.acceptedQuoteId,
+        }).select().single();
+        if (error) throw error;
+        return mapProjectPhaseRow(data as ProjectPhaseRow);
+    },
+
+    updateProjectPhase: async (id: string, updates: Partial<Omit<ProjectPhase, 'id' | 'createdAt' | 'updatedAt' | 'projectId'>>): Promise<ProjectPhase> => {
+        const payload: Record<string, unknown> = { updated_at: new Date().toISOString() };
+        if (updates.name !== undefined) payload.name = updates.name;
+        if (updates.description !== undefined) payload.description = updates.description;
+        if (updates.tradeCategory !== undefined) payload.trade_category = updates.tradeCategory;
+        if (updates.status !== undefined) payload.status = updates.status;
+        if (updates.sortOrder !== undefined) payload.sort_order = updates.sortOrder;
+        if (updates.dependsOn !== undefined) payload.depends_on = updates.dependsOn;
+        if ('startDate' in updates) payload.start_date = updates.startDate || null;
+        if ('endDate' in updates) payload.end_date = updates.endDate || null;
+        if ('estimatedCost' in updates) payload.estimated_cost = updates.estimatedCost ?? null;
+        if ('actualCost' in updates) payload.actual_cost = updates.actualCost ?? null;
+        if ('acceptedQuoteId' in updates) payload.accepted_quote_id = updates.acceptedQuoteId || null;
+
+        const { data, error } = await supabase
+            .from('project_phases')
+            .update(payload)
+            .eq('id', id)
+            .select()
+            .single();
+        if (error) throw error;
+        return mapProjectPhaseRow(data as ProjectPhaseRow);
+    },
+
+    deleteProjectPhase: async (id: string): Promise<void> => {
+        const { error } = await supabase.from('project_phases').delete().eq('id', id);
+        if (error) throw error;
     },
 };
 

@@ -23,6 +23,9 @@ src/
     dashboard/             # Project dashboard (timeline, quotes, agent log tabs)
     marketplace/           # Public project marketplace (industry/subcategory/tag filters)
     post-job/              # Post a new project form (dynamic fields per industry)
+    projects/              # Multi-phase project management
+      new/                 # Step-by-step project creation wizard (details → phases → review)
+      [id]/                # Project detail with Gantt timeline, phase management, budget tracking
     vendor/                # Vendor portal (opportunities feed, pending reviews)
       profile/             # Vendor profile editor (company info, certs, insurance, portfolio)
         [id]/              # Public-facing vendor profile view with reviews
@@ -67,6 +70,8 @@ The platform uses an industry-agnostic data model with AI agent infrastructure:
 - **Vendor Profiles**: company info, certifications, insurance, service areas, portfolio, team size, avg rating, verified status
 - **Estimating Templates**: per-vendor service catalogs with line items supporting hourly, per-unit, flat fee, tiered, and formula pricing models
 - **Team Members**: multi-user company accounts with admin, estimator, field_worker roles
+- **Projects**: multi-phase project coordination with title, description, location, industry, budget, date range, status (PLANNING/ACTIVE/ON_HOLD/COMPLETED/CANCELLED)
+- **Project Phases**: individual trades/sub-jobs with sort order, dependencies, dates, estimated/actual costs, status (NOT_STARTED/WAITING_QUOTES/QUOTED/IN_PROGRESS/COMPLETED/BLOCKED), accepted quote reference
 - **Vendor Reviews**: rating/comment structure (data model only, collection flow deferred)
 - **Agent Actions**: audit log of all AI agent operations (scope_analysis, job_broadcast, vendor_match, auto_quote, clarification, escalation, etc.)
 - **Notifications**: prioritized alerts (low/medium/high/urgent) with action_required flag, types: quote_ready, approval_needed, scope_change, agent_summary, job_match, negotiation_update

@@ -1,0 +1,347 @@
+.container {
+    min-height: 100vh;
+    background: var(--background);
+    color: var(--foreground);
+    display: flex;
+    flex-direction: column;
+}
+
+.wizardWrapper {
+    max-width: 800px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.stepIndicator {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+}
+
+.stepDot {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.85rem;
+    border: 2px solid var(--border-subtle);
+    color: var(--text-secondary);
+    transition: all 0.3s ease;
+}
+
+.stepActive {
+    border-color: var(--primary);
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: #fff;
+}
+
+.stepPanel {
+    padding: 1.75rem;
+    border-radius: var(--radius-md);
+}
+
+.stepPanel h2 {
+    font-size: 1.3rem;
+    margin-bottom: 0.25rem;
+}
+
+.stepDesc {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 1.25rem;
+}
+
+.formGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.fullWidth {
+    grid-column: 1 / -1;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.input {
+    padding: 0.55rem 0.75rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-subtle);
+    background: rgba(255,255,255,0.03);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: 0.88rem;
+    transition: border-color 0.2s ease;
+}
+
+.input:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.textarea {
+    padding: 0.55rem 0.75rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-subtle);
+    background: rgba(255,255,255,0.03);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: 0.88rem;
+    resize: vertical;
+    transition: border-color 0.2s ease;
+}
+
+.textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.phaseList {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.phaseCard {
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 1rem;
+    background: rgba(255,255,255,0.02);
+}
+
+.phaseHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.phaseNum {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--primary);
+}
+
+.phaseActions {
+    display: flex;
+    gap: 0.4rem;
+}
+
+.iconBtn {
+    padding: 0.3rem 0.5rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-subtle);
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: background 0.2s ease;
+}
+
+.iconBtn:hover:not(:disabled) {
+    background: var(--surface-200);
+}
+
+.iconBtn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.removeBtn {
+    padding: 0.3rem 0.6rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-danger, #ef4444);
+    background: transparent;
+    color: var(--danger, #ef4444);
+    cursor: pointer;
+    font-size: 0.78rem;
+    transition: background 0.2s ease;
+}
+
+.removeBtn:hover {
+    background: rgba(239,68,68,0.1);
+}
+
+.phaseFields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+}
+
+.depList {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.depCheck {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+.depCheck input {
+    accent-color: var(--primary);
+}
+
+.addPhaseBtn {
+    margin-top: 0.75rem;
+    padding: 0.6rem 1rem;
+    border-radius: var(--radius-sm);
+    border: 1px dashed var(--border-subtle);
+    background: transparent;
+    color: var(--primary);
+    cursor: pointer;
+    font-size: 0.88rem;
+    font-weight: 600;
+    transition: background 0.2s ease, border-color 0.2s ease;
+    width: 100%;
+}
+
+.addPhaseBtn:hover {
+    background: rgba(99,102,241,0.05);
+    border-color: var(--primary);
+}
+
+.reviewSection {
+    padding: 1rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    margin-bottom: 1rem;
+}
+
+.reviewTitle {
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.reviewMeta {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    margin-top: 0.2rem;
+}
+
+.reviewDesc {
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+    line-height: 1.5;
+}
+
+.reviewStats {
+    display: flex;
+    gap: 1.25rem;
+    margin-top: 0.75rem;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+}
+
+.reviewPhases h4 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.reviewPhaseCard {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.reviewPhaseCard:last-child {
+    border-bottom: none;
+}
+
+.reviewPhaseNum {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.reviewPhaseName {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.reviewPhaseTrade,
+.reviewPhaseCost,
+.reviewPhaseDeps {
+    display: block;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+}
+
+.wizardNav {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.backBtn {
+    padding: 0.55rem 1.25rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-subtle);
+    background: transparent;
+    color: var(--foreground);
+    cursor: pointer;
+    font-size: 0.88rem;
+    transition: background 0.2s ease;
+}
+
+.backBtn:hover {
+    background: var(--surface-200);
+}
+
+.nextBtn {
+    padding: 0.55rem 1.5rem;
+    border-radius: var(--radius-sm);
+    border: none;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: #fff;
+    cursor: pointer;
+    font-size: 0.88rem;
+    font-weight: 700;
+    box-shadow: 0 0 18px -5px var(--primary-glow);
+    transition: transform 0.2s var(--ease-spring), box-shadow 0.2s ease;
+}
+
+.nextBtn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 0 26px -5px var(--primary-glow-strong);
+}
+
+.nextBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

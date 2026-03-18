@@ -239,6 +239,43 @@ export interface VendorReview {
     createdAt: string;
 }
 
+export type ProjectStatus = 'PLANNING' | 'ACTIVE' | 'ON_HOLD' | 'COMPLETED' | 'CANCELLED';
+
+export type PhaseStatus = 'NOT_STARTED' | 'WAITING_QUOTES' | 'QUOTED' | 'IN_PROGRESS' | 'COMPLETED' | 'BLOCKED';
+
+export interface Project {
+    id: string;
+    userId: string;
+    title: string;
+    description: string;
+    location: string;
+    industryVertical: IndustryVertical;
+    status: ProjectStatus;
+    totalBudget?: number;
+    startDate?: string;
+    endDate?: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface ProjectPhase {
+    id: string;
+    projectId: string;
+    name: string;
+    description: string;
+    tradeCategory: string;
+    status: PhaseStatus;
+    sortOrder: number;
+    dependsOn: string[];
+    startDate?: string;
+    endDate?: string;
+    estimatedCost?: number;
+    actualCost?: number;
+    acceptedQuoteId?: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
 export type NotificationType =
     | 'quote_ready'
     | 'approval_needed'

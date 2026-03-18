@@ -1,0 +1,632 @@
+.container {
+    min-height: 100vh;
+    background: var(--background);
+    color: var(--foreground);
+    display: flex;
+    flex-direction: column;
+}
+
+.pageHeader {
+    padding: 1rem 2rem;
+    border-bottom: 1px solid var(--border-subtle);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1.5rem;
+}
+
+.headerLeft {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.backLink {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.backLink:hover {
+    color: var(--primary);
+}
+
+.headerLeft h2 {
+    font-size: 1.4rem;
+    font-weight: 700;
+}
+
+.headerMeta {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.industryBadge {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: var(--radius-full);
+    background: rgba(99,102,241,0.15);
+    color: var(--primary);
+}
+
+.locationText {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.statusSelect {
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-subtle);
+    background: rgba(255,255,255,0.03);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+}
+
+.headerRight {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+}
+
+.overviewStat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.overviewValue {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.overviewLabel {
+    font-size: 0.68rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.progressBarWrap {
+    height: 4px;
+    background: var(--surface-200);
+}
+
+.progressFill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--secondary));
+    transition: width 0.4s ease;
+}
+
+.conflictBanner {
+    margin: 0.75rem 2rem;
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-sm);
+    background: rgba(239,68,68,0.1);
+    border: 1px solid rgba(239,68,68,0.3);
+    color: #fca5a5;
+    font-size: 0.82rem;
+}
+
+.conflictBanner strong {
+    display: block;
+    margin-bottom: 0.3rem;
+    color: #ef4444;
+}
+
+.conflictBanner ul {
+    margin: 0;
+    padding-left: 1.2rem;
+}
+
+.conflictBanner li {
+    margin-bottom: 0.2rem;
+}
+
+.tabBar {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 0 2rem;
+}
+
+.tabBtn {
+    padding: 0.65rem 1.25rem;
+    border: none;
+    background: none;
+    color: var(--text-secondary);
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.tabBtn:hover {
+    color: var(--foreground);
+}
+
+.tabActive {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+}
+
+.mainContent {
+    flex: 1;
+    padding: 1.25rem 2rem;
+    overflow-y: auto;
+}
+
+.ganttContainer {
+    padding: 1.25rem;
+    border-radius: var(--radius-md);
+    overflow-x: auto;
+}
+
+.ganttHeader {
+    display: flex;
+    border-bottom: 1px solid var(--border-subtle);
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.ganttLabelCol {
+    width: 200px;
+    flex-shrink: 0;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding-right: 1rem;
+}
+
+.ganttTimelineCol {
+    flex: 1;
+    min-width: 400px;
+    position: relative;
+}
+
+.ganttMonths {
+    display: flex;
+    width: 100%;
+}
+
+.ganttMonth {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    text-align: center;
+    padding: 0.2rem 0;
+    border-left: 1px solid var(--border-subtle);
+}
+
+.ganttMonth:first-child {
+    border-left: none;
+}
+
+.ganttRow {
+    display: flex;
+    align-items: center;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+
+.ganttRow:last-child {
+    border-bottom: none;
+}
+
+.ganttPhaseName {
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ganttPhaseStatus {
+    font-size: 0.72rem;
+    font-weight: 500;
+}
+
+.ganttTrack {
+    position: relative;
+    height: 28px;
+    background: rgba(255,255,255,0.02);
+    border-radius: 4px;
+}
+
+.ganttBar {
+    position: absolute;
+    top: 2px;
+    height: 24px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    padding: 0 0.5rem;
+    opacity: 0.85;
+    transition: opacity 0.2s ease;
+    cursor: default;
+}
+
+.ganttBar:hover {
+    opacity: 1;
+}
+
+.ganttBarLabel {
+    font-size: 0.7rem;
+    color: #fff;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ganttNoDate {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-style: italic;
+    padding-left: 0.5rem;
+}
+
+.ganttLegend {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-subtle);
+    flex-wrap: wrap;
+}
+
+.legendItem {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.legendDot {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+}
+
+.emptyMsg {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.phaseListView {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.phaseCard {
+    padding: 1rem 1.25rem;
+    border-radius: var(--radius-md);
+}
+
+.phaseCardHeader {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.phaseNumBadge {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.phaseInfo {
+    flex: 1;
+}
+
+.phaseCardName {
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.phaseTrade {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+}
+
+.phaseCardActions {
+    display: flex;
+    gap: 0.35rem;
+    align-items: center;
+}
+
+.iconBtn {
+    padding: 0.3rem 0.5rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-subtle);
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: background 0.2s ease;
+}
+
+.iconBtn:hover:not(:disabled) {
+    background: var(--surface-200);
+}
+
+.iconBtn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.statusSelectSmall {
+    padding: 0.25rem 0.4rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-subtle);
+    background: rgba(255,255,255,0.03);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: 0.75rem;
+}
+
+.editBtn {
+    padding: 0.3rem 0.6rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-subtle);
+    background: transparent;
+    color: var(--primary);
+    cursor: pointer;
+    font-size: 0.78rem;
+    transition: background 0.2s ease;
+}
+
+.editBtn:hover {
+    background: rgba(99,102,241,0.1);
+}
+
+.deleteBtn {
+    padding: 0.3rem 0.6rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(239,68,68,0.3);
+    background: transparent;
+    color: #ef4444;
+    cursor: pointer;
+    font-size: 0.78rem;
+    transition: background 0.2s ease;
+}
+
+.deleteBtn:hover {
+    background: rgba(239,68,68,0.1);
+}
+
+.phaseDesc {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-top: 0.5rem;
+    line-height: 1.5;
+}
+
+.phaseMetaRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.phaseDateTag,
+.phaseCostTag {
+    font-size: 0.75rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: var(--radius-full);
+    background: rgba(255,255,255,0.05);
+    color: var(--text-secondary);
+}
+
+.phaseDeps {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    margin-top: 0.4rem;
+    font-style: italic;
+}
+
+.phaseEditor {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-subtle);
+}
+
+.editorGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+}
+
+.editorFullWidth {
+    grid-column: 1 / -1;
+}
+
+.editorField {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.editorField span {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.editorField input,
+.editorField textarea {
+    padding: 0.45rem 0.65rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-subtle);
+    background: rgba(255,255,255,0.03);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: 0.85rem;
+}
+
+.editorField input:focus,
+.editorField textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.editorField textarea {
+    resize: vertical;
+}
+
+.editorActions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+
+.saveBtn {
+    padding: 0.45rem 1rem;
+    border-radius: var(--radius-sm);
+    border: none;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: #fff;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.saveBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.cancelBtn {
+    padding: 0.45rem 1rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-subtle);
+    background: transparent;
+    color: var(--foreground);
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+.addPhaseBtn {
+    padding: 0.7rem 1rem;
+    border-radius: var(--radius-sm);
+    border: 1px dashed var(--border-subtle);
+    background: transparent;
+    color: var(--primary);
+    cursor: pointer;
+    font-size: 0.88rem;
+    font-weight: 600;
+    transition: background 0.2s ease, border-color 0.2s ease;
+    width: 100%;
+}
+
+.addPhaseBtn:hover {
+    background: rgba(99,102,241,0.05);
+    border-color: var(--primary);
+}
+
+.budgetView {
+    padding: 1.25rem;
+    border-radius: var(--radius-md);
+}
+
+.budgetSummary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.budgetCard {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    background: rgba(255,255,255,0.02);
+}
+
+.budgetCardLabel {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.budgetCardValue {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin-top: 0.3rem;
+}
+
+.overBudget {
+    color: #ef4444 !important;
+}
+
+.underBudget {
+    color: #22c55e !important;
+}
+
+.budgetTable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+
+.budgetTable th {
+    text-align: left;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-secondary);
+    padding: 0.5rem;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.budgetTable td {
+    padding: 0.6rem 0.5rem;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+
+.budgetPhaseName {
+    font-weight: 600;
+}
+
+.budgetPhaseTrade {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.budgetStatusDot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 0.4rem;
+}

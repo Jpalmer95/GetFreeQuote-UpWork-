@@ -461,3 +461,92 @@ create policy "Reviews are viewable by everyone." on public.vendor_reviews
 
 create policy "Users can insert reviews for completed jobs." on public.vendor_reviews
   for insert with check (auth.uid() = reviewer_id);
+
+
+-- PROJECTS (multi-phase project coordination)
+create table public.projects (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references public.profiles(id) not null,
+  title text not null,
+  description text not null default '',
+  location text not null default '',
+  industry_vertical text not null default 'Other',
+  status text check (status in ('PLANNING', 'ACTIVE', 'ON_HOLD', 'COMPLETED', 'CANCELLED')) default 'PLANNING',
+  total_budget numeric,
+  start_date date,
+  end_date date,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.projects enable row level security;
+
+create policy "Users can view own projects." on public.projects
+  for select using (auth.uid() = user_id);
+
+create policy "Users can create projects." on public.projects
+  for insert with check (auth.uid() = user_id);
+
+create policy "Users can update own projects." on public.projects
+  for update using (auth.uid() = user_id);
+
+create policy "Users can delete own projects." on public.projects
+  for delete using (auth.uid() = user_id);
+
+
+-- PROJECT PHASES (individual trades / sub-jobs within a project)
+create table public.project_phases (
+  id uuid default gen_random_uuid() primary key,
+  project_id uuid references public.projects(id) on delete cascade not null,
+  name text not null,
+  description text not null default '',
+  trade_category text not null default 'Other',
+  status text check (status in ('NOT_STARTED', 'WAITING_QUOTES', 'QUOTED', 'IN_PROGRESS', 'COMPLETED', 'BLOCKED')) default 'NOT_STARTED',
+  sort_order integer not null default 0,
+  depends_on uuid[] default '{}',
+  start_date date,
+  end_date date,
+  estimated_cost numeric,
+  actual_cost numeric,
+  accepted_quote_id uuid references public.quotes(id),
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+alter table public.project_phases enable row level security;
+
+create policy "Users can view phases of own projects." on public.project_phases
+  for select using (
+    exists (
+      select 1 from public.projects
+      where public.projects.id = project_id
+      and public.projects.user_id = auth.uid()
+    )
+  );
+
+create policy "Users can insert phases into own projects." on public.project_phases
+  for insert with check (
+    exists (
+      select 1 from public.projects
+      where public.projects.id = project_id
+      and public.projects.user_id = auth.uid()
+    )
+  );
+
+create policy "Users can update phases of own projects." on public.project_phases
+  for update using (
+    exists (
+      select 1 from public.projects
+      where public.projects.id = project_id
+      and public.projects.user_id = auth.uid()
+    )
+  );
+
+create policy "Users can delete phases of own projects." on public.project_phases
+  for delete using (
+    exists (
+      select 1 from public.projects
+      where public.projects.id = project_id
+      and public.projects.user_id = auth.uid()
+    )
+  );

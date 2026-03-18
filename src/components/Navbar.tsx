@@ -33,6 +33,12 @@ export default function Navbar() {
                                 Dashboard
                             </Link>
                             <Link
+                                href="/projects"
+                                className={`${styles.link} ${pathname?.startsWith('/projects') ? styles.active : ''}`}
+                            >
+                                Projects
+                            </Link>
+                            <Link
                                 href="/agent-settings"
                                 className={`${styles.link} ${pathname === '/agent-settings' ? styles.active : ''}`}
                             >

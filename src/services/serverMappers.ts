@@ -1,4 +1,4 @@
-import { Job, AgentConfig, IndustryVertical, VendorProfile, EstimatingTemplate, EstimatingLineItem, TeamMember, VendorReview } from '@/types';
+import { Job, AgentConfig, IndustryVertical, VendorProfile, EstimatingTemplate, EstimatingLineItem, TeamMember, VendorReview, Project, ProjectPhase } from '@/types';
 
 export interface JobRow {
     id: string;
@@ -296,5 +296,75 @@ export function mapVendorReviewRow(row: VendorReviewRow): VendorReview {
         rating: row.rating,
         comment: row.comment,
         createdAt: row.created_at,
+    };
+}
+
+export interface ProjectRow {
+    id: string;
+    user_id: string;
+    title: string;
+    description: string;
+    location: string;
+    industry_vertical: string;
+    status: string;
+    total_budget: number | null;
+    start_date: string | null;
+    end_date: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export function mapProjectRow(row: ProjectRow): Project {
+    return {
+        id: row.id,
+        userId: row.user_id,
+        title: row.title,
+        description: row.description,
+        location: row.location,
+        industryVertical: (row.industry_vertical || 'Other') as IndustryVertical,
+        status: row.status as Project['status'],
+        totalBudget: row.total_budget ?? undefined,
+        startDate: row.start_date || undefined,
+        endDate: row.end_date || undefined,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+    };
+}
+
+export interface ProjectPhaseRow {
+    id: string;
+    project_id: string;
+    name: string;
+    description: string;
+    trade_category: string;
+    status: string;
+    sort_order: number;
+    depends_on: string[] | null;
+    start_date: string | null;
+    end_date: string | null;
+    estimated_cost: number | null;
+    actual_cost: number | null;
+    accepted_quote_id: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export function mapProjectPhaseRow(row: ProjectPhaseRow): ProjectPhase {
+    return {
+        id: row.id,
+        projectId: row.project_id,
+        name: row.name,
+        description: row.description,
+        tradeCategory: row.trade_category,
+        status: row.status as ProjectPhase['status'],
+        sortOrder: row.sort_order,
+        dependsOn: row.depends_on || [],
+        startDate: row.start_date || undefined,
+        endDate: row.end_date || undefined,
+        estimatedCost: row.estimated_cost ?? undefined,
+        actualCost: row.actual_cost ?? undefined,
+        acceptedQuoteId: row.accepted_quote_id || undefined,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
     };
 }
