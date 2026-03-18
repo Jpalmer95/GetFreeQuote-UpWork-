@@ -4,6 +4,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/services/db';
+import { supabase } from '@/lib/supabase';
 import { Project, ProjectPhase, Quote, PhaseStatus } from '@/types';
 import Navbar from '@/components/Navbar';
 import styles from './page.module.css';
@@ -42,6 +43,8 @@ export default function ProjectDetailPage() {
     const [loading, setLoading] = useState(true);
     const [editingPhase, setEditingPhase] = useState<string | null>(null);
     const [expandedPhaseQuotes, setExpandedPhaseQuotes] = useState<string | null>(null);
+    const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
+    const dragSrcIdx = useRef<number | null>(null);
 
     const loadData = useCallback(async () => {
         if (!id) return;
@@ -99,9 +102,14 @@ export default function ProjectDetailPage() {
     };
 
     const callQuoteAction = async (quoteId: string, action: 'accept' | 'reject') => {
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) {
+            headers['Authorization'] = `Bearer ${session.access_token}`;
+        }
         const res = await fetch('/api/quote-action', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers,
             body: JSON.stringify({ quoteId, action }),
         });
         if (!res.ok) {
@@ -145,6 +153,22 @@ export default function ProjectDetailPage() {
                 db.updateProjectPhase(updated[idx].id, { sortOrder: idx }),
                 db.updateProjectPhase(updated[newIdx].id, { sortOrder: newIdx }),
             ]);
+        } catch (err) {
+            console.error('Failed to reorder phases:', err);
+            loadData();
+        }
+    };
+
+    const handleDragDrop = async (fromIdx: number, toIdx: number) => {
+        if (fromIdx === toIdx) return;
+        const updated = [...phases];
+        const [moved] = updated.splice(fromIdx, 1);
+        updated.splice(toIdx, 0, moved);
+        updated.forEach((p, i) => { p.sortOrder = i; });
+        setPhases(updated);
+
+        try {
+            await Promise.all(updated.map((p, i) => db.updateProjectPhase(p.id, { sortOrder: i })));
         } catch (err) {
             console.error('Failed to reorder phases:', err);
             loadData();
@@ -300,7 +324,23 @@ export default function ProjectDetailPage() {
                             const acceptedQuote = phaseQuotes.find(q => q.status === 'ACCEPTED');
 
                             return (
-                                <div key={phase.id} className={`glass-panel ${styles.phaseCard}`}>
+                                <div
+                                    key={phase.id}
+                                    className={`glass-panel ${styles.phaseCard} ${dragOverIdx === idx ? styles.phaseCardDragOver : ''}`}
+                                    draggable
+                                    onDragStart={() => { dragSrcIdx.current = idx; }}
+                                    onDragOver={(e) => { e.preventDefault(); setDragOverIdx(idx); }}
+                                    onDragLeave={() => setDragOverIdx(null)}
+                                    onDrop={(e) => {
+                                        e.preventDefault();
+                                        setDragOverIdx(null);
+                                        if (dragSrcIdx.current !== null) {
+                                            handleDragDrop(dragSrcIdx.current, idx);
+                                            dragSrcIdx.current = null;
+                                        }
+                                    }}
+                                    onDragEnd={() => { dragSrcIdx.current = null; setDragOverIdx(null); }}
+                                >
                                     <div className={styles.phaseCardHeader}>
                                         <div className={styles.phaseNumBadge}>{idx + 1}</div>
                                         <div className={styles.phaseInfo}>

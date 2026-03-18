@@ -706,7 +706,7 @@ function mapJob(row: JobRow): Job {
 function mapQuote(row: QuoteRow): Quote {
     return {
         id: row.id,
-        jobId: row.job_id,
+        jobId: row.job_id || undefined,
         vendorId: row.vendor_id,
         vendorName: row.vendor_name,
         amount: row.amount,

@@ -816,3 +816,17 @@
     color: var(--primary);
     background: rgba(139,92,246,0.05);
 }
+
+.phaseCardDragOver {
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 2px rgba(139,92,246,0.3);
+}
+
+.phaseCard[draggable="true"] {
+    cursor: grab;
+}
+
+.phaseCard[draggable="true"]:active {
+    cursor: grabbing;
+    opacity: 0.7;
+}

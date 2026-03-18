@@ -75,7 +75,7 @@ create policy "Users can update own jobs." on public.jobs
 -- QUOTES
 create table public.quotes (
   id uuid default gen_random_uuid() primary key,
-  job_id uuid references public.jobs(id) not null,
+  job_id uuid references public.jobs(id),
   vendor_id uuid references public.profiles(id) not null,
   vendor_name text not null,
   amount numeric not null,
@@ -83,7 +83,7 @@ create table public.quotes (
   details text,
   status text check (status in ('PENDING', 'ACCEPTED', 'REJECTED')) default 'PENDING',
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
-  phase_id uuid references public.project_phases(id)
+  phase_id uuid
 );
 
 alter table public.quotes enable row level security;
@@ -509,7 +509,7 @@ create table public.project_phases (
   end_date date,
   estimated_cost numeric,
   actual_cost numeric,
-  accepted_quote_id uuid references public.quotes(id),
+  accepted_quote_id uuid,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
@@ -551,3 +551,7 @@ create policy "Users can delete phases of own projects." on public.project_phase
       and public.projects.user_id = auth.uid()
     )
   );
+
+-- Cross-referencing FKs (added after both tables exist to avoid circular dependency)
+alter table public.quotes add constraint quotes_phase_id_fkey foreign key (phase_id) references public.project_phases(id);
+alter table public.project_phases add constraint project_phases_accepted_quote_id_fkey foreign key (accepted_quote_id) references public.quotes(id);

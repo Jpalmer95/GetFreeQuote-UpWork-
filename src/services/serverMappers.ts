@@ -48,7 +48,7 @@ export interface AgentConfigRow {
 
 export interface QuoteRow {
     id: string;
-    job_id: string;
+    job_id: string | null;
     vendor_id: string;
     vendor_name: string;
     amount: number;

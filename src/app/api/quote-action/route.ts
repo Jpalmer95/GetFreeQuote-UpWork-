@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
 
         const { data: quoteCheck, error: checkError } = await supabaseAdmin
             .from('quotes')
-            .select('*, jobs!inner(id, title, user_id)')
+            .select('*')
             .eq('id', quoteId)
             .single();
 
@@ -25,8 +25,38 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Quote not found' }, { status: 404 });
         }
 
-        if (quoteCheck.jobs?.user_id !== caller.id) {
-            return NextResponse.json({ error: 'Forbidden: only job owner can accept/reject quotes' }, { status: 403 });
+        let authorized = false;
+        let jobTitle = 'Unknown';
+        let jobUserId: string | undefined;
+
+        if (quoteCheck.job_id) {
+            const { data: jobData } = await supabaseAdmin
+                .from('jobs')
+                .select('id, title, user_id')
+                .eq('id', quoteCheck.job_id)
+                .single();
+            if (jobData) {
+                authorized = jobData.user_id === caller.id;
+                jobTitle = jobData.title || 'Unknown';
+                jobUserId = jobData.user_id;
+            }
+        }
+
+        if (!authorized && quoteCheck.phase_id) {
+            const { data: phaseData } = await supabaseAdmin
+                .from('project_phases')
+                .select('id, project_id, projects!inner(user_id)')
+                .eq('id', quoteCheck.phase_id)
+                .single();
+            if (phaseData && (phaseData as Record<string, unknown>).projects) {
+                const proj = (phaseData as Record<string, unknown>).projects as { user_id: string };
+                authorized = proj.user_id === caller.id;
+                jobUserId = proj.user_id;
+            }
+        }
+
+        if (!authorized) {
+            return NextResponse.json({ error: 'Forbidden: only owner can accept/reject quotes' }, { status: 403 });
         }
 
         const newStatus = action === 'accept' ? 'ACCEPTED' : 'REJECTED';
@@ -35,7 +65,7 @@ export async function POST(request: NextRequest) {
             .from('quotes')
             .update({ status: newStatus })
             .eq('id', quoteId)
-            .select('*, jobs!inner(id, title, user_id)')
+            .select('*')
             .single();
 
         if (quoteError) {
@@ -43,13 +73,13 @@ export async function POST(request: NextRequest) {
         }
 
         const jobId = quote.job_id;
-        const jobTitle = quote.jobs?.title || 'Unknown';
-        const jobUserId = quote.jobs?.user_id;
         const vendorId = quote.vendor_id;
         const phaseId = quote.phase_id;
 
         if (action === 'accept') {
-            await supabaseAdmin.from('jobs').update({ status: 'IN_PROGRESS' }).eq('id', jobId);
+            if (jobId) {
+                await supabaseAdmin.from('jobs').update({ status: 'IN_PROGRESS' }).eq('id', jobId);
+            }
 
             if (phaseId) {
                 await supabaseAdmin.from('project_phases').update({
@@ -65,13 +95,15 @@ export async function POST(request: NextRequest) {
                     .eq('status', 'PENDING');
             }
 
-            await supabaseAdmin.from('messages').insert({
-                job_id: jobId,
-                sender_id: 'system-agent',
-                sender_type: 'system',
-                content: `Quote of $${quote.amount} from ${quote.vendor_name} has been accepted. Project is now in progress.`,
-                is_agent_action: true,
-            });
+            if (jobId) {
+                await supabaseAdmin.from('messages').insert({
+                    job_id: jobId,
+                    sender_id: 'system-agent',
+                    sender_type: 'system',
+                    content: `Quote of $${quote.amount} from ${quote.vendor_name} has been accepted. Project is now in progress.`,
+                    is_agent_action: true,
+                });
+            }
 
             await supabaseAdmin.from('notifications').insert({
                 user_id: vendorId,
@@ -79,7 +111,7 @@ export async function POST(request: NextRequest) {
                 type: 'milestone',
                 priority: 'high',
                 title: 'Quote Accepted!',
-                message: `Your quote of $${quote.amount} for "${jobTitle}" has been accepted.`,
+                message: `Your quote of $${quote.amount} from ${quote.vendor_name} has been accepted.`,
                 action_required: false,
                 read: false,
             });
@@ -111,13 +143,15 @@ export async function POST(request: NextRequest) {
                 }
             }
 
-            await supabaseAdmin.from('messages').insert({
-                job_id: jobId,
-                sender_id: 'system-agent',
-                sender_type: 'system',
-                content: `Quote of $${quote.amount} from ${quote.vendor_name} has been declined.`,
-                is_agent_action: true,
-            });
+            if (jobId) {
+                await supabaseAdmin.from('messages').insert({
+                    job_id: jobId,
+                    sender_id: 'system-agent',
+                    sender_type: 'system',
+                    content: `Quote of $${quote.amount} from ${quote.vendor_name} has been declined.`,
+                    is_agent_action: true,
+                });
+            }
 
             await supabaseAdmin.from('notifications').insert({
                 user_id: vendorId,

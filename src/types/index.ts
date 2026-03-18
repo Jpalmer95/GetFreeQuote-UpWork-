@@ -86,7 +86,7 @@ export interface Job {
 
 export interface Quote {
     id: string;
-    jobId: string;
+    jobId?: string;
     vendorId: string;
     vendorName: string;
     amount: number;
