@@ -35,12 +35,13 @@ async function resolveVendorContext(userId: string, userEmail: string): Promise<
         .from('team_members')
         .select('id, vendor_profile_id, role, user_id, accepted_at, vendor_profiles!inner(id, user_id)')
         .eq('email', userEmail)
-        .eq('is_active', true);
+        .eq('user_id', userId)
+        .eq('is_active', true)
+        .not('accepted_at', 'is', null);
 
     if (!memberships || memberships.length === 0) return null;
 
-    const accepted = memberships.find(m => m.accepted_at && m.user_id === userId);
-    const membership = accepted || memberships[0];
+    const membership = memberships[0];
     if (!membership) return null;
 
     const vp = membership.vendor_profiles as unknown as { id: string; user_id: string };

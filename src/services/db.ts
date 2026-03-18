@@ -540,12 +540,11 @@ export const db = {
 
         const memberships = await db.getTeamMemberByUserEmail(userEmail);
         const accepted = memberships.find(m => m.acceptedAt && m.userId === userId);
-        const pending = accepted || memberships[0];
-        if (!pending) return null;
+        if (!accepted) return null;
 
-        const profile = await db.getVendorProfile(pending.vendorOwnerId);
+        const profile = await db.getVendorProfile(accepted.vendorOwnerId);
         if (!profile) return null;
-        return { profile, role: pending.role };
+        return { profile, role: accepted.role };
     },
 
     getVendorReviews: async (vendorProfileId: string): Promise<VendorReview[]> => {
