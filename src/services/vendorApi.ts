@@ -13,6 +13,10 @@ async function getAuthHeaders(): Promise<HeadersInit> {
 async function vendorGet(action: string): Promise<Record<string, unknown>> {
     const headers = await getAuthHeaders();
     const res = await fetch(`/api/vendor?action=${action}`, { headers });
+    if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `Request failed (${res.status})`);
+    }
     return res.json();
 }
 
@@ -20,7 +24,7 @@ async function vendorPost(body: Record<string, unknown>): Promise<Record<string,
     const headers = await getAuthHeaders();
     const res = await fetch('/api/vendor', { method: 'POST', headers, body: JSON.stringify(body) });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Request failed');
+    if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
     return data;
 }
 

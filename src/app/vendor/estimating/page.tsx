@@ -24,7 +24,7 @@ function emptyLineItem(): EstimatingLineItem {
 export default function EstimatingPage() {
     const { user, isLoading } = useAuth();
     const router = useRouter();
-    const [vendorProfileId, setVendorProfileId] = useState<string | null>(null);
+    const [hasVendorContext, setHasVendorContext] = useState(false);
     const [templates, setTemplates] = useState<EstimatingTemplate[]>([]);
     const [editing, setEditing] = useState<EstimatingTemplate | null>(null);
     const [isNew, setIsNew] = useState(false);
@@ -49,17 +49,12 @@ export default function EstimatingPage() {
         if (!isLoading && !user) { router.push('/login'); return; }
         if (!user) return;
         const load = async () => {
-            const result = await vendorApi.getTemplates();
-            if (result.templates.length > 0 || result.role !== 'owner') {
-                setVendorProfileId('resolved');
-                setUserRole(result.role);
+            const ctx = await vendorApi.getContext();
+            if (ctx) {
+                setHasVendorContext(true);
+                setUserRole(ctx.role);
+                const result = await vendorApi.getTemplates();
                 setTemplates(result.templates);
-            } else {
-                const ctx = await vendorApi.getContext();
-                if (ctx) {
-                    setVendorProfileId(ctx.profile.id);
-                    setUserRole(ctx.role);
-                }
             }
         };
         load();
@@ -139,7 +134,7 @@ export default function EstimatingPage() {
     const handleSave = async () => {
         if (!canCreate && isNew) return;
         if (!canEditTemplate && !isNew) return;
-        if (!vendorProfileId || !form.name.trim()) return;
+        if (!hasVendorContext || !form.name.trim()) return;
         setSaving(true);
         try {
             const cleanItems = form.lineItems
@@ -188,7 +183,7 @@ export default function EstimatingPage() {
 
     if (isLoading || !user) return <div className="loading-screen">Loading...</div>;
 
-    if (!vendorProfileId) {
+    if (!hasVendorContext) {
         return (
             <div className={styles.container}>
                 <Navbar />

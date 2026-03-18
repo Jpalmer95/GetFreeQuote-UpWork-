@@ -18,7 +18,7 @@ const ROLES: { value: TeamMemberRole; label: string; desc: string }[] = [
 export default function TeamManagement() {
     const { user, isLoading } = useAuth();
     const router = useRouter();
-    const [vendorProfileId, setVendorProfileId] = useState<string | null>(null);
+    const [hasVendorContext, setHasVendorContext] = useState(false);
     const [members, setMembers] = useState<TeamMember[]>([]);
     const [showForm, setShowForm] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -36,17 +36,12 @@ export default function TeamManagement() {
         if (!isLoading && !user) { router.push('/login'); return; }
         if (!user) return;
         const load = async () => {
-            const result = await vendorApi.getTeam();
-            if (result.members.length > 0 || result.role !== 'owner') {
-                setVendorProfileId('resolved');
-                setUserRole(result.role);
+            const ctx = await vendorApi.getContext();
+            if (ctx) {
+                setHasVendorContext(true);
+                setUserRole(ctx.role);
+                const result = await vendorApi.getTeam();
                 setMembers(result.members);
-            } else {
-                const ctx = await vendorApi.getContext();
-                if (ctx) {
-                    setVendorProfileId(ctx.profile.id);
-                    setUserRole(ctx.role);
-                }
             }
         };
         load();
@@ -67,7 +62,7 @@ export default function TeamManagement() {
     const cancelForm = () => { setShowForm(false); setEditingId(null); };
 
     const handleSave = async () => {
-        if (!canManage || !vendorProfileId || !form.name.trim() || !form.email.trim()) return;
+        if (!canManage || !hasVendorContext || !form.name.trim() || !form.email.trim()) return;
         setSaving(true);
         try {
             if (editingId) {
@@ -110,7 +105,7 @@ export default function TeamManagement() {
 
     if (isLoading || !user) return <div className="loading-screen">Loading...</div>;
 
-    if (!vendorProfileId) {
+    if (!hasVendorContext) {
         return (
             <div className={styles.container}>
                 <Navbar />
