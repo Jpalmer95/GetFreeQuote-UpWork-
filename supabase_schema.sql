@@ -707,7 +707,15 @@ begin
   end if;
 
   insert into public.donations (community_project_id, donor_id, donor_name, amount, is_anonymous, transaction_hash, message)
-  values (p_project_id, p_donor_id, p_donor_name, p_amount, p_is_anonymous, p_tx_hash, p_message)
+  values (
+    p_project_id,
+    case when p_is_anonymous then null else p_donor_id end,
+    case when p_is_anonymous then 'Anonymous' else p_donor_name end,
+    p_amount,
+    p_is_anonymous,
+    p_tx_hash,
+    p_message
+  )
   returning id into v_donation_id;
 
   update public.community_projects

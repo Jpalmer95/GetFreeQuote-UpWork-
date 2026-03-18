@@ -115,8 +115,8 @@ export default function CommunityPage() {
                                 const pct = p.goalAmount > 0 ? Math.min(100, (p.currentFunding / p.goalAmount) * 100) : 0;
                                 return (
                                     <Link href={`/community/${p.id}`} key={p.id} className={styles.card}>
-                                        <div className={styles.cardImage}>
-                                            {CATEGORY_ICONS[p.category] || '\u{2728}'}
+                                        <div className={styles.cardImage} style={p.imageUrl ? { backgroundImage: `url(${p.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}>
+                                            {!p.imageUrl && (CATEGORY_ICONS[p.category] || '\u{2728}')}
                                             <span className={`${styles.cardBadge} ${getBadgeClass(p.status)}`}>
                                                 {p.status.replace('_', ' ')}
                                             </span>

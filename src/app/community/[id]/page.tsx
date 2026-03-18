@@ -214,6 +214,12 @@ export default function CommunityProjectDetail() {
                     {'\u2190'} Back to Community
                 </Link>
 
+                {project.imageUrl && (
+                    <div className={styles.projectImage}>
+                        <img src={project.imageUrl} alt={project.title} className={styles.projectImg} />
+                    </div>
+                )}
+
                 <div className={styles.header}>
                     <span className={`${styles.badge} ${getBadgeClass(project.status)}`}>
                         {project.status.replace('_', ' ')}

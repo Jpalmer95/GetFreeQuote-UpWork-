@@ -424,8 +424,8 @@ export function mapDonationRow(row: DonationRow): Donation {
     return {
         id: row.id,
         communityProjectId: row.community_project_id,
-        donorId: row.donor_id || undefined,
-        donorName: row.donor_name,
+        donorId: row.is_anonymous ? undefined : (row.donor_id || undefined),
+        donorName: row.is_anonymous ? 'Anonymous' : row.donor_name,
         amount: row.amount,
         isAnonymous: row.is_anonymous,
         transactionHash: row.transaction_hash || undefined,

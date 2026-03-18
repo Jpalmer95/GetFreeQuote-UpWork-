@@ -16,6 +16,7 @@ export default function NewCommunityProject() {
     const [category, setCategory] = useState<CommunityProjectCategory>('Other');
     const [location, setLocation] = useState('');
     const [goalAmount, setGoalAmount] = useState('');
+    const [imageUrl, setImageUrl] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
 
@@ -42,6 +43,7 @@ export default function NewCommunityProject() {
                     category,
                     location,
                     goalAmount: parseFloat(goalAmount),
+                    imageUrl: imageUrl || undefined,
                 }),
             });
             const data = await res.json();
@@ -142,6 +144,20 @@ export default function NewCommunityProject() {
                             value={location}
                             onChange={e => setLocation(e.target.value)}
                         />
+                    </div>
+
+                    <div className={styles.fieldGroup}>
+                        <label className={styles.label}>Project Image URL</label>
+                        <input
+                            type="url"
+                            className={styles.input}
+                            placeholder="https://example.com/project-photo.jpg"
+                            value={imageUrl}
+                            onChange={e => setImageUrl(e.target.value)}
+                        />
+                        <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.35)', marginTop: '0.25rem' }}>
+                            Optional. Provide a URL to an image that represents your project.
+                        </span>
                     </div>
 
                     {error && <div className={styles.error}>{error}</div>}
