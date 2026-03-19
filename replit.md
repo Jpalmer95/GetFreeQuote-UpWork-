@@ -146,5 +146,5 @@ npm run start  # Production server on port 5000 (Replit)
 
 - Workflow: `Start application` runs `npm run dev`
 - `next.config.ts` sets `allowedDevOrigins` to `REPLIT_DEV_DOMAIN`
-- Hydration: `suppressHydrationWarning` on `<html>` and `<body>` in layout.tsx; Replit iframe proxy may inject DOM nodes causing dev-mode hydration warnings (cosmetic only, no impact on functionality or production)
+- Hydration: `suppressHydrationWarning` on `<html>` and `<body>` in layout.tsx; inline script in `<head>` intercepts `reportError`/`console.error`/window error events to filter Replit-proxy-caused hydration mismatch errors (proxy injects DOM nodes into body before React hydrates)
 - Port 5000 is required for Replit's webview preview
