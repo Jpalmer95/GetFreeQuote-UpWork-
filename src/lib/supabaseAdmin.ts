@@ -8,7 +8,7 @@ let _client: SupabaseClient | null = null;
 export function getSupabaseAdmin(): SupabaseClient {
     if (!_client) {
         if (!supabaseServiceKey) {
-            throw new Error('SUPABASE_SERVICE_ROLE_KEY is required for server-side operations');
+            throw new Error('SUPABASE_SERVICE_ROLE_KEY is not set. Please add it to your environment secrets to enable server-side operations like AI agent processing.');
         }
         _client = createClient(supabaseUrl, supabaseServiceKey, {
             auth: { persistSession: false },

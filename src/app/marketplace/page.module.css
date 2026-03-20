@@ -342,6 +342,24 @@
     color: var(--foreground);
 }
 
+.errorBanner {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.85rem 1.25rem;
+    margin-bottom: 1.25rem;
+    border-radius: var(--radius-sm);
+    background: rgba(255, 69, 58, 0.08);
+    border: 1px solid rgba(255, 69, 58, 0.25);
+    color: #ff453a;
+    font-size: 0.9rem;
+    line-height: 1.45;
+}
+
+.errorBanner svg {
+    flex-shrink: 0;
+}
+
 .emptyState {
     grid-column: 1 / -1;
     display: flex;

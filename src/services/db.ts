@@ -10,6 +10,17 @@ import {
     mapCommunityProjectRow, mapDonationRow, mapCommunityProjectUpdateRow, mapLedgerEntryRow,
 } from './serverMappers';
 
+function formatSupabaseError(error: unknown): string {
+    if (!error) return 'Unknown error';
+    const e = error as Record<string, unknown>;
+    const parts: string[] = [];
+    if (e.message) parts.push(String(e.message));
+    if (e.code) parts.push(`code=${e.code}`);
+    if (e.hint) parts.push(`hint: ${e.hint}`);
+    if (e.details) parts.push(`details: ${e.details}`);
+    return parts.length > 0 ? parts.join(' | ') : JSON.stringify(error);
+}
+
 export const db = {
     getJobs: async (userId?: string): Promise<Job[]> => {
         let query = supabase.from('jobs').select('*');
@@ -17,7 +28,7 @@ export const db = {
 
         const { data, error } = await query;
         if (error) {
-            console.error('Error fetching jobs:', error);
+            console.error('Error fetching jobs:', formatSupabaseError(error));
             return [];
         }
         return data.map(mapJob);
@@ -64,8 +75,9 @@ export const db = {
 
         const { data, error } = await query;
         if (error) {
-            console.error('Error searching jobs:', error);
-            return [];
+            const msg = formatSupabaseError(error);
+            console.error('Error searching jobs:', msg);
+            throw new Error(msg);
         }
 
         let results = data.map(mapJob);
@@ -117,13 +129,13 @@ export const db = {
 
     updateJobStatus: async (jobId: string, status: string): Promise<void> => {
         const { error } = await supabase.from('jobs').update({ status }).eq('id', jobId);
-        if (error) console.error('Error updating job status:', error);
+        if (error) console.error('Error updating job status:', formatSupabaseError(error));
     },
 
     getQuotes: async (jobId: string): Promise<Quote[]> => {
         const { data, error } = await supabase.from('quotes').select('*').eq('job_id', jobId);
         if (error) {
-            console.error('Error fetching quotes:', error);
+            console.error('Error fetching quotes:', formatSupabaseError(error));
             return [];
         }
         return data.map(mapQuote);
@@ -149,7 +161,7 @@ export const db = {
     getQuotesByPhase: async (phaseId: string): Promise<Quote[]> => {
         const { data, error } = await supabase.from('quotes').select('*').eq('phase_id', phaseId);
         if (error) {
-            console.error('Error fetching phase quotes:', error);
+            console.error('Error fetching phase quotes:', formatSupabaseError(error));
             return [];
         }
         return data.map(mapQuote);
@@ -157,13 +169,13 @@ export const db = {
 
     updateQuoteStatus: async (quoteId: string, status: string): Promise<void> => {
         const { error } = await supabase.from('quotes').update({ status }).eq('id', quoteId);
-        if (error) console.error('Error updating quote status:', error);
+        if (error) console.error('Error updating quote status:', formatSupabaseError(error));
     },
 
     getMessages: async (jobId: string): Promise<Message[]> => {
         const { data, error } = await supabase.from('messages').select('*').eq('job_id', jobId).order('timestamp', { ascending: true });
         if (error) {
-            console.error('Error fetching messages:', error);
+            console.error('Error fetching messages:', formatSupabaseError(error));
             return [];
         }
         return data.map(mapMessage);
@@ -244,7 +256,7 @@ export const db = {
 
         const { data, error } = await query;
         if (error) {
-            console.error('Error fetching agent configs:', error);
+            console.error('Error fetching agent configs:', formatSupabaseError(error));
             return [];
         }
 
@@ -282,7 +294,7 @@ export const db = {
             .eq('job_id', jobId)
             .order('created_at', { ascending: true });
         if (error) {
-            console.error('Error fetching agent actions:', error);
+            console.error('Error fetching agent actions:', formatSupabaseError(error));
             return [];
         }
         return data.map(mapAgentAction);
@@ -317,7 +329,7 @@ export const db = {
 
         const { data, error } = await query;
         if (error) {
-            console.error('Error fetching notifications:', error);
+            console.error('Error fetching notifications:', formatSupabaseError(error));
             return [];
         }
         return data.map(mapNotification);
@@ -328,7 +340,7 @@ export const db = {
             .from('notifications')
             .update({ read: true })
             .eq('id', notifId);
-        if (error) console.error('Error marking notification read:', error);
+        if (error) console.error('Error marking notification read:', formatSupabaseError(error));
     },
 
     markAllNotificationsRead: async (userId: string): Promise<void> => {
@@ -337,7 +349,7 @@ export const db = {
             .update({ read: true })
             .eq('user_id', userId)
             .eq('read', false);
-        if (error) console.error('Error marking all notifications read:', error);
+        if (error) console.error('Error marking all notifications read:', formatSupabaseError(error));
     },
 
     getVendorProfile: async (userId: string): Promise<VendorProfile | undefined> => {
@@ -411,7 +423,7 @@ export const db = {
             .eq('vendor_profile_id', vendorProfileId)
             .order('created_at', { ascending: true });
         if (error) {
-            console.error('Error fetching estimating templates:', error);
+            console.error('Error fetching estimating templates:', formatSupabaseError(error));
             return [];
         }
         return data.map((row) => mapEstimatingTemplateRow(row as EstimatingTemplateRow));
@@ -466,7 +478,7 @@ export const db = {
             .eq('vendor_profile_id', vendorProfileId)
             .order('invited_at', { ascending: true });
         if (error) {
-            console.error('Error fetching team members:', error);
+            console.error('Error fetching team members:', formatSupabaseError(error));
             return [];
         }
         return data.map((row) => mapTeamMemberRow(row as TeamMemberRow));
@@ -513,7 +525,7 @@ export const db = {
             .eq('email', email)
             .eq('is_active', true);
         if (error) {
-            console.error('Error fetching team membership by email:', error);
+            console.error('Error fetching team membership by email:', formatSupabaseError(error));
             return [];
         }
         return (data || []).map((row) => ({
@@ -529,7 +541,7 @@ export const db = {
             .eq('user_id', userId)
             .eq('is_active', true);
         if (error) {
-            console.error('Error fetching team membership by userId:', error);
+            console.error('Error fetching team membership by userId:', formatSupabaseError(error));
             return [];
         }
         return (data || []).map((row) => ({
@@ -569,7 +581,7 @@ export const db = {
             .eq('vendor_profile_id', vendorProfileId)
             .order('created_at', { ascending: false });
         if (error) {
-            console.error('Error fetching vendor reviews:', error);
+            console.error('Error fetching vendor reviews:', formatSupabaseError(error));
             return [];
         }
         return data.map((row) => mapVendorReviewRow(row as VendorReviewRow));
@@ -582,7 +594,7 @@ export const db = {
             .eq('user_id', userId)
             .order('created_at', { ascending: false });
         if (error) {
-            console.error('Error fetching projects:', error);
+            console.error('Error fetching projects:', formatSupabaseError(error));
             return [];
         }
         return data.map((row) => mapProjectRow(row as ProjectRow));
@@ -647,7 +659,7 @@ export const db = {
             .eq('project_id', projectId)
             .order('sort_order', { ascending: true });
         if (error) {
-            console.error('Error fetching project phases:', error);
+            console.error('Error fetching project phases:', formatSupabaseError(error));
             return [];
         }
         return data.map((row) => mapProjectPhaseRow(row as ProjectPhaseRow));
@@ -709,7 +721,7 @@ export const db = {
             query = query.or(`title.ilike.%${filters.query}%,description.ilike.%${filters.query}%`);
         }
         const { data, error } = await query;
-        if (error) { console.error('Error fetching community projects:', error); return []; }
+        if (error) { console.error('Error fetching community projects:', formatSupabaseError(error)); return []; }
         return data.map((r) => mapCommunityProjectRow(r as CommunityProjectRow));
     },
 
@@ -758,7 +770,7 @@ export const db = {
             .select('*')
             .eq('community_project_id', communityProjectId)
             .order('created_at', { ascending: false });
-        if (error) { console.error('Error fetching donations:', error); return []; }
+        if (error) { console.error('Error fetching donations:', formatSupabaseError(error)); return []; }
         return data.map((r) => mapDonationRow(r as DonationRow));
     },
 
@@ -782,7 +794,7 @@ export const db = {
             .select('*')
             .eq('community_project_id', communityProjectId)
             .order('created_at', { ascending: false });
-        if (error) { console.error('Error fetching project updates:', error); return []; }
+        if (error) { console.error('Error fetching project updates:', formatSupabaseError(error)); return []; }
         return data.map((r) => mapCommunityProjectUpdateRow(r as CommunityProjectUpdateRow));
     },
 
@@ -805,7 +817,7 @@ export const db = {
             .select('*')
             .eq('community_project_id', communityProjectId)
             .order('created_at', { ascending: false });
-        if (error) { console.error('Error fetching ledger:', error); return []; }
+        if (error) { console.error('Error fetching ledger:', formatSupabaseError(error)); return []; }
         return data.map((r) => mapLedgerEntryRow(r as LedgerEntryRow));
     },
 };

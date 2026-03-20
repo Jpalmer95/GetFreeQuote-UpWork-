@@ -14,6 +14,7 @@ const URGENCY_LABELS: Record<string, string> = {
 
 export default function Marketplace() {
     const [jobs, setJobs] = useState<Job[]>([]);
+    const [error, setError] = useState<string | null>(null);
     const [filters, setFilters] = useState({
         query: '',
         industryVertical: '' as IndustryVertical | '',
@@ -25,24 +26,31 @@ export default function Marketplace() {
 
     useEffect(() => {
         const timer = setTimeout(async () => {
-            let results = await jobService.searchJobs({
-                query: filters.query || undefined,
-                industryVertical: filters.industryVertical || undefined,
-                subcategory: filters.subcategory || undefined,
-                requiresPermit: filters.requiresPermit,
-                location: filters.location || undefined,
-            });
+            try {
+                setError(null);
+                let results = await jobService.searchJobs({
+                    query: filters.query || undefined,
+                    industryVertical: filters.industryVertical || undefined,
+                    subcategory: filters.subcategory || undefined,
+                    requiresPermit: filters.requiresPermit,
+                    location: filters.location || undefined,
+                });
 
-            if (filters.tagFilter) {
-                const tagTerms = filters.tagFilter.toLowerCase().split(',').map(t => t.trim()).filter(Boolean);
-                results = results.filter(job =>
-                    tagTerms.some(term =>
-                        job.tags.some(tag => tag.toLowerCase().includes(term))
-                    )
-                );
+                if (filters.tagFilter) {
+                    const tagTerms = filters.tagFilter.toLowerCase().split(',').map(t => t.trim()).filter(Boolean);
+                    results = results.filter(job =>
+                        tagTerms.some(term =>
+                            job.tags.some(tag => tag.toLowerCase().includes(term))
+                        )
+                    );
+                }
+
+                setJobs(results);
+            } catch (err) {
+                console.error('Marketplace search failed:', err);
+                setJobs([]);
+                setError('Unable to load projects. The service may be temporarily unavailable — please try again later.');
             }
-
-            setJobs(results);
         }, 300);
         return () => clearTimeout(timer);
     }, [filters]);
@@ -157,6 +165,15 @@ export default function Marketplace() {
                             <option>Highest Budget</option>
                         </select>
                     </div>
+
+                    {error && (
+                        <div className={styles.errorBanner}>
+                            <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd"/>
+                            </svg>
+                            <span>{error}</span>
+                        </div>
+                    )}
 
                     <div className={styles.grid}>
                         {jobs.map(job => (

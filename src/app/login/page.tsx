@@ -42,7 +42,15 @@ function LoginForm() {
                 router.push('/dashboard');
             }
         } catch (err: unknown) {
-            setError(err instanceof Error ? err.message : 'An unexpected error occurred.');
+            let message = 'An unexpected error occurred.';
+            if (err instanceof Error) {
+                if (err.message === 'Load failed' || err.message === 'Failed to fetch' || err.message === 'NetworkError when attempting to fetch resource.') {
+                    message = 'Unable to connect to the server. Please check your internet connection and try again.';
+                } else {
+                    message = err.message;
+                }
+            }
+            setError(message);
         } finally {
             setLoading(false);
         }
