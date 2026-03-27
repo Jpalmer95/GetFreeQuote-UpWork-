@@ -207,22 +207,20 @@ export async function POST(request: NextRequest) {
                 .eq('is_active', true)
                 .maybeSingle();
 
-            if (ownerConfig && mapAgentConfigRow(ownerConfig as AgentConfigRow).autoRespond) {
-                await supabaseAdmin.from('notifications').insert({
-                    user_id: jobRow.user_id,
-                    job_id: jobId,
-                    type: 'new_message',
-                    priority: 'medium',
-                    title: 'Vendor Message',
-                    message: `A vendor sent a message regarding "${jobRow.title}".`,
-                    action_required: false,
-                    read: false,
-                });
+            await supabaseAdmin.from('notifications').insert({
+                user_id: jobRow.user_id,
+                job_id: jobId,
+                type: 'new_message',
+                priority: 'medium',
+                title: 'Vendor Message',
+                message: `A vendor sent a message regarding "${jobRow.title}".`,
+                action_required: false,
+                read: false,
+            });
 
-                sendNotificationEmail(jobRow.user_id, 'new_message', 'Vendor Message',
-                    `A vendor sent a message regarding "${jobRow.title}".`, '/dashboard').catch(() => {});
-                responses.push('owner_notified');
-            }
+            sendNotificationEmail(jobRow.user_id, 'new_message', 'Vendor Message',
+                `A vendor sent a message regarding "${jobRow.title}".`, '/dashboard').catch(() => {});
+            responses.push('owner_notified');
         }
 
         return NextResponse.json({ status: 'ok', responses });

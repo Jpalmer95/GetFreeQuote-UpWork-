@@ -6,6 +6,7 @@ import {
 } from '@/services/serverMappers';
 import { TeamMemberRole } from '@/types';
 import { hasPermission, VendorRole } from '@/services/vendorAuth';
+import { sendNotificationEmail } from '@/services/serverEmail';
 
 async function getAuthUser(req: NextRequest) {
     const authHeader = req.headers.get('authorization');
@@ -380,6 +381,29 @@ export async function POST(req: NextRequest) {
             .update({ status: 'WAITING_QUOTES' })
             .eq('id', phaseId)
             .in('status', ['NOT_STARTED']);
+
+        const { data: project } = await supabaseAdmin
+            .from('projects')
+            .select('user_id, title')
+            .eq('id', phase.project_id)
+            .single();
+
+        if (project) {
+            const notifTitle = 'New Quote Received';
+            const notifMessage = `${vendorName} submitted a quote of $${parseFloat(amount).toLocaleString()} for your project "${project.title}".`;
+
+            await supabaseAdmin.from('notifications').insert({
+                user_id: project.user_id,
+                type: 'quote_ready',
+                priority: 'medium',
+                title: notifTitle,
+                message: notifMessage,
+                action_required: false,
+                read: false,
+            });
+
+            sendNotificationEmail(project.user_id, 'quote_ready', notifTitle, notifMessage, '/dashboard').catch(() => {});
+        }
 
         return NextResponse.json({ quote });
     }
