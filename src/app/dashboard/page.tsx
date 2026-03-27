@@ -90,7 +90,7 @@ export default function Dashboard() {
         }
     }, [user, isLoading, router]);
 
-    const realtimeConnectedRef = useRef(false);
+    const channelHealthRef = useRef<Record<string, boolean>>({});
     const fallbackPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     const fetchJobDetail = useCallback(async (jobId: string) => {
@@ -128,9 +128,11 @@ export default function Dashboard() {
 
         fetchJobDetail(selectedJob.id);
 
-        const handleRealtimeStatus = (connected: boolean) => {
-            realtimeConnectedRef.current = connected;
-            if (connected) {
+        channelHealthRef.current = {};
+
+        const updateFallbackPolling = () => {
+            const allConnected = Object.values(channelHealthRef.current).every(Boolean);
+            if (allConnected && Object.keys(channelHealthRef.current).length === 2) {
                 if (fallbackPollRef.current) {
                     clearInterval(fallbackPollRef.current);
                     fallbackPollRef.current = null;
@@ -150,13 +152,20 @@ export default function Dashboard() {
             () => {
                 fetchJobDetail(selectedJob.id);
             },
-            handleRealtimeStatus,
+            (connected) => {
+                channelHealthRef.current.quotes = connected;
+                updateFallbackPolling();
+            },
         );
 
         const unsubMessages = realtimeService.subscribeToMessages(
             selectedJob.id,
             () => {
                 fetchJobDetail(selectedJob.id);
+            },
+            (connected) => {
+                channelHealthRef.current.messages = connected;
+                updateFallbackPolling();
             },
         );
 

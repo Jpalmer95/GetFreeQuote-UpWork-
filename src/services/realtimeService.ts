@@ -57,7 +57,7 @@ export const realtimeService = {
                     entry.status = 'connected';
                     entry.retryCount = 0;
                     onStatusChange?.(true);
-                } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+                } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
                     entry.status = 'disconnected';
                     onStatusChange?.(false);
 
