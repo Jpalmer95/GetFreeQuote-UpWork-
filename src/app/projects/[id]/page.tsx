@@ -414,7 +414,12 @@ export default function ProjectDetailPage() {
                                                 {phaseQuotes.map(quote => (
                                                     <div key={quote.id} className={styles.quoteCard}>
                                                         <div className={styles.quoteHeader}>
-                                                            <span className={styles.vendorName}>{quote.vendorName}</span>
+                                                            <span className={styles.vendorName}>
+                                                                {quote.vendorName}
+                                                                {vendorInfo[quote.vendorId]?.isVerified && (
+                                                                    <span className="badge badge-green" style={{ marginLeft: '0.5rem', fontSize: '0.65rem', padding: '0.15rem 0.4rem' }}>✓ Verified</span>
+                                                                )}
+                                                            </span>
                                                             <span className={styles.quotePrice}>${quote.amount.toLocaleString()}</span>
                                                         </div>
                                                         <p className={styles.quoteTimeline}>{quote.estimatedDays} day estimate</p>

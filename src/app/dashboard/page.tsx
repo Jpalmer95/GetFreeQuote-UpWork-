@@ -349,7 +349,12 @@ export default function Dashboard() {
                                         {quotes.map(quote => (
                                             <div key={quote.id} className={styles.quoteCard}>
                                                 <div className={styles.quoteHeader}>
-                                                    <span className={styles.vendorName}>{quote.vendorName}</span>
+                                                    <span className={styles.vendorName}>
+                                                        {quote.vendorName}
+                                                        {vendorInfo[quote.vendorId]?.isVerified && (
+                                                            <span className="badge badge-green" style={{ marginLeft: '0.5rem', fontSize: '0.65rem', padding: '0.15rem 0.4rem' }}>✓ Verified</span>
+                                                        )}
+                                                    </span>
                                                     <span className={styles.price}>${quote.amount}</span>
                                                 </div>
                                                 <p className={styles.timeline}>{quote.estimatedDays} day estimate</p>

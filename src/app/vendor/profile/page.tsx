@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
@@ -8,6 +8,7 @@ import { vendorApi } from '@/services/vendorApi';
 import { hasPermission, VendorRole, getRoleLabel } from '@/services/vendorAuth';
 import Navbar from '@/components/Navbar';
 import FileUpload from '@/components/FileUpload';
+import VerificationSection from '@/components/VerificationSection';
 import styles from './page.module.css';
 
 export default function VendorProfileEdit() {
@@ -336,6 +337,10 @@ export default function VendorProfileEdit() {
                         </div>
                     </div>
                 </div>
+
+                {profileId && user && (
+                    <VerificationSection userId={user.id} profileId={profileId} />
+                )}
 
                 {canEdit && (
                     <div className={styles.saveBar}>

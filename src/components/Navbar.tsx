@@ -58,6 +58,14 @@ export default function Navbar() {
                             >
                                 AI Agent
                             </Link>
+                            {profile?.role === 'ADMIN' && (
+                                <Link
+                                    href="/admin/verifications"
+                                    className={`${styles.link} ${pathname?.startsWith('/admin') ? styles.active : ''}`}
+                                >
+                                    Admin
+                                </Link>
+                            )}
                         </>
                     )}
                 </nav>

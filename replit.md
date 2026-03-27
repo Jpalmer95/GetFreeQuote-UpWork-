@@ -38,18 +38,23 @@ src/
       estimating/          # Estimating template management (hourly, per-unit, flat, tiered, formula)
       team/                # Team member management (admin, estimator, field_worker roles)
     agent-settings/        # AI Agent configuration page
+    admin/
+      verifications/       # Admin-only verification request review panel (approve/reject with notes)
     api/
       agent-process/       # Server-side AI agent orchestration (POST) — vendor matching with location, capacity, specialty, budget scoring
       agent-respond/       # Multi-turn conversation handler (POST) — scope updates, escalation, vendor notifications
       quote-action/        # Server-side quote accept/reject (POST)
+      verification/        # Verification API (submit request, admin list, admin approve/reject)
       community/           # Community project API (donate, create-project, post-update, record-expense, post-to-marketplace) with atomic RPCs for donations & expenses
   components/
-    Navbar.tsx             # Sticky glass navbar with notification bell + AI Agent link
+    Navbar.tsx             # Sticky glass navbar with notification bell + AI Agent link + Admin link for ADMIN role
     Navbar.module.css
     NotificationPanel.tsx  # Notification dropdown with priority indicators
     NotificationPanel.module.css
     QuoteComparison.tsx    # Side-by-side quote comparison modal with sort and best-value scoring
     QuoteComparison.module.css
+    VerificationSection.tsx  # Vendor verification request form and status display
+    VerificationSection.module.css
   context/
     AuthContext.tsx        # Supabase auth state provider
   lib/
@@ -63,7 +68,8 @@ src/
   types/
     index.ts               # TypeScript types, agent configs, notifications
 public/                    # Static assets
-supabase_schema.sql        # Database schema reference
+supabase_schema.sql                  # Database schema reference
+supabase_verification_requests.sql   # Migration: verification_requests table + notification type update
 ```
 
 ## Data Model
