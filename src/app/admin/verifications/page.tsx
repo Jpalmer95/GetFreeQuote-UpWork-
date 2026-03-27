@@ -229,7 +229,9 @@ export default function AdminVerifications() {
                                 <div className={styles.documentsSection}>
                                     <div className={styles.docLabel}>Submitted Documents</div>
                                     <div className={styles.docList}>
-                                        {req.documents.map((doc, i) => (
+                                        {req.documents.filter(doc => {
+                                            try { return new URL(doc).protocol === 'https:'; } catch { return false; }
+                                        }).map((doc, i) => (
                                             <a
                                                 key={i}
                                                 href={doc}

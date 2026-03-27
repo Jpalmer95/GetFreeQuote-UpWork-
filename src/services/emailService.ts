@@ -11,7 +11,8 @@ export type EmailNotificationType =
     | 'quote_rejected'
     | 'job_match'
     | 'agent_approval'
-    | 'new_message';
+    | 'new_message'
+    | 'verification_update';
 
 export interface EmailPreferences {
     quote_ready: boolean;
@@ -20,6 +21,7 @@ export interface EmailPreferences {
     job_match: boolean;
     agent_approval: boolean;
     new_message: boolean;
+    verification_update: boolean;
 }
 
 export const DEFAULT_EMAIL_PREFERENCES: EmailPreferences = {
@@ -29,6 +31,7 @@ export const DEFAULT_EMAIL_PREFERENCES: EmailPreferences = {
     job_match: true,
     agent_approval: true,
     new_message: false,
+    verification_update: true,
 };
 
 const NOTIFICATION_TYPE_TO_EMAIL_TYPE: Record<string, EmailNotificationType> = {
@@ -40,6 +43,7 @@ const NOTIFICATION_TYPE_TO_EMAIL_TYPE: Record<string, EmailNotificationType> = {
     approval_needed: 'agent_approval',
     agent_summary: 'agent_approval',
     new_message: 'new_message',
+    verification_update: 'verification_update',
 };
 
 function escapeHtml(str: string): string {
@@ -153,6 +157,7 @@ export async function sendEmailNotification(params: SendEmailNotificationParams)
         job_match: 'View Project',
         agent_approval: 'Review & Respond',
         new_message: 'View Messages',
+        verification_update: 'View Profile',
     };
 
     const html = buildEmailHtml({

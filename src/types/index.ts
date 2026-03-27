@@ -362,7 +362,8 @@ export type NotificationType =
     | 'job_match'
     | 'negotiation_update'
     | 'milestone'
-    | 'new_message';
+    | 'new_message'
+    | 'verification_update';
 
 export type NotificationPriority = 'low' | 'medium' | 'high' | 'urgent';
 

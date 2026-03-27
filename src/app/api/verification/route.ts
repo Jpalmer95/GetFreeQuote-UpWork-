@@ -104,6 +104,18 @@ export async function POST(req: NextRequest) {
         const { action } = body;
 
         if (action === 'submit') {
+            const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+            const validDocUrls = (body.documents || []).filter((url: string) => {
+                if (typeof url !== 'string') return false;
+                try {
+                    const parsed = new URL(url);
+                    if (parsed.protocol !== 'https:') return false;
+                    if (supabaseUrl && !url.startsWith(supabaseUrl)) return false;
+                    return true;
+                } catch {
+                    return false;
+                }
+            });
             const { data: vendorProfile } = await supabaseAdmin
                 .from('vendor_profiles')
                 .select('id, is_verified')
@@ -133,7 +145,7 @@ export async function POST(req: NextRequest) {
                 .from('verification_requests')
                 .insert({
                     vendor_profile_id: vendorProfile.id,
-                    documents: body.documents || [],
+                    documents: validDocUrls,
                     license_number: body.licenseNumber || null,
                     insurance_details: body.insuranceDetails || null,
                     notes: body.notes || null,
@@ -212,7 +224,7 @@ export async function POST(req: NextRequest) {
                 read: false,
             });
 
-            sendNotificationEmail(vendorProfile.user_id, 'verification_update' as any, notifTitle, notifMessage, '/vendor/profile').catch(() => {});
+            sendNotificationEmail(vendorProfile.user_id, 'verification_update', notifTitle, notifMessage, '/vendor/profile').catch(() => {});
 
             return NextResponse.json({ success: true });
         }
