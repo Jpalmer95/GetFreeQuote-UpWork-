@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getAuthenticatedUser } from '@/lib/serverAuth';
+import { sendNotificationEmail } from '@/services/serverEmail';
 
 export async function POST(request: NextRequest) {
     try {
@@ -116,6 +117,9 @@ export async function POST(request: NextRequest) {
                 read: false,
             });
 
+            sendNotificationEmail(vendorId, 'milestone', 'Quote Accepted!',
+                `Your quote of $${quote.amount} for "${jobTitle}" has been accepted.`, '/vendor').catch(() => {});
+
             if (jobId && jobUserId) {
                 await supabaseAdmin.from('agent_actions').insert({
                     job_id: jobId,
@@ -163,6 +167,9 @@ export async function POST(request: NextRequest) {
                 action_required: false,
                 read: false,
             });
+
+            sendNotificationEmail(vendorId, 'negotiation_update', 'Quote Declined',
+                `Your quote of $${quote.amount} for "${jobTitle}" was not accepted.`, '/vendor').catch(() => {});
 
             if (jobId && jobUserId) {
                 await supabaseAdmin.from('agent_actions').insert({

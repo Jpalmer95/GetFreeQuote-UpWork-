@@ -146,15 +146,24 @@
     font-size: 0.82rem;
 }
 
+.panelFooter {
+    display: flex;
+    border-top: 1px solid var(--border-subtle);
+}
+
 .settingsLink {
+    flex: 1;
     display: block;
     padding: 0.6rem 1rem;
     text-align: center;
     color: var(--primary);
     font-size: 0.78rem;
     text-decoration: none;
-    border-top: 1px solid var(--border-subtle);
     transition: background var(--dur-base) ease;
+}
+
+.settingsLink + .settingsLink {
+    border-left: 1px solid var(--border-subtle);
 }
 
 .settingsLink:hover { background: var(--surface-100); }

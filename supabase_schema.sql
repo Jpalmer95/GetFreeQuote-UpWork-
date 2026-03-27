@@ -8,6 +8,7 @@ create table public.profiles (
   full_name text,
   role text check (role in ('USER', 'VENDOR', 'ADMIN')) default 'USER',
   avatar_url text,
+  email_preferences jsonb default '{"quote_ready":true,"quote_accepted":true,"quote_rejected":true,"job_match":true,"agent_approval":true,"new_message":false}'::jsonb,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 

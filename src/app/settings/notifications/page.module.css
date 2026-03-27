@@ -1,0 +1,146 @@
+.container {
+    min-height: 100vh;
+    background: var(--bg-primary);
+}
+
+.content {
+    max-width: 620px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 4rem;
+}
+
+.backLink {
+    display: inline-block;
+    color: rgba(255, 255, 255, 0.4);
+    text-decoration: none;
+    font-size: 0.85rem;
+    margin-bottom: 1.5rem;
+    transition: color 0.15s;
+}
+
+.backLink:hover {
+    color: var(--primary-light);
+}
+
+.title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 0.4rem;
+}
+
+.subtitle {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.45);
+    margin: 0 0 1.5rem;
+    line-height: 1.5;
+}
+
+.card {
+    background: var(--surface-100);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.prefRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--border-subtle);
+    transition: background 0.15s;
+}
+
+.prefRow:last-child {
+    border-bottom: none;
+}
+
+.prefRow:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.prefInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.prefLabel {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.prefDesc {
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.35);
+}
+
+.toggle {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    border-radius: 12px;
+    border: none;
+    background: rgba(255, 255, 255, 0.12);
+    cursor: pointer;
+    transition: background 0.2s;
+    flex-shrink: 0;
+}
+
+.toggleOn {
+    background: var(--primary);
+}
+
+.toggleThumb {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform 0.2s;
+}
+
+.toggleOn .toggleThumb {
+    transform: translateX(20px);
+}
+
+.error {
+    margin-top: 1rem;
+    padding: 0.75rem 1rem;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    border-radius: var(--radius-sm);
+    color: #ef4444;
+    font-size: 0.85rem;
+}
+
+.actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 1.25rem;
+}
+
+.saveBtn {
+    padding: 0.65rem 1.5rem;
+    border-radius: var(--radius-sm);
+    border: none;
+    background: var(--primary);
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: opacity 0.15s;
+}
+
+.saveBtn:hover:not(:disabled) {
+    opacity: 0.9;
+}
+
+.saveBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

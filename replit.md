@@ -9,6 +9,7 @@ An AI-agent-native marketplace for estimates and bids across any industry — ho
 - **Styling**: CSS Modules + global utility classes in `globals.css`
 - **Font**: Outfit (Google Fonts, weights 300-900)
 - **Storage**: Supabase Storage (3 buckets: job-attachments, vendor-assets, community-images)
+- **Email**: Resend (`resend` package) — requires `RESEND_API_KEY` secret; gracefully skips if not set
 - **Package Manager**: npm
 
 ## Project Structure

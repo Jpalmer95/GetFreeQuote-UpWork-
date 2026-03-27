@@ -118,9 +118,14 @@ export default function NotificationPanel() {
                         ))
                     )}
 
-                    <a href="/agent-settings" className={styles.settingsLink}>
-                        Agent Settings
-                    </a>
+                    <div className={styles.panelFooter}>
+                        <a href="/agent-settings" className={styles.settingsLink}>
+                            Agent Settings
+                        </a>
+                        <a href="/settings/notifications" className={styles.settingsLink}>
+                            Email Preferences
+                        </a>
+                    </div>
                 </div>
             )}
         </div>
