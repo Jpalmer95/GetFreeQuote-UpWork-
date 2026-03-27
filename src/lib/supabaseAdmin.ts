@@ -7,6 +7,9 @@ let _client: SupabaseClient | null = null;
 
 export function getSupabaseAdmin(): SupabaseClient {
     if (!_client) {
+        if (!supabaseUrl) {
+            throw new Error('NEXT_PUBLIC_SUPABASE_URL is not set. Please add it to your environment secrets.');
+        }
         if (!supabaseServiceKey) {
             throw new Error('SUPABASE_SERVICE_ROLE_KEY is not set. Please add it to your environment secrets to enable server-side operations like AI agent processing.');
         }
