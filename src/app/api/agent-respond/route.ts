@@ -177,6 +177,30 @@ export async function POST(request: NextRequest) {
             }
         }
 
+        if (isJobOwner) {
+            const { data: vendorQuotes } = await supabaseAdmin
+                .from('quotes')
+                .select('vendor_id')
+                .eq('job_id', jobId);
+
+            for (const vq of (vendorQuotes || [])) {
+                await supabaseAdmin.from('notifications').insert({
+                    user_id: vq.vendor_id,
+                    job_id: jobId,
+                    type: 'new_message',
+                    priority: 'medium',
+                    title: 'New Message from Project Owner',
+                    message: `The project owner sent a message regarding "${jobRow.title}".`,
+                    action_required: false,
+                    read: false,
+                });
+
+                sendNotificationEmail(vq.vendor_id, 'new_message', 'New Message from Project Owner',
+                    `The project owner sent a message regarding "${jobRow.title}".`, '/vendor').catch(() => {});
+            }
+            responses.push('vendors_notified');
+        }
+
         if (isVendorParticipant) {
             const { data: vcRow } = await supabaseAdmin
                 .from('agent_configs')
