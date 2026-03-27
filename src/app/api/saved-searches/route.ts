@@ -45,6 +45,39 @@ export async function POST(req: NextRequest) {
     }
 }
 
+export async function PUT(req: NextRequest) {
+    try {
+        const user = await getAuthenticatedUser(req);
+        if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+        const body = await req.json();
+        const { id, name, filters } = body;
+
+        if (!id) return NextResponse.json({ error: 'Search ID required' }, { status: 400 });
+
+        const updates: Record<string, unknown> = {};
+        if (name) updates.name = name;
+        if (filters) updates.filters = filters;
+
+        if (Object.keys(updates).length === 0) {
+            return NextResponse.json({ error: 'Nothing to update' }, { status: 400 });
+        }
+
+        const { data, error } = await supabaseAdmin
+            .from('saved_searches')
+            .update(updates)
+            .eq('id', id)
+            .eq('user_id', user.id)
+            .select()
+            .single();
+
+        if (error) return NextResponse.json({ error: 'Failed to update saved search' }, { status: 500 });
+        return NextResponse.json(data);
+    } catch {
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
+}
+
 export async function DELETE(req: NextRequest) {
     try {
         const user = await getAuthenticatedUser(req);
