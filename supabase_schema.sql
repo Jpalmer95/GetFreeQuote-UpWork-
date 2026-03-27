@@ -100,16 +100,6 @@ create policy "Job owners can view quotes for their jobs." on public.quotes
     )
   );
 
-create policy "Project owners can view phase quotes." on public.quotes
-  for select using (
-    exists (
-      select 1 from public.project_phases pp
-      join public.projects p on p.id = pp.project_id
-      where pp.id = quotes.phase_id
-      and p.user_id = auth.uid()
-    )
-  );
-
 create policy "Vendors can create quotes." on public.quotes
   for insert with check (auth.uid() = vendor_id);
 
@@ -559,6 +549,17 @@ create policy "Users can delete phases of own projects." on public.project_phase
       select 1 from public.projects
       where public.projects.id = project_id
       and public.projects.user_id = auth.uid()
+    )
+  );
+
+-- Deferred quotes policy (depends on project_phases table created above)
+create policy "Project owners can view phase quotes." on public.quotes
+  for select using (
+    exists (
+      select 1 from public.project_phases pp
+      join public.projects p on p.id = pp.project_id
+      where pp.id = quotes.phase_id
+      and p.user_id = auth.uid()
     )
   );
 
