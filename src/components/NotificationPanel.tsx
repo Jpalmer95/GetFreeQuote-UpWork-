@@ -1,8 +1,9 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Notification } from '@/types';
 import { db } from '@/services/db';
+import { realtimeService } from '@/services/realtimeService';
 import styles from './NotificationPanel.module.css';
 
 const PRIORITY_CLASS: Record<string, string> = {
@@ -11,6 +12,8 @@ const PRIORITY_CLASS: Record<string, string> = {
     high: styles.priorityHigh,
     urgent: styles.priorityUrgent,
 };
+
+const FALLBACK_POLL_INTERVAL = 15000;
 
 function timeAgo(dateStr: string): string {
     const diff = Date.now() - new Date(dateStr).getTime();
@@ -22,24 +25,83 @@ function timeAgo(dateStr: string): string {
     return `${Math.floor(hours / 24)}d ago`;
 }
 
+function mapRealtimeNotification(row: Record<string, unknown>): Notification {
+    return {
+        id: row.id as string,
+        userId: row.user_id as string,
+        jobId: (row.job_id as string) || undefined,
+        type: row.type as Notification['type'],
+        priority: row.priority as Notification['priority'],
+        title: row.title as string,
+        message: row.message as string,
+        read: row.read as boolean,
+        actionRequired: row.action_required as boolean,
+        actionUrl: (row.action_url as string) || undefined,
+        createdAt: row.created_at as string,
+    };
+}
+
 export default function NotificationPanel() {
     const { user } = useAuth();
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [open, setOpen] = useState(false);
+    const [realtimeConnected, setRealtimeConnected] = useState(false);
     const panelRef = useRef<HTMLDivElement>(null);
+    const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+    const loadNotifications = useCallback(async () => {
+        if (!user) return;
+        const notifs = await db.getNotifications(user.id);
+        setNotifications(notifs);
+    }, [user]);
 
     useEffect(() => {
         if (!user) return;
 
-        const load = async () => {
-            const notifs = await db.getNotifications(user.id);
-            setNotifications(notifs);
-        };
+        loadNotifications();
 
-        load();
-        const interval = setInterval(load, 5000);
-        return () => clearInterval(interval);
-    }, [user]);
+        const unsubscribe = realtimeService.subscribeToNotifications(
+            user.id,
+            (payload) => {
+                if (payload.eventType === 'INSERT') {
+                    const notif = mapRealtimeNotification(payload.new);
+                    setNotifications(prev => [notif, ...prev].slice(0, 50));
+                } else if (payload.eventType === 'UPDATE') {
+                    const updated = mapRealtimeNotification(payload.new);
+                    setNotifications(prev =>
+                        prev.map(n => n.id === updated.id ? updated : n)
+                    );
+                }
+            },
+            (connected) => {
+                setRealtimeConnected(connected);
+            },
+        );
+
+        return () => {
+            unsubscribe();
+        };
+    }, [user, loadNotifications]);
+
+    useEffect(() => {
+        if (realtimeConnected) {
+            if (pollRef.current) {
+                clearInterval(pollRef.current);
+                pollRef.current = null;
+            }
+            return;
+        }
+
+        if (!user) return;
+
+        pollRef.current = setInterval(loadNotifications, FALLBACK_POLL_INTERVAL);
+        return () => {
+            if (pollRef.current) {
+                clearInterval(pollRef.current);
+                pollRef.current = null;
+            }
+        };
+    }, [realtimeConnected, user, loadNotifications]);
 
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {

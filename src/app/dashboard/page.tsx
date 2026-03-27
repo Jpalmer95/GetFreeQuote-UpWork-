@@ -1,11 +1,12 @@
 'use client';
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { jobService } from '@/services/jobService';
 import { Job, Quote, Message, AgentAction, IndustryVertical, INDUSTRY_VERTICALS } from '@/types';
 import { db } from '@/services/db';
 import { isAgentSender, getAgentLabel } from '@/services/aiAgent';
 import { supabase } from '@/lib/supabase';
+import { realtimeService } from '@/services/realtimeService';
 import styles from './page.module.css';
 import Navbar from '@/components/Navbar';
 import QuoteComparison, { CompareQuotesButton } from '@/components/QuoteComparison';
@@ -89,35 +90,85 @@ export default function Dashboard() {
         }
     }, [user, isLoading, router]);
 
+    const realtimeConnectedRef = useRef(false);
+    const fallbackPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+    const fetchJobDetail = useCallback(async (jobId: string) => {
+        const [updatedQuotes, updatedMessages, updatedActions] = await Promise.all([
+            jobService.getJobQuotes(jobId),
+            jobService.getJobMessages(jobId),
+            db.getAgentActions(jobId),
+        ]);
+        setQuotes([...updatedQuotes]);
+        setMessages([...updatedMessages]);
+        setAgentActions([...updatedActions]);
+
+        const vendorIds = [...new Set(updatedQuotes.map(q => q.vendorId))];
+        if (vendorIds.length > 0) {
+            const info = await db.getVendorInfoByUserIds(vendorIds);
+            setVendorInfo(info);
+        }
+    }, []);
+
     useEffect(() => {
         if (!user) return;
 
         const fetchJobs = async () => {
             const myJobs = await jobService.getMyJobs(user.id);
             setJobs([...myJobs]);
+        };
 
-            if (selectedJob) {
-                const [updatedQuotes, updatedMessages, updatedActions] = await Promise.all([
-                    jobService.getJobQuotes(selectedJob.id),
-                    jobService.getJobMessages(selectedJob.id),
-                    db.getAgentActions(selectedJob.id),
-                ]);
-                setQuotes([...updatedQuotes]);
-                setMessages([...updatedMessages]);
-                setAgentActions([...updatedActions]);
+        fetchJobs();
+        const jobsInterval = setInterval(fetchJobs, 30000);
+        return () => clearInterval(jobsInterval);
+    }, [user]);
 
-                const vendorIds = [...new Set(updatedQuotes.map(q => q.vendorId))];
-                if (vendorIds.length > 0) {
-                    const info = await db.getVendorInfoByUserIds(vendorIds);
-                    setVendorInfo(info);
+    useEffect(() => {
+        if (!user || !selectedJob) return;
+
+        fetchJobDetail(selectedJob.id);
+
+        const handleRealtimeStatus = (connected: boolean) => {
+            realtimeConnectedRef.current = connected;
+            if (connected) {
+                if (fallbackPollRef.current) {
+                    clearInterval(fallbackPollRef.current);
+                    fallbackPollRef.current = null;
+                }
+            } else {
+                if (!fallbackPollRef.current) {
+                    fallbackPollRef.current = setInterval(
+                        () => fetchJobDetail(selectedJob.id),
+                        15000,
+                    );
                 }
             }
         };
 
-        fetchJobs();
-        const interval = setInterval(fetchJobs, 3000);
-        return () => clearInterval(interval);
-    }, [selectedJob, user]);
+        const unsubQuotes = realtimeService.subscribeToQuotes(
+            selectedJob.id,
+            () => {
+                fetchJobDetail(selectedJob.id);
+            },
+            handleRealtimeStatus,
+        );
+
+        const unsubMessages = realtimeService.subscribeToMessages(
+            selectedJob.id,
+            () => {
+                fetchJobDetail(selectedJob.id);
+            },
+        );
+
+        return () => {
+            unsubQuotes();
+            unsubMessages();
+            if (fallbackPollRef.current) {
+                clearInterval(fallbackPollRef.current);
+                fallbackPollRef.current = null;
+            }
+        };
+    }, [selectedJob, user, fetchJobDetail]);
 
     const filteredJobs = useMemo(() => {
         let result = jobs;

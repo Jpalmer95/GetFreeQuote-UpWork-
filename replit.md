@@ -49,7 +49,7 @@ src/
   components/
     Navbar.tsx             # Sticky glass navbar with notification bell + AI Agent link + Admin link for ADMIN role
     Navbar.module.css
-    NotificationPanel.tsx  # Notification dropdown with priority indicators
+    NotificationPanel.tsx  # Notification dropdown with real-time updates (Supabase subscriptions, fallback polling)
     NotificationPanel.module.css
     QuoteComparison.tsx    # Side-by-side quote comparison modal with sort and best-value scoring
     QuoteComparison.module.css
@@ -65,11 +65,13 @@ src/
     aiAgent.ts             # AI agent UI helpers (status labels, scoring display)
     serverMappers.ts       # Shared typed row interfaces + mapper functions for server-side routes
     db.ts                  # Database access layer (Supabase queries, mappers)
+    realtimeService.ts     # Centralized Supabase real-time subscription manager with reconnect and fallback
   types/
     index.ts               # TypeScript types, agent configs, notifications
 public/                    # Static assets
 supabase_schema.sql                  # Database schema reference
 supabase_verification_requests.sql   # Migration: verification_requests table + notification type update
+supabase_realtime_setup.sql          # Migration: enable real-time for notifications, quotes, messages tables
 ```
 
 ## Data Model
