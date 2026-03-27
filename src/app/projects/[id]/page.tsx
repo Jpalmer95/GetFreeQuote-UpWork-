@@ -399,7 +399,12 @@ export default function ProjectDetailPage() {
                                         >
                                             Quotes ({phaseQuotes.length})
                                             {pendingQuotes > 0 && <span className={styles.pendingBadge}>{pendingQuotes} pending</span>}
-                                            {acceptedQuote && <span className={styles.acceptedBadge}>Vendor: {acceptedQuote.vendorName}</span>}
+                                            {acceptedQuote && (
+                                                <span className={styles.acceptedBadge}>
+                                                    Vendor: {acceptedQuote.vendorName}
+                                                    {vendorInfo[acceptedQuote.vendorId]?.isVerified && ' ✓'}
+                                                </span>
+                                            )}
                                             <span className={styles.toggleArrow}>{expandedPhaseQuotes === phase.id ? '\u25B2' : '\u25BC'}</span>
                                         </button>
 
@@ -534,7 +539,16 @@ export default function ProjectDetailPage() {
                                                 <span className={styles.budgetStatusDot} style={{ background: STATUS_COLORS[phase.status] }} />
                                                 {STATUS_LABELS[phase.status]}
                                             </td>
-                                            <td>{acceptedQuote ? acceptedQuote.vendorName : '-'}</td>
+                                            <td>
+                                                {acceptedQuote ? (
+                                                    <>
+                                                        {acceptedQuote.vendorName}
+                                                        {vendorInfo[acceptedQuote.vendorId]?.isVerified && (
+                                                            <span className="badge badge-green" style={{ marginLeft: '0.35rem', fontSize: '0.6rem', padding: '0.1rem 0.3rem' }}>✓</span>
+                                                        )}
+                                                    </>
+                                                ) : '-'}
+                                            </td>
                                             <td>{est > 0 ? `$${est.toLocaleString()}` : '-'}</td>
                                             <td>{act > 0 ? `$${act.toLocaleString()}` : '-'}</td>
                                             <td className={variance > 0 ? styles.overBudget : variance < 0 ? styles.underBudget : ''}>

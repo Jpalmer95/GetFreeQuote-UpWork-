@@ -524,7 +524,12 @@ export default function Dashboard() {
                                                 {quotes.filter(q => q.status === 'PENDING').map(q => (
                                                     <div key={q.id} className={styles.quoteCard} style={{ marginBottom: '0.4rem' }}>
                                                         <div className={styles.quoteHeader}>
-                                                            <span className={styles.vendorName}>{q.vendorName}</span>
+                                                            <span className={styles.vendorName}>
+                                                                {q.vendorName}
+                                                                {vendorInfo[q.vendorId]?.isVerified && (
+                                                                    <span className="badge badge-green" style={{ marginLeft: '0.5rem', fontSize: '0.65rem', padding: '0.15rem 0.4rem' }}>✓ Verified</span>
+                                                                )}
+                                                            </span>
                                                             <span className={styles.price}>${q.amount}</span>
                                                         </div>
                                                         <p className={styles.timeline}>{q.estimatedDays} day estimate</p>
