@@ -61,7 +61,7 @@ function buildEmailHtml(params: {
 }): string {
     const title = escapeHtml(params.title);
     const preheader = escapeHtml(params.preheader);
-    const body = escapeHtml(params.body);
+    const body = escapeHtml(params.body).replace(/\n/g, '<br />');
     const ctaText = params.ctaText ? escapeHtml(params.ctaText) : undefined;
     const { ctaUrl, unsubscribeUrl } = params;
     return `<!DOCTYPE html>
@@ -158,7 +158,7 @@ export async function sendEmailNotification(params: SendEmailNotificationParams)
     const html = buildEmailHtml({
         title,
         preheader: message.substring(0, 120),
-        body: message.replace(/\n/g, '<br />'),
+        body: message,
         ctaText: ctaLabels[emailType] || 'View on BidFlow',
         ctaUrl: fullActionUrl,
         unsubscribeUrl,
