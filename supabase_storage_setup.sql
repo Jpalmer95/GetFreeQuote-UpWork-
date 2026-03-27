@@ -1,5 +1,8 @@
 -- Supabase Storage Buckets Setup
 -- Run this in the Supabase SQL Editor after the main schema
+-- Note: Buckets are public (read access) by design — marketplace attachments,
+-- vendor portfolios, and community images are publicly viewable content.
+-- Insert policies enforce folder ownership so users can only upload to their own folder.
 
 -- Create storage buckets
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)

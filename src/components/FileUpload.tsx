@@ -45,9 +45,11 @@ export default function FileUpload({
         }))
     );
 
+    const existingUrlsKey = existingUrls.join('|');
     useEffect(() => {
         setPreviews(prev => {
-            const uploadedPreviews = prev.filter(p => !p.isExisting);
+            const existingSet = new Set(existingUrls);
+            const uploadedPreviews = prev.filter(p => !p.isExisting && !existingSet.has(p.url));
             const existingPreviews: PreviewFile[] = existingUrls.map((url, i) => ({
                 id: `existing-${i}`,
                 url,
@@ -56,7 +58,8 @@ export default function FileUpload({
             }));
             return [...existingPreviews, ...uploadedPreviews];
         });
-    }, [existingUrls]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [existingUrlsKey]);
 
     const [uploading, setUploading] = useState(false);
     const [error, setError] = useState<string | null>(null);
