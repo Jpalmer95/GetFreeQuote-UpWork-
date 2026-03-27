@@ -361,7 +361,8 @@ export type NotificationType =
     | 'agent_summary'
     | 'job_match'
     | 'negotiation_update'
-    | 'milestone';
+    | 'milestone'
+    | 'new_message';
 
 export type NotificationPriority = 'low' | 'medium' | 'high' | 'urgent';
 

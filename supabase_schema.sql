@@ -254,7 +254,7 @@ create table public.notifications (
   job_id uuid references public.jobs(id),
   type text check (type in (
     'quote_ready', 'approval_needed', 'scope_change',
-    'agent_summary', 'job_match', 'negotiation_update', 'milestone'
+    'agent_summary', 'job_match', 'negotiation_update', 'milestone', 'new_message'
   )) not null,
   priority text check (priority in ('low', 'medium', 'high', 'urgent')) default 'medium',
   title text not null,
