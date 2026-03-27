@@ -14,9 +14,10 @@ const URGENCY_LABELS: Record<string, string> = {
     urgent: 'Urgent',
 };
 
-function getRelevanceScore(job: Job, query: string, location: string): { score: number; reasons: string[] } {
+function getRelevanceScore(job: Job, query: string, location: string): { score: number; reasons: string[]; locationMatch: string } {
     const reasons: string[] = [];
     let score = 0;
+    let locationMatch = '';
 
     if (query) {
         const q = query.toLowerCase();
@@ -30,13 +31,24 @@ function getRelevanceScore(job: Job, query: string, location: string): { score: 
         if (job.location.toLowerCase() === loc) {
             score += 3;
             reasons.push('Exact location');
-        } else if (job.location.toLowerCase().includes(loc)) {
-            score += 1;
-            reasons.push('Near location');
+            locationMatch = 'exact';
+        } else if (job.location.toLowerCase().includes(loc) || loc.includes(job.location.toLowerCase())) {
+            score += 2;
+            reasons.push('Same area');
+            locationMatch = 'nearby';
+        } else {
+            const locParts = loc.split(',').map(p => p.trim()).filter(Boolean);
+            const jobParts = job.location.toLowerCase().split(',').map(p => p.trim()).filter(Boolean);
+            const sharedParts = locParts.filter(p => jobParts.some(jp => jp.includes(p) || p.includes(jp)));
+            if (sharedParts.length > 0) {
+                score += 1;
+                reasons.push('Same region');
+                locationMatch = 'region';
+            }
         }
     }
 
-    return { score, reasons };
+    return { score, reasons, locationMatch };
 }
 
 export default function Marketplace() {
@@ -76,6 +88,13 @@ export default function Marketplace() {
                 if (filters.location && filters.locationRadius === 'exact') {
                     const loc = filters.location.toLowerCase();
                     results = results.filter(job => job.location.toLowerCase() === loc);
+                } else if (filters.location && filters.locationRadius === 'region') {
+                    const loc = filters.location.toLowerCase();
+                    const locParts = loc.split(',').map(p => p.trim()).filter(Boolean);
+                    results = results.filter(job => {
+                        const jobLoc = job.location.toLowerCase();
+                        return locParts.some(part => jobLoc.includes(part));
+                    });
                 }
 
                 setJobs(results);
@@ -197,6 +216,7 @@ export default function Marketplace() {
                                 requiresPermit: saved.requiresPermit as boolean | undefined,
                                 location: (saved.location as string) || '',
                                 tagFilter: (saved.tagFilter as string) || '',
+                                locationRadius: (saved.locationRadius as string) || 'any',
                             })}
                         />
                     </div>
@@ -268,8 +288,13 @@ export default function Marketplace() {
                                 <p className={styles.description}>{job.description}</p>
 
                                 <div className={styles.metaRow}>
-                                    <span className={styles.metaChip}>
+                                    <span className={`${styles.metaChip} ${relevance?.locationMatch === 'exact' ? styles.metaChipMatch : relevance?.locationMatch === 'nearby' ? styles.metaChipNear : ''}`}>
+                                        {relevance?.locationMatch === 'exact' && '📍 '}
+                                        {relevance?.locationMatch === 'nearby' && '📍 '}
                                         {job.location}
+                                        {relevance?.locationMatch === 'exact' && ' — Exact match'}
+                                        {relevance?.locationMatch === 'nearby' && ' — Nearby'}
+                                        {relevance?.locationMatch === 'region' && ' — Same region'}
                                     </span>
                                     {job.budget && (
                                         <span className={styles.metaChip}>

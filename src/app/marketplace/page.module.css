@@ -295,6 +295,18 @@
     color: rgba(255,255,255,0.55);
 }
 
+.metaChipMatch {
+    color: #34c759;
+    background: rgba(52,199,89,0.08);
+    border-color: rgba(52,199,89,0.2);
+}
+
+.metaChipNear {
+    color: var(--primary-light);
+    background: rgba(79,142,247,0.08);
+    border-color: rgba(79,142,247,0.2);
+}
+
 .metaChipWarn {
     color: var(--accent-amber);
     background: rgba(245,166,35,0.08);
