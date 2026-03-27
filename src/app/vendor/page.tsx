@@ -9,6 +9,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import styles from './page.module.css';
 import Navbar from '@/components/Navbar';
+import VendorAnalytics from '@/components/VendorAnalytics';
 
 type VendorTab = 'opportunities' | 'reviews';
 
@@ -108,6 +109,8 @@ export default function VendorDashboard() {
                     ))}
                 </div>
             )}
+
+            <VendorAnalytics />
 
             <div className={styles.statsBar}>
                 <div className={styles.statTile}>

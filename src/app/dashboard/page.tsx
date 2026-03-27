@@ -10,6 +10,7 @@ import { realtimeService } from '@/services/realtimeService';
 import styles from './page.module.css';
 import Navbar from '@/components/Navbar';
 import QuoteComparison, { CompareQuotesButton } from '@/components/QuoteComparison';
+import ClientAnalytics from '@/components/ClientAnalytics';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 
@@ -209,6 +210,8 @@ export default function Dashboard() {
                     <Link href="/post-job" className={styles.newBtn}>+ New Project</Link>
                 </div>
             </header>
+
+            <ClientAnalytics />
 
             <div className={styles.layout}>
                 <aside className={styles.jobList}>

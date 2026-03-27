@@ -1,0 +1,137 @@
+.container {
+    padding: 1.5rem;
+    border-radius: var(--radius-md);
+    background: var(--glass-bg);
+    border: 1px solid var(--border-subtle);
+    backdrop-filter: blur(12px);
+    margin-bottom: 2rem;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+}
+
+.title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: rgba(255,255,255,0.9);
+}
+
+.period {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.35);
+    font-weight: 500;
+}
+
+.loading {
+    color: rgba(255,255,255,0.4);
+    font-size: 0.9rem;
+    text-align: center;
+    padding: 2rem 0;
+}
+
+.metricsGrid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.metricCard {
+    padding: 1rem;
+    border-radius: var(--radius-sm);
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border-subtle);
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    text-align: center;
+}
+
+.metricValue {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: rgba(255,255,255,0.9);
+}
+
+.metricLabel {
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: rgba(255,255,255,0.35);
+}
+
+.accentGreen { color: var(--accent); }
+.accentBlue { color: var(--primary-light); }
+
+.chartSection {
+    border-top: 1px solid var(--border-subtle);
+    padding-top: 1.25rem;
+}
+
+.chartHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.chartTitle {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: rgba(255,255,255,0.7);
+}
+
+.chartSubtitle {
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.35);
+}
+
+.chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 100px;
+    padding-bottom: 1.25rem;
+    position: relative;
+}
+
+.barWrap {
+    flex: 1;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
+    position: relative;
+}
+
+.bar {
+    width: 100%;
+    min-height: 2px;
+    border-radius: 2px 2px 0 0;
+    background: linear-gradient(to top, var(--primary), var(--secondary));
+    transition: height 0.3s ease;
+}
+
+.barWrap:hover .bar {
+    background: linear-gradient(to top, var(--primary-light), var(--secondary-light));
+}
+
+.barLabel {
+    position: absolute;
+    bottom: -1.1rem;
+    font-size: 0.58rem;
+    color: rgba(255,255,255,0.3);
+    white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+    .metricsGrid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}

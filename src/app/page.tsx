@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import PlatformStats from '@/components/PlatformStats';
 import styles from './page.module.css';
 
 const VERTICALS = [
@@ -55,6 +56,8 @@ export default function Home() {
           <span>& More</span>
         </div>
       </section>
+
+      <PlatformStats />
 
       <section className={styles.featuresSection}>
         <div className={styles.sectionLabel}>How It Works</div>

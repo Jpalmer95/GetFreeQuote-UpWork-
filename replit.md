@@ -53,6 +53,12 @@ src/
     NotificationPanel.module.css
     QuoteComparison.tsx    # Side-by-side quote comparison modal with sort and best-value scoring
     QuoteComparison.module.css
+    VendorAnalytics.tsx      # Vendor performance analytics (win rate, revenue, 30-day chart)
+    VendorAnalytics.module.css
+    ClientAnalytics.tsx      # Client project insights (spending, savings, completion rate)
+    ClientAnalytics.module.css
+    PlatformStats.tsx        # Landing page aggregate platform statistics
+    PlatformStats.module.css
     VerificationSection.tsx  # Vendor verification request form and status display
     VerificationSection.module.css
   context/
