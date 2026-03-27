@@ -167,3 +167,25 @@
 }
 
 .settingsLink:hover { background: var(--surface-100); }
+
+/* ─── Mobile: Notification Panel ─── */
+@media (max-width: 768px) {
+    .panel {
+        position: fixed;
+        top: 62px;
+        right: 0;
+        left: 0;
+        width: 100%;
+        max-height: calc(100dvh - 62px);
+        border-radius: 0 0 var(--radius-md) var(--radius-md);
+        z-index: 310;
+    }
+
+    .bellBtn {
+        min-width: 44px;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+}

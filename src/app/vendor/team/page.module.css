@@ -289,3 +289,63 @@
     transition: all var(--dur-base) ease;
 }
 .linkBtn:hover { background: var(--primary-hover); }
+
+/* ─── Mobile: Team Management ─── */
+@media (max-width: 768px) {
+    .container {
+        padding-top: 0;
+    }
+
+    .pageHeader {
+        flex-direction: column;
+        gap: 0.5rem;
+        align-items: flex-start;
+        padding: 1rem;
+    }
+
+    .content {
+        padding: 1rem;
+    }
+
+    .card {
+        padding: 1rem;
+    }
+
+    .memberCard {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+    }
+
+    .memberActions {
+        width: 100%;
+    }
+
+    .editBtn, .removeBtn {
+        flex: 1;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .formGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .input, .select {
+        min-height: 44px;
+    }
+
+    .btnRow {
+        flex-direction: column;
+    }
+
+    .saveBtn, .cancelBtn, .addBtn {
+        min-height: 44px;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+}

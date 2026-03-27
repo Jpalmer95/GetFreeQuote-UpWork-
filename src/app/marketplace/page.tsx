@@ -94,6 +94,8 @@ export default function Marketplace() {
         loadVendorProfile();
     }, [user]);
 
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+
     const [filters, setFilters] = useState({
         query: '',
         industryVertical: '' as IndustryVertical | '',
@@ -156,7 +158,15 @@ export default function Marketplace() {
             <Navbar />
 
             <div className={styles.layout}>
-                <aside className={styles.sidebar}>
+                <button
+                    className={styles.mobileFilterToggle}
+                    onClick={() => setSidebarOpen(!sidebarOpen)}
+                    aria-expanded={sidebarOpen}
+                    aria-controls="marketplace-filters"
+                >
+                    {sidebarOpen ? '✕ Hide Filters' : '☰ Show Filters'}
+                </button>
+                <aside id="marketplace-filters" className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ''}`}>
                     <div className={styles.filterSection}>
                         <span className={styles.filterLabel}>Industry</span>
                         <div className={styles.pillGroup}>

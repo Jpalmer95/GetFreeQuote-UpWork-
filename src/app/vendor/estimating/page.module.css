@@ -319,3 +319,75 @@
     transition: all var(--dur-base) ease;
 }
 .linkBtn:hover { background: var(--primary-hover); }
+
+/* ─── Mobile: Estimating ─── */
+@media (max-width: 768px) {
+    .container {
+        padding-top: 0;
+    }
+
+    .pageHeader {
+        flex-direction: column;
+        gap: 0.5rem;
+        align-items: flex-start;
+        padding: 1rem;
+    }
+
+    .content {
+        padding: 1rem;
+    }
+
+    .card {
+        padding: 1rem;
+    }
+
+    .formGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .lineItemGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .tierRow {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+    }
+
+    .templateHeader {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .templateActions {
+        width: 100%;
+    }
+
+    .editBtn, .deleteBtn {
+        flex: 1;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .input, .select {
+        min-height: 44px;
+    }
+
+    .btnRow {
+        flex-direction: column;
+    }
+
+    .saveBtn, .cancelBtn, .createBtn {
+        min-height: 44px;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .removeItemBtn {
+        min-height: 36px;
+    }
+}

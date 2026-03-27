@@ -421,3 +421,116 @@
 .emptyIcon {
     opacity: 0.2;
 }
+
+.mobileFilterToggle {
+    display: none;
+}
+
+/* ─── Mobile: Marketplace ─── */
+@media (max-width: 768px) {
+    .layout {
+        flex-direction: column;
+        padding: 1rem;
+        gap: 0;
+    }
+
+    .mobileFilterToggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        width: 100%;
+        padding: 0.65rem;
+        margin-bottom: 1rem;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border-mid);
+        background: var(--surface-100);
+        color: rgba(255,255,255,0.7);
+        font-family: var(--font-sans);
+        font-size: 0.88rem;
+        font-weight: 600;
+        cursor: pointer;
+        min-height: 44px;
+    }
+
+    .sidebar {
+        width: 100%;
+        display: none;
+        margin-bottom: 1.25rem;
+        padding-bottom: 1.25rem;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .sidebarOpen {
+        display: block;
+    }
+
+    .pillGroup {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+
+    .pill {
+        width: auto;
+        padding: 0.4rem 0.7rem;
+        font-size: 0.82rem;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+    }
+
+    .grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .jobCard {
+        padding: 1rem;
+    }
+
+    .cardHeader {
+        flex-wrap: wrap;
+        gap: 0.35rem;
+    }
+
+    .tagRow {
+        flex-wrap: wrap;
+    }
+
+    .metaRow {
+        flex-wrap: wrap;
+        gap: 0.35rem !important;
+    }
+
+    .cardActions {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .bidBtn, .detailsBtn {
+        width: 100%;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .feedHeader {
+        flex-direction: column;
+        gap: 0.5rem;
+        align-items: flex-start;
+    }
+
+    .sortSelect {
+        width: 100%;
+        min-height: 44px;
+    }
+
+    .miniInput {
+        min-height: 44px;
+    }
+
+    .radiusSelect {
+        min-height: 44px;
+    }
+}

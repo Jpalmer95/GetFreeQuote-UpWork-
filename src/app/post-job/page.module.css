@@ -160,3 +160,42 @@
     border-radius: 50%;
     animation: spin 0.7s linear infinite;
 }
+
+/* ─── Mobile: Post Job ─── */
+@media (max-width: 768px) {
+    .container {
+        padding: 1rem 0.75rem;
+    }
+
+    .formCard {
+        padding: 1.25rem;
+    }
+
+    .formCard h1 {
+        font-size: 1.4rem;
+    }
+
+    .inputRow {
+        grid-template-columns: 1fr;
+    }
+
+    .submitButton {
+        min-height: 48px;
+        font-size: 0.95rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .formCard {
+        padding: 1rem;
+        border-radius: var(--radius-sm);
+    }
+
+    .formCard h1 {
+        font-size: 1.2rem;
+    }
+
+    .subtext {
+        font-size: 0.88rem;
+    }
+}
