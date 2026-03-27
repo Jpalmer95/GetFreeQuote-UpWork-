@@ -37,6 +37,13 @@ export default function Navbar() {
         return () => document.removeEventListener('keydown', handleEsc);
     }, [menuOpen]);
 
+    useEffect(() => {
+        const mq = window.matchMedia('(min-width: 769px)');
+        const handler = () => { if (mq.matches) setMenuOpen(false); };
+        mq.addEventListener('change', handler);
+        return () => mq.removeEventListener('change', handler);
+    }, []);
+
     const showUser = mounted && user;
 
     return (
