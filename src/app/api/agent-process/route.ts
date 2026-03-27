@@ -458,8 +458,10 @@ export async function POST(request: NextRequest) {
             `Your agent broadcast "${job.title}" to ${vendorConfigs.length} vendor(s). Quotes will arrive as vendors respond.`, false, '/dashboard');
 
         return NextResponse.json({ status: 'processed', vendorsMatched: vendorConfigs.length });
-    } catch (error) {
-        console.error('Agent processing error:', error);
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Internal server error';
+        console.error('Agent processing error:', message);
+        const status = message.includes('SUPABASE_SERVICE_ROLE_KEY') ? 503 : 500;
+        return NextResponse.json({ error: message }, { status });
     }
 }

@@ -53,6 +53,7 @@ async function resolveVendorContext(userId: string, userEmail: string): Promise<
 }
 
 export async function GET(req: NextRequest) {
+  try {
     const user = await getAuthUser(req);
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
@@ -125,9 +126,16 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Internal server error';
+    console.error('[vendor GET]', message);
+    const status = message.includes('SUPABASE_SERVICE_ROLE_KEY') ? 503 : 500;
+    return NextResponse.json({ error: message }, { status });
+  }
 }
 
 export async function POST(req: NextRequest) {
+  try {
     const user = await getAuthUser(req);
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
@@ -377,4 +385,10 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Internal server error';
+    console.error('[vendor POST]', message);
+    const status = message.includes('SUPABASE_SERVICE_ROLE_KEY') ? 503 : 500;
+    return NextResponse.json({ error: message }, { status });
+  }
 }
