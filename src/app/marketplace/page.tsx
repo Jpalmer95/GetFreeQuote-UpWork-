@@ -275,6 +275,15 @@ export default function Marketplace() {
                     <SearchAutocomplete
                         value={filters.query}
                         onChange={(val) => setFilters({ ...filters, query: val })}
+                        onSelectSuggestion={(type, val) => {
+                            if (type === 'location') {
+                                setFilters({ ...filters, location: val, query: '' });
+                            } else if (type === 'category') {
+                                setFilters({ ...filters, query: val });
+                            } else {
+                                setFilters({ ...filters, tagFilter: val, query: '' });
+                            }
+                        }}
                         placeholder="Search projects by keyword..."
                     />
 

@@ -10,10 +10,11 @@ interface Suggestion {
 interface SearchAutocompleteProps {
     value: string;
     onChange: (value: string) => void;
+    onSelectSuggestion?: (type: string, value: string) => void;
     placeholder?: string;
 }
 
-export default function SearchAutocomplete({ value, onChange, placeholder }: SearchAutocompleteProps) {
+export default function SearchAutocomplete({ value, onChange, onSelectSuggestion, placeholder }: SearchAutocompleteProps) {
     const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
     const [showDropdown, setShowDropdown] = useState(false);
     const [activeIndex, setActiveIndex] = useState(-1);
@@ -59,7 +60,11 @@ export default function SearchAutocomplete({ value, onChange, placeholder }: Sea
     }, []);
 
     const handleSelect = (suggestion: Suggestion) => {
-        onChange(suggestion.value);
+        if (onSelectSuggestion) {
+            onSelectSuggestion(suggestion.type, suggestion.value);
+        } else {
+            onChange(suggestion.value);
+        }
         setShowDropdown(false);
     };
 
