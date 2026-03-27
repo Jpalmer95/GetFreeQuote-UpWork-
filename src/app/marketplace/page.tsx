@@ -14,10 +14,45 @@ const URGENCY_LABELS: Record<string, string> = {
     urgent: 'Urgent',
 };
 
-function getRelevanceScore(job: Job, query: string, location: string): { score: number; reasons: string[]; locationMatch: string } {
+function estimateDistance(jobLocation: string, searchLocation: string): { miles: number; label: string; tier: 'exact' | 'nearby' | 'region' | 'far' } {
+    const jobLoc = jobLocation.toLowerCase().trim();
+    const searchLoc = searchLocation.toLowerCase().trim();
+
+    if (jobLoc === searchLoc) {
+        return { miles: 0, label: '0 mi', tier: 'exact' };
+    }
+
+    const jobParts = jobLoc.split(',').map(p => p.trim()).filter(Boolean);
+    const searchParts = searchLoc.split(',').map(p => p.trim()).filter(Boolean);
+
+    const jobCity = jobParts[0] || '';
+    const searchCity = searchParts[0] || '';
+    const jobState = jobParts[1] || '';
+    const searchState = searchParts[1] || '';
+
+    if (jobCity === searchCity) {
+        return { miles: 0, label: '0 mi', tier: 'exact' };
+    }
+
+    if (jobCity.includes(searchCity) || searchCity.includes(jobCity)) {
+        return { miles: 5, label: '~5 mi', tier: 'exact' };
+    }
+
+    if (jobState && searchState && jobState === searchState) {
+        return { miles: 25, label: '~25 mi', tier: 'nearby' };
+    }
+
+    if (jobParts.some(p => searchParts.some(sp => p.includes(sp) || sp.includes(p)))) {
+        return { miles: 50, label: '~50 mi', tier: 'region' };
+    }
+
+    return { miles: 100, label: '100+ mi', tier: 'far' };
+}
+
+function getRelevanceScore(job: Job, query: string, location: string): { score: number; reasons: string[]; distance: { miles: number; label: string; tier: string } | null } {
     const reasons: string[] = [];
     let score = 0;
-    let locationMatch = '';
+    let distance: { miles: number; label: string; tier: string } | null = null;
 
     if (query) {
         const q = query.toLowerCase();
@@ -27,28 +62,13 @@ function getRelevanceScore(job: Job, query: string, location: string): { score: 
     }
 
     if (location) {
-        const loc = location.toLowerCase();
-        if (job.location.toLowerCase() === loc) {
-            score += 3;
-            reasons.push('Exact location');
-            locationMatch = 'exact';
-        } else if (job.location.toLowerCase().includes(loc) || loc.includes(job.location.toLowerCase())) {
-            score += 2;
-            reasons.push('Same area');
-            locationMatch = 'nearby';
-        } else {
-            const locParts = loc.split(',').map(p => p.trim()).filter(Boolean);
-            const jobParts = job.location.toLowerCase().split(',').map(p => p.trim()).filter(Boolean);
-            const sharedParts = locParts.filter(p => jobParts.some(jp => jp.includes(p) || p.includes(jp)));
-            if (sharedParts.length > 0) {
-                score += 1;
-                reasons.push('Same region');
-                locationMatch = 'region';
-            }
-        }
+        distance = estimateDistance(job.location, location);
+        if (distance.tier === 'exact') { score += 3; }
+        else if (distance.tier === 'nearby') { score += 2; }
+        else if (distance.tier === 'region') { score += 1; }
     }
 
-    return { score, reasons, locationMatch };
+    return { score, reasons, distance };
 }
 
 export default function Marketplace() {
@@ -85,16 +105,14 @@ export default function Marketplace() {
                     );
                 }
 
-                if (filters.location && filters.locationRadius === 'exact') {
-                    const loc = filters.location.toLowerCase();
-                    results = results.filter(job => job.location.toLowerCase() === loc);
-                } else if (filters.location && filters.locationRadius === 'region') {
-                    const loc = filters.location.toLowerCase();
-                    const locParts = loc.split(',').map(p => p.trim()).filter(Boolean);
-                    results = results.filter(job => {
-                        const jobLoc = job.location.toLowerCase();
-                        return locParts.some(part => jobLoc.includes(part));
-                    });
+                if (filters.location && filters.locationRadius !== 'any') {
+                    const maxMiles = parseInt(filters.locationRadius, 10);
+                    if (!isNaN(maxMiles)) {
+                        results = results.filter(job => {
+                            const dist = estimateDistance(job.location, filters.location);
+                            return dist.miles <= maxMiles;
+                        });
+                    }
                 }
 
                 setJobs(results);
@@ -200,8 +218,10 @@ export default function Marketplace() {
                                 onChange={(e) => setFilters({ ...filters, locationRadius: e.target.value })}
                             >
                                 <option value="any">Any distance</option>
-                                <option value="exact">Exact match</option>
-                                <option value="region">Same region</option>
+                                <option value="10">Within 10 miles</option>
+                                <option value="25">Within 25 miles</option>
+                                <option value="50">Within 50 miles</option>
+                                <option value="100">Within 100 miles</option>
                             </select>
                         )}
                     </div>
@@ -288,14 +308,14 @@ export default function Marketplace() {
                                 <p className={styles.description}>{job.description}</p>
 
                                 <div className={styles.metaRow}>
-                                    <span className={`${styles.metaChip} ${relevance?.locationMatch === 'exact' ? styles.metaChipMatch : relevance?.locationMatch === 'nearby' ? styles.metaChipNear : ''}`}>
-                                        {relevance?.locationMatch === 'exact' && '📍 '}
-                                        {relevance?.locationMatch === 'nearby' && '📍 '}
+                                    <span className={`${styles.metaChip} ${relevance?.distance?.tier === 'exact' ? styles.metaChipMatch : relevance?.distance?.tier === 'nearby' ? styles.metaChipNear : ''}`}>
                                         {job.location}
-                                        {relevance?.locationMatch === 'exact' && ' — Exact match'}
-                                        {relevance?.locationMatch === 'nearby' && ' — Nearby'}
-                                        {relevance?.locationMatch === 'region' && ' — Same region'}
                                     </span>
+                                    {relevance?.distance && (
+                                        <span className={`${styles.metaChip} ${relevance.distance.tier === 'exact' ? styles.metaChipMatch : relevance.distance.tier === 'nearby' ? styles.metaChipNear : ''}`}>
+                                            {relevance.distance.label}
+                                        </span>
+                                    )}
                                     {job.budget && (
                                         <span className={styles.metaChip}>
                                             {job.budget}
