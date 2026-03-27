@@ -600,6 +600,23 @@ export const db = {
         return data.map((row) => mapProjectRow(row as ProjectRow));
     },
 
+    getVendorInfoByUserIds: async (userIds: string[]): Promise<Record<string, { rating?: number; isVerified: boolean }>> => {
+        if (userIds.length === 0) return {};
+        const { data, error } = await supabase
+            .from('vendor_profiles')
+            .select('user_id, avg_rating, is_verified')
+            .in('user_id', userIds);
+        if (error || !data) return {};
+        const result: Record<string, { rating?: number; isVerified: boolean }> = {};
+        for (const row of data) {
+            result[row.user_id] = {
+                rating: row.avg_rating ?? undefined,
+                isVerified: row.is_verified ?? false,
+            };
+        }
+        return result;
+    },
+
     getProject: async (id: string): Promise<Project | undefined> => {
         const { data, error } = await supabase
             .from('projects')

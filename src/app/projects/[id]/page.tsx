@@ -45,6 +45,7 @@ export default function ProjectDetailPage() {
     const [editingPhase, setEditingPhase] = useState<string | null>(null);
     const [expandedPhaseQuotes, setExpandedPhaseQuotes] = useState<string | null>(null);
     const [comparingPhaseId, setComparingPhaseId] = useState<string | null>(null);
+    const [vendorInfo, setVendorInfo] = useState<Record<string, { rating?: number; isVerified: boolean }>>({});
     const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
     const dragSrcIdx = useRef<number | null>(null);
 
@@ -61,6 +62,12 @@ export default function ProjectDetailPage() {
             qMap[phase.id] = await db.getQuotesByPhase(phase.id);
         }));
         setQuotesByPhase(qMap);
+
+        const allVendorIds = [...new Set(Object.values(qMap).flat().map(q => q.vendorId))];
+        if (allVendorIds.length > 0) {
+            const info = await db.getVendorInfoByUserIds(allVendorIds);
+            setVendorInfo(info);
+        }
         setLoading(false);
     }, [id, router]);
 
@@ -428,6 +435,7 @@ export default function ProjectDetailPage() {
                                                 {comparingPhaseId === phase.id && phaseQuotes.length >= 2 && (
                                                     <QuoteComparison
                                                         quotes={phaseQuotes}
+                                                        vendorInfo={vendorInfo}
                                                         onAccept={async (quoteId) => {
                                                             await acceptPhaseQuote(phase.id, quoteId);
                                                             setComparingPhaseId(null);

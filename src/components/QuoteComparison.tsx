@@ -139,9 +139,6 @@ export default function QuoteComparison({ quotes, vendorInfo, onAccept, onReject
                                 {sortedQuotes.map((q, i) => (
                                     <td key={q.id} className={`${styles.vendorNameCell} ${i === bestValueIdx ? styles.bestCol : ''}`}>
                                         {q.vendorName}
-                                        {vendorInfo?.[q.vendorId]?.isVerified && (
-                                            <div><span className={styles.verifiedBadge}>✓ Verified</span></div>
-                                        )}
                                     </td>
                                 ))}
                             </tr>
@@ -160,6 +157,21 @@ export default function QuoteComparison({ quotes, vendorInfo, onAccept, onReject
                                         {q.estimatedDays} day{q.estimatedDays !== 1 ? 's' : ''}
                                     </td>
                                 ))}
+                            </tr>
+                            <tr>
+                                <td className={styles.rowLabel}>Verified</td>
+                                {sortedQuotes.map((q, i) => {
+                                    const info = vendorInfo?.[q.vendorId];
+                                    return (
+                                        <td key={q.id} className={`${styles.statusCell} ${i === bestValueIdx ? styles.bestCol : ''}`}>
+                                            {info?.isVerified ? (
+                                                <span className={styles.verifiedBadge}>✓ Verified</span>
+                                            ) : (
+                                                <span className={styles.noRating}>Not verified</span>
+                                            )}
+                                        </td>
+                                    );
+                                })}
                             </tr>
                             <tr>
                                 <td className={styles.rowLabel}>Rating</td>

@@ -59,6 +59,7 @@ export default function Dashboard() {
     const [replyText, setReplyText] = useState('');
     const [sendingReply, setSendingReply] = useState(false);
     const [showComparison, setShowComparison] = useState(false);
+    const [vendorInfo, setVendorInfo] = useState<Record<string, { rating?: number; isVerified: boolean }>>({});
 
     const handleSendReply = useCallback(async () => {
         if (!selectedJob || !replyText.trim() || sendingReply) return;
@@ -104,6 +105,12 @@ export default function Dashboard() {
                 setQuotes([...updatedQuotes]);
                 setMessages([...updatedMessages]);
                 setAgentActions([...updatedActions]);
+
+                const vendorIds = [...new Set(updatedQuotes.map(q => q.vendorId))];
+                if (vendorIds.length > 0) {
+                    const info = await db.getVendorInfoByUserIds(vendorIds);
+                    setVendorInfo(info);
+                }
             }
         };
 
@@ -379,6 +386,7 @@ export default function Dashboard() {
                                     {showComparison && quotes.length >= 2 && (
                                         <QuoteComparison
                                             quotes={quotes}
+                                            vendorInfo={vendorInfo}
                                             onAccept={async (quoteId) => {
                                                 await jobService.acceptQuote(quoteId);
                                                 setShowComparison(false);
