@@ -65,7 +65,10 @@ export default function NotificationPanel() {
             (payload) => {
                 if (payload.eventType === 'INSERT') {
                     const notif = mapRealtimeNotification(payload.new);
-                    setNotifications(prev => [notif, ...prev].slice(0, 50));
+                    setNotifications(prev => {
+                        if (prev.some(n => n.id === notif.id)) return prev;
+                        return [notif, ...prev].slice(0, 50);
+                    });
                 } else if (payload.eventType === 'UPDATE') {
                     const updated = mapRealtimeNotification(payload.new);
                     setNotifications(prev =>
