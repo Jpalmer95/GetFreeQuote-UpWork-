@@ -14,6 +14,7 @@ const PREF_LABELS: { key: keyof EmailPreferences; label: string; description: st
     { key: 'job_match', label: 'Job Matches', description: 'When a new project matches your vendor profile' },
     { key: 'agent_approval', label: 'Agent Alerts', description: 'When your AI agent needs your input or approval' },
     { key: 'new_message', label: 'Messages', description: 'When you receive a new message on a project' },
+    { key: 'verification_update', label: 'Verification Updates', description: 'When your vendor verification request is approved or declined' },
 ];
 
 export default function NotificationSettings() {
