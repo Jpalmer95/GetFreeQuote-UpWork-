@@ -42,10 +42,11 @@ export async function PUT(request: NextRequest) {
             return NextResponse.json({ error: 'preferences object required' }, { status: 400 });
         }
 
-        const validKeys = Object.keys(DEFAULT_EMAIL_PREFERENCES);
+        const defaults: Record<string, boolean> = { ...DEFAULT_EMAIL_PREFERENCES };
+        const validKeys = Object.keys(defaults);
         const sanitized: Record<string, boolean> = {};
         for (const key of validKeys) {
-            sanitized[key] = typeof preferences[key] === 'boolean' ? preferences[key] : (DEFAULT_EMAIL_PREFERENCES as Record<string, boolean>)[key];
+            sanitized[key] = typeof preferences[key] === 'boolean' ? preferences[key] : defaults[key];
         }
 
         const { error } = await supabaseAdmin

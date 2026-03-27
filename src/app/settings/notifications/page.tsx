@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import Navbar from '@/components/Navbar';
-import { EmailPreferences } from '@/services/emailService';
+import type { EmailPreferences } from '@/services/emailService';
 import styles from './page.module.css';
 
 const PREF_LABELS: { key: keyof EmailPreferences; label: string; description: string }[] = [
