@@ -42,6 +42,15 @@ const NOTIFICATION_TYPE_TO_EMAIL_TYPE: Record<string, EmailNotificationType> = {
     new_message: 'new_message',
 };
 
+function escapeHtml(str: string): string {
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 function buildEmailHtml(params: {
     title: string;
     preheader: string;
@@ -50,7 +59,11 @@ function buildEmailHtml(params: {
     ctaUrl?: string;
     unsubscribeUrl: string;
 }): string {
-    const { title, preheader, body, ctaText, ctaUrl, unsubscribeUrl } = params;
+    const title = escapeHtml(params.title);
+    const preheader = escapeHtml(params.preheader);
+    const body = escapeHtml(params.body);
+    const ctaText = params.ctaText ? escapeHtml(params.ctaText) : undefined;
+    const { ctaUrl, unsubscribeUrl } = params;
     return `<!DOCTYPE html>
 <html>
 <head>
