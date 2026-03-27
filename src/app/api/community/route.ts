@@ -260,7 +260,8 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
     } catch (err: unknown) {
         const message = err instanceof Error ? err.message : 'Internal server error';
-        console.error('Community API error:', err);
-        return NextResponse.json({ error: message }, { status: 500 });
+        console.error('Community API error:', message);
+        const status = message.includes('SUPABASE_SERVICE_ROLE_KEY') || message.includes('SUPABASE_URL') ? 503 : 500;
+        return NextResponse.json({ error: message }, { status });
     }
 }

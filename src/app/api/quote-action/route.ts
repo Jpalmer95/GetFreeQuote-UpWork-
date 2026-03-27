@@ -177,8 +177,10 @@ export async function POST(request: NextRequest) {
         }
 
         return NextResponse.json({ status: 'ok', newStatus });
-    } catch (error) {
-        console.error('Quote action error:', error);
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Internal server error';
+        console.error('Quote action error:', message);
+        const status = message.includes('SUPABASE_SERVICE_ROLE_KEY') || message.includes('SUPABASE_URL') ? 503 : 500;
+        return NextResponse.json({ error: message }, { status });
     }
 }
