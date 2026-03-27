@@ -224,13 +224,6 @@ export async function POST(request: NextRequest) {
                 }
             }
 
-            const { data: ownerConfig } = await supabaseAdmin
-                .from('agent_configs')
-                .select('*')
-                .eq('user_id', jobRow.user_id)
-                .eq('is_active', true)
-                .maybeSingle();
-
             await supabaseAdmin.from('notifications').insert({
                 user_id: jobRow.user_id,
                 job_id: jobId,
