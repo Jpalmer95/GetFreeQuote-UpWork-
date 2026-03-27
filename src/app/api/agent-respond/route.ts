@@ -7,6 +7,7 @@ import {
     mapAgentConfigRow,
     customerAgentId, vendorAgentId,
 } from '@/services/serverMappers';
+import { sendNotificationEmail } from '@/services/serverEmail';
 
 export async function POST(request: NextRequest) {
     try {
@@ -139,6 +140,9 @@ export async function POST(request: NextRequest) {
                                 action_required: true,
                                 read: false,
                             });
+
+                            sendNotificationEmail(vq.vendor_id, 'scope_change', 'Scope Update',
+                                `The customer updated project details for "${jobRow.title}". Review and revise your quote.`, '/vendor').catch(() => {});
                         }
                     }
                 }
@@ -166,6 +170,9 @@ export async function POST(request: NextRequest) {
                     action_required: true,
                     read: false,
                 });
+
+                sendNotificationEmail(caller.id, 'approval_needed', 'Action Required',
+                    `Your message about "${jobRow.title}" has been flagged. Your agent recommends direct attention.`, '/dashboard').catch(() => {});
                 responses.push('escalation_flagged');
             }
         }
@@ -204,13 +211,16 @@ export async function POST(request: NextRequest) {
                 await supabaseAdmin.from('notifications').insert({
                     user_id: jobRow.user_id,
                     job_id: jobId,
-                    type: 'negotiation_update',
+                    type: 'new_message',
                     priority: 'medium',
                     title: 'Vendor Message',
                     message: `A vendor sent a message regarding "${jobRow.title}".`,
                     action_required: false,
                     read: false,
                 });
+
+                sendNotificationEmail(jobRow.user_id, 'new_message', 'Vendor Message',
+                    `A vendor sent a message regarding "${jobRow.title}".`, '/dashboard').catch(() => {});
                 responses.push('owner_notified');
             }
         }

@@ -37,7 +37,9 @@ const NOTIFICATION_TYPE_TO_EMAIL_TYPE: Record<string, EmailNotificationType> = {
     negotiation_update: 'quote_rejected',
     job_match: 'job_match',
     scope_change: 'agent_approval',
-    agent_summary: 'new_message',
+    approval_needed: 'agent_approval',
+    agent_summary: 'agent_approval',
+    new_message: 'new_message',
 };
 
 function buildEmailHtml(params: {
