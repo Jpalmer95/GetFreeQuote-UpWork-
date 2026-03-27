@@ -385,6 +385,14 @@
     border: 1px solid rgba(52,199,89,0.2);
 }
 
+.serviceAreaHint {
+    display: block;
+    margin-top: 0.35rem;
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.35);
+    font-style: italic;
+}
+
 .radiusSelect {
     width: 100%;
     margin-top: 0.5rem;

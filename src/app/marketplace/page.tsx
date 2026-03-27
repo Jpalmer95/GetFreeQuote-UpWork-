@@ -108,12 +108,13 @@ export default function Marketplace() {
         const timer = setTimeout(async () => {
             try {
                 setError(null);
+                const useRadiusMode = filters.location && filters.locationRadius !== 'any';
                 let results = await jobService.searchJobs({
                     query: filters.query || undefined,
                     industryVertical: filters.industryVertical || undefined,
                     subcategory: filters.subcategory || undefined,
                     requiresPermit: filters.requiresPermit,
-                    location: filters.location || undefined,
+                    location: useRadiusMode ? undefined : (filters.location || undefined),
                 });
 
                 if (filters.tagFilter) {
@@ -125,11 +126,12 @@ export default function Marketplace() {
                     );
                 }
 
-                if (filters.location && filters.locationRadius !== 'any') {
+                const radiusLocation = filters.location || (vendorServiceAreas.length > 0 ? vendorServiceAreas[0] : '');
+                if (radiusLocation && filters.locationRadius !== 'any') {
                     const maxMiles = parseInt(filters.locationRadius, 10);
                     if (!isNaN(maxMiles)) {
                         results = results.filter(job => {
-                            const dist = estimateDistance(job.location, filters.location);
+                            const dist = estimateDistance(job.location, radiusLocation);
                             return dist.miles <= maxMiles;
                         });
                     }
@@ -231,18 +233,25 @@ export default function Marketplace() {
                             value={filters.location}
                             onChange={(e) => setFilters({ ...filters, location: e.target.value })}
                         />
-                        {filters.location && (
-                            <select
-                                className={styles.radiusSelect}
-                                value={filters.locationRadius}
-                                onChange={(e) => setFilters({ ...filters, locationRadius: e.target.value })}
-                            >
-                                <option value="any">Any distance</option>
-                                <option value="10">Within 10 miles</option>
-                                <option value="25">Within 25 miles</option>
-                                <option value="50">Within 50 miles</option>
-                                <option value="100">Within 100 miles</option>
-                            </select>
+                        {(filters.location || vendorServiceAreas.length > 0) && (
+                            <>
+                                {!filters.location && vendorServiceAreas.length > 0 && (
+                                    <span className={styles.serviceAreaHint}>
+                                        From: {vendorServiceAreas[0]}
+                                    </span>
+                                )}
+                                <select
+                                    className={styles.radiusSelect}
+                                    value={filters.locationRadius}
+                                    onChange={(e) => setFilters({ ...filters, locationRadius: e.target.value })}
+                                >
+                                    <option value="any">Any distance</option>
+                                    <option value="10">Within 10 miles</option>
+                                    <option value="25">Within 25 miles</option>
+                                    <option value="50">Within 50 miles</option>
+                                    <option value="100">Within 100 miles</option>
+                                </select>
+                            </>
                         )}
                     </div>
 
