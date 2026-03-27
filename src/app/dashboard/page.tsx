@@ -8,6 +8,7 @@ import { isAgentSender, getAgentLabel } from '@/services/aiAgent';
 import { supabase } from '@/lib/supabase';
 import styles from './page.module.css';
 import Navbar from '@/components/Navbar';
+import QuoteComparison, { CompareQuotesButton } from '@/components/QuoteComparison';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 
@@ -57,6 +58,7 @@ export default function Dashboard() {
     const [searchQuery, setSearchQuery] = useState('');
     const [replyText, setReplyText] = useState('');
     const [sendingReply, setSendingReply] = useState(false);
+    const [showComparison, setShowComparison] = useState(false);
 
     const handleSendReply = useCallback(async () => {
         if (!selectedJob || !replyText.trim() || sendingReply) return;
@@ -333,6 +335,9 @@ export default function Dashboard() {
 
                             {activeTab === 'quotes' && (
                                 <section className={`glass-panel ${styles.section}`}>
+                                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.75rem' }}>
+                                        <CompareQuotesButton quotes={quotes} onClick={() => setShowComparison(true)} />
+                                    </div>
                                     <div className={styles.quoteList}>
                                         {quotes.map(quote => (
                                             <div key={quote.id} className={styles.quoteCard}>
@@ -371,6 +376,20 @@ export default function Dashboard() {
                                             <p className={styles.emptyMsg}>Waiting for vendor agents to submit quotes...</p>
                                         )}
                                     </div>
+                                    {showComparison && quotes.length >= 2 && (
+                                        <QuoteComparison
+                                            quotes={quotes}
+                                            onAccept={async (quoteId) => {
+                                                await jobService.acceptQuote(quoteId);
+                                                setShowComparison(false);
+                                            }}
+                                            onReject={async (quoteId) => {
+                                                await jobService.rejectQuote(quoteId);
+                                                setShowComparison(false);
+                                            }}
+                                            onClose={() => setShowComparison(false)}
+                                        />
+                                    )}
                                 </section>
                             )}
 

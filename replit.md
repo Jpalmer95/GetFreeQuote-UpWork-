@@ -48,6 +48,8 @@ src/
     Navbar.module.css
     NotificationPanel.tsx  # Notification dropdown with priority indicators
     NotificationPanel.module.css
+    QuoteComparison.tsx    # Side-by-side quote comparison modal with sort and best-value scoring
+    QuoteComparison.module.css
   context/
     AuthContext.tsx        # Supabase auth state provider
   lib/
@@ -85,7 +87,8 @@ The platform uses an industry-agnostic data model with AI agent infrastructure:
 - **Ledger Entries**: transparent transaction log (DONATION/EXPENSE) with tx hashes for full financial transparency
 - **Vendor Reviews**: rating/comment structure (data model only, collection flow deferred)
 - **Agent Actions**: audit log of all AI agent operations (scope_analysis, job_broadcast, vendor_match, auto_quote, clarification, escalation, etc.)
-- **Notifications**: prioritized alerts (low/medium/high/urgent) with action_required flag, types: quote_ready, approval_needed, scope_change, agent_summary, job_match, negotiation_update
+- **Notifications**: prioritized alerts (low/medium/high/urgent) with action_required flag, types: quote_ready, approval_needed, scope_change, agent_summary, job_match, negotiation_update, new_message
+- **Quote Comparison**: side-by-side comparison modal for 2+ quotes with sorting (price/timeline/best value), best-value scoring (price 45%, timeline 30%, rating 20%, verified 5%), accept/reject actions
 
 ## AI Agent System
 

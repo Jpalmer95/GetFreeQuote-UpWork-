@@ -7,6 +7,7 @@ import { db } from '@/services/db';
 import { supabase } from '@/lib/supabase';
 import { Project, ProjectPhase, Quote, PhaseStatus } from '@/types';
 import Navbar from '@/components/Navbar';
+import QuoteComparison, { CompareQuotesButton } from '@/components/QuoteComparison';
 import styles from './page.module.css';
 
 type ViewTab = 'gantt' | 'phases' | 'budget';
@@ -43,6 +44,7 @@ export default function ProjectDetailPage() {
     const [loading, setLoading] = useState(true);
     const [editingPhase, setEditingPhase] = useState<string | null>(null);
     const [expandedPhaseQuotes, setExpandedPhaseQuotes] = useState<string | null>(null);
+    const [comparingPhaseId, setComparingPhaseId] = useState<string | null>(null);
     const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
     const dragSrcIdx = useRef<number | null>(null);
 
@@ -396,6 +398,9 @@ export default function ProjectDetailPage() {
 
                                         {expandedPhaseQuotes === phase.id && (
                                             <div className={styles.quoteList}>
+                                                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.5rem' }}>
+                                                    <CompareQuotesButton quotes={phaseQuotes} onClick={() => setComparingPhaseId(phase.id)} />
+                                                </div>
                                                 {phaseQuotes.length === 0 && (
                                                     <p className={styles.emptyMsg}>No quotes for this phase yet.</p>
                                                 )}
@@ -420,6 +425,20 @@ export default function ProjectDetailPage() {
                                                         )}
                                                     </div>
                                                 ))}
+                                                {comparingPhaseId === phase.id && phaseQuotes.length >= 2 && (
+                                                    <QuoteComparison
+                                                        quotes={phaseQuotes}
+                                                        onAccept={async (quoteId) => {
+                                                            await acceptPhaseQuote(phase.id, quoteId);
+                                                            setComparingPhaseId(null);
+                                                        }}
+                                                        onReject={async (quoteId) => {
+                                                            await rejectPhaseQuote(quoteId);
+                                                            setComparingPhaseId(null);
+                                                        }}
+                                                        onClose={() => setComparingPhaseId(null)}
+                                                    />
+                                                )}
                                             </div>
                                         )}
                                     </div>
