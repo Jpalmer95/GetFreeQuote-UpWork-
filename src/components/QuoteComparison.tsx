@@ -62,6 +62,25 @@ function renderStars(rating: number): string {
 export default function QuoteComparison({ quotes, vendorInfo, onAccept, onReject, onClose }: QuoteComparisonProps) {
     const [sortMode, setSortMode] = useState<SortMode>('score');
 
+    const computeScore = (q: Quote): number => {
+        const prices = quotes.map(x => x.amount);
+        const timelines = quotes.map(x => x.estimatedDays);
+        const maxPrice = Math.max(...prices);
+        const minPrice = Math.min(...prices);
+        const maxTimeline = Math.max(...timelines);
+        const minTimeline = Math.min(...timelines);
+        const priceRange = maxPrice - minPrice || 1;
+        const timelineRange = maxTimeline - minTimeline || 1;
+
+        const priceScore = 1 - (q.amount - minPrice) / priceRange;
+        const timelineScore = 1 - (q.estimatedDays - minTimeline) / timelineRange;
+        const info = vendorInfo?.[q.vendorId];
+        const ratingScore = info?.rating ? (info.rating / 5) : 0.5;
+        const verifiedBonus = info?.isVerified ? 0.1 : 0;
+
+        return (priceScore * 0.45) + (timelineScore * 0.3) + (ratingScore * 0.2) + verifiedBonus;
+    };
+
     const sortedQuotes = useMemo(() => {
         const sorted = [...quotes];
         switch (sortMode) {
@@ -75,11 +94,12 @@ export default function QuoteComparison({ quotes, vendorInfo, onAccept, onReject
                 sorted.sort((a, b) => a.estimatedDays - b.estimatedDays);
                 break;
             case 'score':
-            default:
+                sorted.sort((a, b) => computeScore(b) - computeScore(a));
                 break;
         }
         return sorted;
-    }, [quotes, sortMode]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [quotes, sortMode, vendorInfo]);
 
     const bestValueIdx = useMemo(() => computeBestValueIndex(sortedQuotes, vendorInfo), [sortedQuotes, vendorInfo]);
 
