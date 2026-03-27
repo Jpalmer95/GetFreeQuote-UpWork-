@@ -27,6 +27,7 @@ export async function GET(req: NextRequest) {
         const { data: locationRows } = await supabaseAdmin
             .from('jobs')
             .select('location')
+            .eq('is_public', true)
             .ilike('location', `%${q}%`)
             .limit(50);
 
@@ -38,6 +39,7 @@ export async function GET(req: NextRequest) {
         const { data: tagRows } = await supabaseAdmin
             .from('jobs')
             .select('tags')
+            .eq('is_public', true)
             .limit(100);
 
         let tagMatches: { type: string; value: string }[] = [];

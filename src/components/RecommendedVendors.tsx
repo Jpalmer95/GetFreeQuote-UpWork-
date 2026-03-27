@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/context/AuthContext';
 import styles from './RecommendedVendors.module.css';
 
 interface Vendor {
@@ -17,13 +18,17 @@ interface Vendor {
 }
 
 export default function RecommendedVendors({ jobId }: { jobId: string }) {
+    const { session } = useAuth();
     const [vendors, setVendors] = useState<Vendor[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        if (!session?.access_token) { setLoading(false); return; }
         const load = async () => {
             try {
-                const res = await fetch(`/api/recommendations?jobId=${jobId}`);
+                const res = await fetch(`/api/recommendations?jobId=${jobId}`, {
+                    headers: { Authorization: `Bearer ${session.access_token}` },
+                });
                 if (res.ok) {
                     const data = await res.json();
                     setVendors(data);
@@ -35,7 +40,7 @@ export default function RecommendedVendors({ jobId }: { jobId: string }) {
             }
         };
         load();
-    }, [jobId]);
+    }, [jobId, session?.access_token]);
 
     if (loading) return null;
     if (vendors.length === 0) return null;

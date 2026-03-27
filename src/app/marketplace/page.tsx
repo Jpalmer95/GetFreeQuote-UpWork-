@@ -14,6 +14,31 @@ const URGENCY_LABELS: Record<string, string> = {
     urgent: 'Urgent',
 };
 
+function getRelevanceScore(job: Job, query: string, location: string): { score: number; reasons: string[] } {
+    const reasons: string[] = [];
+    let score = 0;
+
+    if (query) {
+        const q = query.toLowerCase();
+        if (job.title.toLowerCase().includes(q)) { score += 3; reasons.push('Title match'); }
+        if (job.tags.some(t => t.toLowerCase().includes(q))) { score += 2; reasons.push('Tag match'); }
+        if (job.description.toLowerCase().includes(q)) { score += 1; }
+    }
+
+    if (location) {
+        const loc = location.toLowerCase();
+        if (job.location.toLowerCase() === loc) {
+            score += 3;
+            reasons.push('Exact location');
+        } else if (job.location.toLowerCase().includes(loc)) {
+            score += 1;
+            reasons.push('Near location');
+        }
+    }
+
+    return { score, reasons };
+}
+
 export default function Marketplace() {
     const [jobs, setJobs] = useState<Job[]>([]);
     const [error, setError] = useState<string | null>(null);
@@ -24,6 +49,7 @@ export default function Marketplace() {
         requiresPermit: undefined as boolean | undefined,
         location: '',
         tagFilter: '',
+        locationRadius: 'any' as string,
     });
 
     useEffect(() => {
@@ -45,6 +71,11 @@ export default function Marketplace() {
                             job.tags.some(tag => tag.toLowerCase().includes(term))
                         )
                     );
+                }
+
+                if (filters.location && filters.locationRadius === 'exact') {
+                    const loc = filters.location.toLowerCase();
+                    results = results.filter(job => job.location.toLowerCase() === loc);
                 }
 
                 setJobs(results);
@@ -138,11 +169,22 @@ export default function Marketplace() {
                         <span className={styles.filterLabel}>Location</span>
                         <input
                             type="text"
-                            placeholder="Filter by city..."
+                            placeholder="City, state, or zip..."
                             className={styles.miniInput}
                             value={filters.location}
                             onChange={(e) => setFilters({ ...filters, location: e.target.value })}
                         />
+                        {filters.location && (
+                            <select
+                                className={styles.radiusSelect}
+                                value={filters.locationRadius}
+                                onChange={(e) => setFilters({ ...filters, locationRadius: e.target.value })}
+                            >
+                                <option value="any">Any distance</option>
+                                <option value="exact">Exact match</option>
+                                <option value="region">Same region</option>
+                            </select>
+                        )}
                     </div>
 
                     <div className={styles.filterSection}>
@@ -185,7 +227,12 @@ export default function Marketplace() {
                     )}
 
                     <div className={styles.grid}>
-                        {jobs.map(job => (
+                        {jobs.map(job => {
+                            const hasActiveSearch = !!(filters.query || filters.location);
+                            const relevance = hasActiveSearch
+                                ? getRelevanceScore(job, filters.query, filters.location)
+                                : null;
+                            return (
                             <div
                                 key={job.id}
                                 className={`glass-panel ${styles.jobCard}`}
@@ -196,6 +243,11 @@ export default function Marketplace() {
                                     <span className={styles.industryTag}>{job.industryVertical}</span>
                                     {job.communityProjectId && (
                                         <span className={styles.communityTag}>Community Funded</span>
+                                    )}
+                                    {relevance && relevance.reasons.length > 0 && (
+                                        <span className={styles.relevanceBadge}>
+                                            {relevance.reasons[0]}
+                                        </span>
                                     )}
                                     <span className={styles.timeAgo}>
                                         {job.urgency && job.urgency !== 'flexible'
@@ -241,7 +293,8 @@ export default function Marketplace() {
                                     <button className={styles.detailsBtn}>View Details</button>
                                 </div>
                             </div>
-                        ))}
+                            );
+                        })}
 
                         {jobs.length === 0 && (
                             <div className={styles.emptyState}>

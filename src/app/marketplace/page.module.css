@@ -360,6 +360,32 @@
     flex-shrink: 0;
 }
 
+.relevanceBadge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.15rem 0.5rem;
+    border-radius: var(--radius-full);
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    background: rgba(52,199,89,0.12);
+    color: #34c759;
+    border: 1px solid rgba(52,199,89,0.2);
+}
+
+.radiusSelect {
+    width: 100%;
+    margin-top: 0.5rem;
+    padding: 0.45rem 0.65rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-mid);
+    background: var(--surface-100);
+    color: rgba(255,255,255,0.65);
+    font-family: var(--font-sans);
+    font-size: 0.82rem;
+    cursor: pointer;
+}
+
 .emptyState {
     grid-column: 1 / -1;
     display: flex;
