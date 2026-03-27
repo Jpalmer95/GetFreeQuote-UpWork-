@@ -11,6 +11,7 @@ import styles from './page.module.css';
 import Navbar from '@/components/Navbar';
 import QuoteComparison, { CompareQuotesButton } from '@/components/QuoteComparison';
 import ClientAnalytics from '@/components/ClientAnalytics';
+import RecommendedVendors from '@/components/RecommendedVendors';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 
@@ -324,6 +325,10 @@ export default function Dashboard() {
                                     </div>
                                 )}
                             </div>
+
+                            {selectedJob.status === 'OPEN' && (
+                                <RecommendedVendors jobId={selectedJob.id} />
+                            )}
 
                             <div className={styles.tabBar}>
                                 <button

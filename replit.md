@@ -59,6 +59,12 @@ src/
     ClientAnalytics.module.css
     PlatformStats.tsx        # Landing page aggregate platform statistics
     PlatformStats.module.css
+    SearchAutocomplete.tsx   # Search input with autocomplete dropdown (categories, locations, tags)
+    SearchAutocomplete.module.css
+    SavedSearches.tsx        # Save/load/delete marketplace filter configurations
+    SavedSearches.module.css
+    RecommendedVendors.tsx   # Vendor recommendations for open jobs (scored by industry, specialty, location)
+    RecommendedVendors.module.css
     VerificationSection.tsx  # Vendor verification request form and status display
     VerificationSection.module.css
   context/
@@ -78,6 +84,7 @@ public/                    # Static assets
 supabase_schema.sql                  # Database schema reference
 supabase_verification_requests.sql   # Migration: verification_requests table + notification type update
 supabase_realtime_setup.sql          # Migration: enable real-time for notifications, quotes, messages tables
+supabase_saved_searches.sql          # Migration: saved_searches table for vendor filter persistence
 ```
 
 ## Data Model

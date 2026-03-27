@@ -1,0 +1,92 @@
+.wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.searchIcon {
+    position: absolute;
+    left: 1rem;
+    color: rgba(255,255,255,0.35);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.input {
+    width: 100%;
+    background: var(--surface-100);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: 0.9rem;
+    padding: 0.7rem 1rem 0.7rem 2.75rem;
+    transition: border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
+    outline: none;
+}
+
+.input::placeholder {
+    color: rgba(255,255,255,0.3);
+}
+
+.input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
+.dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 4px;
+    background: var(--surface-200);
+    border: 1px solid var(--border-mid);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 12px 32px -4px rgba(0,0,0,0.5);
+    z-index: 50;
+    overflow: hidden;
+}
+
+.suggestion {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    width: 100%;
+    padding: 0.6rem 1rem;
+    border: none;
+    background: transparent;
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: 0.88rem;
+    cursor: pointer;
+    text-align: left;
+    transition: background var(--dur-fast) ease;
+}
+
+.suggestion:hover,
+.active {
+    background: var(--surface-100);
+}
+
+.typeIcon {
+    font-size: 0.85rem;
+    flex-shrink: 0;
+}
+
+.suggestionText {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.typeLabel {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: rgba(255,255,255,0.3);
+    font-weight: 600;
+    flex-shrink: 0;
+}

@@ -4,6 +4,8 @@ import { jobService } from '@/services/jobService';
 import { Job, IndustryVertical, KnownIndustryVertical, INDUSTRY_VERTICALS, INDUSTRY_SUBCATEGORIES } from '@/types';
 import styles from './page.module.css';
 import Navbar from '@/components/Navbar';
+import SearchAutocomplete from '@/components/SearchAutocomplete';
+import SavedSearches from '@/components/SavedSearches';
 
 const URGENCY_LABELS: Record<string, string> = {
     flexible: 'Flexible',
@@ -142,21 +144,28 @@ export default function Marketplace() {
                             onChange={(e) => setFilters({ ...filters, location: e.target.value })}
                         />
                     </div>
+
+                    <div className={styles.filterSection}>
+                        <SavedSearches
+                            currentFilters={filters}
+                            onApply={(saved) => setFilters({
+                                query: (saved.query as string) || '',
+                                industryVertical: (saved.industryVertical as IndustryVertical | '') || '',
+                                subcategory: (saved.subcategory as string) || '',
+                                requiresPermit: saved.requiresPermit as boolean | undefined,
+                                location: (saved.location as string) || '',
+                                tagFilter: (saved.tagFilter as string) || '',
+                            })}
+                        />
+                    </div>
                 </aside>
 
                 <main className={styles.feed}>
-                    <div className={styles.searchBar}>
-                        <svg className={styles.searchIcon} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-                        </svg>
-                        <input
-                            type="text"
-                            placeholder="Search projects by keyword..."
-                            className={styles.searchInput}
-                            value={filters.query}
-                            onChange={(e) => setFilters({ ...filters, query: e.target.value })}
-                        />
-                    </div>
+                    <SearchAutocomplete
+                        value={filters.query}
+                        onChange={(val) => setFilters({ ...filters, query: val })}
+                        placeholder="Search projects by keyword..."
+                    />
 
                     <div className={styles.feedHeader}>
                         <h2>Active Opportunities ({jobs.length})</h2>
