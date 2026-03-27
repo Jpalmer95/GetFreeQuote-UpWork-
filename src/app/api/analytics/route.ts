@@ -14,6 +14,7 @@ interface QuoteRow {
     status: string;
     created_at: string;
     job_id: string;
+    vendor_id?: string;
 }
 
 interface JobRow {
@@ -60,6 +61,43 @@ export async function GET(req: NextRequest) {
             : 0;
         const revenue = acceptedQuotes.reduce((s, q) => s + q.amount, 0);
 
+        let avgResponseTimeHours = 0;
+        if (totalQuotes > 0) {
+            const jobIds = [...new Set(allQuotes.map(q => q.job_id))];
+            const { data: jobRows } = await supabaseAdmin
+                .from('jobs')
+                .select('id, created_at')
+                .in('id', jobIds);
+            if (jobRows && jobRows.length > 0) {
+                const jobCreatedMap = new Map<string, string>();
+                for (const j of jobRows) {
+                    jobCreatedMap.set(j.id, j.created_at);
+                }
+                const firstQuotePerJob = new Map<string, string>();
+                const sorted = [...allQuotes].sort((a, b) =>
+                    new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+                );
+                for (const q of sorted) {
+                    if (!firstQuotePerJob.has(q.job_id)) {
+                        firstQuotePerJob.set(q.job_id, q.created_at);
+                    }
+                }
+                let totalHours = 0;
+                let count = 0;
+                for (const [jobId, quoteTime] of firstQuotePerJob) {
+                    const jobTime = jobCreatedMap.get(jobId);
+                    if (jobTime) {
+                        const diffMs = new Date(quoteTime).getTime() - new Date(jobTime).getTime();
+                        if (diffMs >= 0) {
+                            totalHours += diffMs / (1000 * 60 * 60);
+                            count++;
+                        }
+                    }
+                }
+                avgResponseTimeHours = count > 0 ? Math.round((totalHours / count) * 10) / 10 : 0;
+            }
+        }
+
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
         const recentQuotes = allQuotes.filter(q => new Date(q.created_at) >= thirtyDaysAgo);
@@ -88,6 +126,7 @@ export async function GET(req: NextRequest) {
             avgAmount,
             revenue,
             acceptedCount: acceptedQuotes.length,
+            avgResponseTimeHours,
             activity30d,
         });
     }

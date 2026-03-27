@@ -9,7 +9,14 @@ interface VendorStats {
     avgAmount: number;
     revenue: number;
     acceptedCount: number;
+    avgResponseTimeHours: number;
     activity30d: { date: string; count: number }[];
+}
+
+function formatResponseTime(hours: number): string {
+    if (hours < 1) return `${Math.round(hours * 60)}m`;
+    if (hours < 24) return `${Math.round(hours)}h`;
+    return `${Math.round(hours / 24)}d`;
 }
 
 export default function VendorAnalytics() {
@@ -74,6 +81,10 @@ export default function VendorAnalytics() {
                 <div className={styles.metricCard}>
                     <span className={`${styles.metricValue} ${styles.accentBlue}`}>${stats.revenue.toLocaleString()}</span>
                     <span className={styles.metricLabel}>Total Revenue</span>
+                </div>
+                <div className={styles.metricCard}>
+                    <span className={styles.metricValue}>{formatResponseTime(stats.avgResponseTimeHours)}</span>
+                    <span className={styles.metricLabel}>Avg Response</span>
                 </div>
             </div>
 
