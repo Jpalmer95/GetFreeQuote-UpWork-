@@ -7,6 +7,7 @@ import { INDUSTRY_VERTICALS, IndustryVertical } from '@/types';
 import { vendorApi } from '@/services/vendorApi';
 import { hasPermission, VendorRole, getRoleLabel } from '@/services/vendorAuth';
 import Navbar from '@/components/Navbar';
+import FileUpload from '@/components/FileUpload';
 import styles from './page.module.css';
 
 export default function VendorProfileEdit() {
@@ -189,10 +190,17 @@ export default function VendorProfileEdit() {
                                 placeholder="1" min="1" disabled={!canEdit} />
                         </div>
                         <div className={styles.formGroup}>
-                            <label className={styles.label}>Logo URL</label>
-                            <input className={styles.input} value={form.logoUrl}
-                                onChange={e => setForm(p => ({ ...p, logoUrl: e.target.value }))}
-                                placeholder="https://..." disabled={!canEdit} />
+                            <label className={styles.label}>Company Logo</label>
+                            {user && <FileUpload
+                                bucket="vendor-assets"
+                                userId={user.id}
+                                single
+                                existingUrls={form.logoUrl ? [form.logoUrl] : []}
+                                label=""
+                                hint="Upload your company logo"
+                                onUpload={(urls) => setForm(p => ({ ...p, logoUrl: urls[0] || '' }))}
+                                disabled={!canEdit}
+                            />}
                         </div>
                     </div>
                 </div>
@@ -276,43 +284,38 @@ export default function VendorProfileEdit() {
                 <div className={`glass-panel ${styles.card}`}>
                     <div className={styles.cardTitle}>Portfolio / Past Work</div>
                     <div className={styles.cardDesc}>Showcase your best projects with images and descriptions</div>
-                    <div className={styles.certList}>
-                        {form.portfolioImages.map((img, i) => (
-                            <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '0.75rem', borderRadius: 'var(--radius-sm)', background: 'var(--surface-100)', border: '1px solid var(--border-subtle)' }}>
-                                <div className={styles.certRow}>
-                                    <input className={styles.certInput} value={img}
-                                        onChange={e => {
-                                            const imgs = [...form.portfolioImages];
-                                            imgs[i] = e.target.value;
-                                            setForm(p => ({ ...p, portfolioImages: imgs }));
-                                        }}
-                                        placeholder="Image URL (https://...)" disabled={!canEdit} />
-                                    {canEdit && <button className={styles.removeBtn} onClick={() => {
-                                        setForm(p => ({
-                                            ...p,
-                                            portfolioImages: p.portfolioImages.filter((_, idx) => idx !== i),
-                                            portfolioDescriptions: p.portfolioDescriptions.filter((_, idx) => idx !== i),
-                                        }));
-                                    }}>Remove</button>}
-                                </div>
-                                <input className={styles.input} style={{ width: '100%' }}
+                    {user && <FileUpload
+                        bucket="vendor-assets"
+                        userId={user.id}
+                        maxFiles={12}
+                        existingUrls={form.portfolioImages.filter(Boolean)}
+                        hint="Upload photos of your completed projects"
+                        onUpload={(urls) => setForm(p => ({ ...p, portfolioImages: urls }))}
+                        onRemove={(url) => {
+                            const idx = form.portfolioImages.indexOf(url);
+                            if (idx >= 0) {
+                                setForm(p => ({
+                                    ...p,
+                                    portfolioDescriptions: p.portfolioDescriptions.filter((_, i) => i !== idx),
+                                }));
+                            }
+                        }}
+                        disabled={!canEdit}
+                    />}
+                    {form.portfolioImages.filter(Boolean).length > 0 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
+                            {form.portfolioImages.filter(Boolean).map((_, i) => (
+                                <input key={i} className={styles.input}
                                     value={form.portfolioDescriptions[i] || ''}
                                     onChange={e => {
                                         const descs = [...form.portfolioDescriptions];
                                         descs[i] = e.target.value;
                                         setForm(p => ({ ...p, portfolioDescriptions: descs }));
                                     }}
-                                    placeholder="Description of this project..." disabled={!canEdit} />
-                            </div>
-                        ))}
-                        {canEdit && <button className={styles.addBtn} onClick={() => {
-                            setForm(p => ({
-                                ...p,
-                                portfolioImages: [...p.portfolioImages, ''],
-                                portfolioDescriptions: [...p.portfolioDescriptions, ''],
-                            }));
-                        }}>+ Add Portfolio Item</button>}
-                    </div>
+                                    placeholder={`Description for image ${i + 1}...`} disabled={!canEdit} />
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 <div className={`glass-panel ${styles.card}`}>

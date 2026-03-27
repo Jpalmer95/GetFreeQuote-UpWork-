@@ -209,6 +209,65 @@
     margin-top: 0.25rem;
 }
 
+.attachmentGallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-subtle);
+}
+
+.attachmentThumb {
+    aspect-ratio: 1;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    border: 1px solid var(--border-subtle);
+    display: block;
+    transition: border-color 0.15s ease;
+}
+
+.attachmentThumb:hover {
+    border-color: var(--primary);
+}
+
+.attachmentThumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.attachmentFile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    aspect-ratio: 1;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-subtle);
+    background: var(--surface-100);
+    color: rgba(255, 255, 255, 0.5);
+    text-decoration: none;
+    font-size: 0.6rem;
+    padding: 0.35rem;
+    text-align: center;
+    overflow: hidden;
+    transition: border-color 0.15s ease;
+}
+
+.attachmentFile:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.attachmentFile span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+}
+
 .detailMeta {
     display: flex;
     flex-wrap: wrap;

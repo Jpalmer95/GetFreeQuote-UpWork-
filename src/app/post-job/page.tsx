@@ -5,6 +5,7 @@ import { jobService } from '@/services/jobService';
 import { IndustryVertical, INDUSTRY_VERTICALS, INDUSTRY_SUBCATEGORIES, ProjectUrgency } from '@/types';
 import styles from './page.module.css';
 import { useAuth } from '@/context/AuthContext';
+import FileUpload from '@/components/FileUpload';
 
 const URGENCY_OPTIONS: { value: ProjectUrgency; label: string }[] = [
     { value: 'flexible', label: 'Flexible Timeline' },
@@ -41,6 +42,7 @@ export default function PostJob() {
         timelineEnd: '',
         tags: '',
     });
+    const [attachmentUrls, setAttachmentUrls] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
 
     const subcategories = (INDUSTRY_SUBCATEGORIES as Record<string, string[]>)[formData.industryVertical] || ['Other'];
@@ -91,6 +93,7 @@ export default function PostJob() {
                 timelineStart: formData.timelineStart || undefined,
                 timelineEnd: formData.timelineEnd || undefined,
                 tags: tagList,
+                attachments: attachmentUrls,
             });
 
             router.push('/dashboard?new=true');
@@ -292,6 +295,15 @@ export default function PostJob() {
                             </div>
                         </div>
                     )}
+
+                    {user && <FileUpload
+                        bucket="job-attachments"
+                        userId={user.id}
+                        maxFiles={10}
+                        label="Photos & Documents"
+                        hint="Upload photos of the job site, blueprints, or reference documents"
+                        onUpload={setAttachmentUrls}
+                    />}
 
                     <div className={styles.divider} />
 

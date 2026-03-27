@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { COMMUNITY_CATEGORIES, CommunityProjectCategory } from '@/types';
 import Navbar from '@/components/Navbar';
+import FileUpload from '@/components/FileUpload';
 import styles from './page.module.css';
 
 export default function NewCommunityProject() {
@@ -147,17 +148,15 @@ export default function NewCommunityProject() {
                     </div>
 
                     <div className={styles.fieldGroup}>
-                        <label className={styles.label}>Project Image URL</label>
-                        <input
-                            type="url"
-                            className={styles.input}
-                            placeholder="https://example.com/project-photo.jpg"
-                            value={imageUrl}
-                            onChange={e => setImageUrl(e.target.value)}
-                        />
-                        <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.35)', marginTop: '0.25rem' }}>
-                            Optional. Provide a URL to an image that represents your project.
-                        </span>
+                        <label className={styles.label}>Project Image</label>
+                        {user && <FileUpload
+                            bucket="community-images"
+                            userId={user.id}
+                            single
+                            label=""
+                            hint="Upload a photo that represents your project"
+                            onUpload={(urls) => setImageUrl(urls[0] || '')}
+                        />}
                     </div>
 
                     {error && <div className={styles.error}>{error}</div>}

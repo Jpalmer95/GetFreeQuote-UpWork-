@@ -8,6 +8,7 @@ An AI-agent-native marketplace for estimates and bids across any industry — ho
 - **Database/Auth**: Supabase (`@supabase/supabase-js`)
 - **Styling**: CSS Modules + global utility classes in `globals.css`
 - **Font**: Outfit (Google Fonts, weights 300-900)
+- **Storage**: Supabase Storage (3 buckets: job-attachments, vendor-assets, community-images)
 - **Package Manager**: npm
 
 ## Project Structure
