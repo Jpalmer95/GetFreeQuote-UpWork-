@@ -339,7 +339,7 @@ export default function VendorProfileEdit() {
                 </div>
 
                 {profileId && user && (
-                    <VerificationSection userId={user.id} profileId={profileId} />
+                    <VerificationSection userId={user.id} />
                 )}
 
                 {canEdit && (

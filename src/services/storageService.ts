@@ -56,11 +56,11 @@ async function compressImage(file: File, maxWidth = 1920, quality = 0.85): Promi
 }
 
 export const storageService = {
-    validateFile(file: File, bucket: StorageBucket): string | null {
+    validateFile(file: File, bucket: StorageBucket, options?: { acceptPdf?: boolean }): string | null {
         if (file.size > MAX_FILE_SIZE) {
             return `File "${file.name}" exceeds 10MB limit`;
         }
-        const allowed = bucket === 'job-attachments' ? ALLOWED_TYPES : IMAGE_TYPES;
+        const allowed = (bucket === 'job-attachments' || options?.acceptPdf) ? ALLOWED_TYPES : IMAGE_TYPES;
         if (!allowed.includes(file.type)) {
             const types = allowed.map(t => t.split('/')[1]).join(', ');
             return `File "${file.name}" type not allowed. Accepted: ${types}`;
@@ -68,8 +68,8 @@ export const storageService = {
         return null;
     },
 
-    async uploadFile(file: File, bucket: StorageBucket, userId: string): Promise<UploadResult> {
-        const error = this.validateFile(file, bucket);
+    async uploadFile(file: File, bucket: StorageBucket, userId: string, options?: { acceptPdf?: boolean }): Promise<UploadResult> {
+        const error = this.validateFile(file, bucket, options);
         if (error) throw new Error(error);
 
         const compressed = await compressImage(file);
@@ -98,12 +98,12 @@ export const storageService = {
         };
     },
 
-    async uploadFiles(files: File[], bucket: StorageBucket, userId: string): Promise<UploadResult[]> {
+    async uploadFiles(files: File[], bucket: StorageBucket, userId: string, options?: { acceptPdf?: boolean }): Promise<UploadResult[]> {
         const results: UploadResult[] = [];
         const errors: string[] = [];
         for (const file of files) {
             try {
-                const result = await this.uploadFile(file, bucket, userId);
+                const result = await this.uploadFile(file, bucket, userId, options);
                 results.push(result);
             } catch (err) {
                 errors.push(err instanceof Error ? err.message : `Failed to upload ${file.name}`);

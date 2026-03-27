@@ -83,7 +83,7 @@ export default function FileUpload({
         const toUpload = files.slice(0, available);
 
         for (const f of toUpload) {
-            const validationError = storageService.validateFile(f, bucket);
+            const validationError = storageService.validateFile(f, bucket, { acceptPdf });
             if (validationError) {
                 setError(validationError);
                 return;
@@ -92,7 +92,7 @@ export default function FileUpload({
 
         setUploading(true);
         try {
-            const results: UploadResult[] = await storageService.uploadFiles(toUpload, bucket, userId);
+            const results: UploadResult[] = await storageService.uploadFiles(toUpload, bucket, userId, { acceptPdf });
             const newPreviews: PreviewFile[] = results.map(r => ({
                 id: r.path,
                 url: r.url,

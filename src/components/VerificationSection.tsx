@@ -6,7 +6,6 @@ import styles from './VerificationSection.module.css';
 
 interface VerificationSectionProps {
     userId: string;
-    profileId: string;
 }
 
 interface VerificationStatus {
@@ -21,7 +20,7 @@ interface VerificationStatus {
     };
 }
 
-export default function VerificationSection({ userId, profileId }: VerificationSectionProps) {
+export default function VerificationSection({ userId }: VerificationSectionProps) {
     const [verificationStatus, setVerificationStatus] = useState<VerificationStatus | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const [documents, setDocuments] = useState<string[]>([]);
