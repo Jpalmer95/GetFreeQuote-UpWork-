@@ -33,5 +33,8 @@ export async function GET() {
         healthy = false;
     }
 
+    if (process.env.NODE_ENV === 'production') {
+        return NextResponse.json({ healthy }, { status: healthy ? 200 : 503 });
+    }
     return NextResponse.json({ healthy, checks }, { status: healthy ? 200 : 503 });
 }
