@@ -171,6 +171,7 @@ export default function VerificationSection({ userId, profileId }: VerificationS
                     bucket="vendor-assets"
                     userId={userId}
                     maxFiles={5}
+                    acceptPdf
                     existingUrls={documents}
                     hint="Upload business license, insurance certificates, or other credentials"
                     onUpload={(urls) => setDocuments(urls)}

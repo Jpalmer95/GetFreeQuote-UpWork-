@@ -1,6 +1,11 @@
 -- VERIFICATION REQUESTS
 -- Run this migration in the Supabase SQL Editor
 
+-- Update vendor-assets bucket to accept PDFs (for verification documents)
+update storage.buckets
+set allowed_mime_types = array['image/jpeg','image/png','image/webp','image/gif','application/pdf']
+where id = 'vendor-assets';
+
 create table if not exists public.verification_requests (
   id uuid default gen_random_uuid() primary key,
   vendor_profile_id uuid references public.vendor_profiles(id) not null,

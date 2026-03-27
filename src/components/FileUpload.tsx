@@ -11,6 +11,7 @@ interface FileUploadProps {
     label?: string;
     hint?: string;
     single?: boolean;
+    acceptPdf?: boolean;
     onUpload: (urls: string[]) => void;
     onRemove?: (url: string) => void;
     disabled?: boolean;
@@ -32,6 +33,7 @@ export default function FileUpload({
     label,
     hint,
     single = false,
+    acceptPdf = false,
     onUpload,
     onRemove,
     disabled = false,
@@ -154,7 +156,7 @@ export default function FileUpload({
                         type="file"
                         className={styles.hiddenInput}
                         multiple={!single}
-                        accept={bucket === 'job-attachments'
+                        accept={(bucket === 'job-attachments' || acceptPdf)
                             ? 'image/jpeg,image/png,image/webp,image/gif,application/pdf'
                             : 'image/jpeg,image/png,image/webp,image/gif'}
                         onChange={e => e.target.files && handleFiles(e.target.files)}
@@ -177,7 +179,7 @@ export default function FileUpload({
                                 Drop files here or <span className={styles.browse}>browse</span>
                             </span>
                             <span className={styles.dropHint}>
-                                {bucket === 'job-attachments'
+                                {(bucket === 'job-attachments' || acceptPdf)
                                     ? 'JPG, PNG, WebP, GIF, PDF up to 10MB'
                                     : 'JPG, PNG, WebP, GIF up to 10MB'}
                                 {!single && ` \u00B7 ${previews.length}/${effectiveMax} files`}
