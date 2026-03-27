@@ -24,6 +24,7 @@ interface JobRow {
 }
 
 export async function GET(req: NextRequest) {
+    try {
     const { searchParams } = new URL(req.url);
     const action = searchParams.get('action');
 
@@ -33,6 +34,10 @@ export async function GET(req: NextRequest) {
             supabaseAdmin.from('vendor_profiles').select('id', { count: 'exact', head: true }),
             supabaseAdmin.from('quotes').select('id', { count: 'exact', head: true }),
         ]);
+
+        if (jobsRes.error || vendorsRes.error || quotesRes.error) {
+            return NextResponse.json({ error: 'Failed to fetch platform stats' }, { status: 500 });
+        }
 
         return NextResponse.json({
             totalJobs: jobsRes.count ?? 0,
@@ -194,4 +199,7 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+    } catch {
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
 }
