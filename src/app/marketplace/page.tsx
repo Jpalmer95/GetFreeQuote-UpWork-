@@ -1,6 +1,8 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { jobService } from '@/services/jobService';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/context/AuthContext';
 import { Job, IndustryVertical, KnownIndustryVertical, INDUSTRY_VERTICALS, INDUSTRY_SUBCATEGORIES } from '@/types';
 import styles from './page.module.css';
 import Navbar from '@/components/Navbar';
@@ -72,8 +74,26 @@ function getRelevanceScore(job: Job, query: string, location: string): { score: 
 }
 
 export default function Marketplace() {
+    const { user } = useAuth();
     const [jobs, setJobs] = useState<Job[]>([]);
     const [error, setError] = useState<string | null>(null);
+    const [vendorServiceAreas, setVendorServiceAreas] = useState<string[]>([]);
+
+    useEffect(() => {
+        if (!user) return;
+        const loadVendorProfile = async () => {
+            const { data } = await supabase
+                .from('vendor_profiles')
+                .select('service_areas')
+                .eq('user_id', user.id)
+                .single();
+            if (data?.service_areas) {
+                setVendorServiceAreas(data.service_areas);
+            }
+        };
+        loadVendorProfile();
+    }, [user]);
+
     const [filters, setFilters] = useState({
         query: '',
         industryVertical: '' as IndustryVertical | '',
@@ -268,9 +288,10 @@ export default function Marketplace() {
 
                     <div className={styles.grid}>
                         {jobs.map(job => {
-                            const hasActiveSearch = !!(filters.query || filters.location);
+                            const locationForDistance = filters.location || (vendorServiceAreas.length > 0 ? vendorServiceAreas[0] : '');
+                            const hasActiveSearch = !!(filters.query || locationForDistance);
                             const relevance = hasActiveSearch
-                                ? getRelevanceScore(job, filters.query, filters.location)
+                                ? getRelevanceScore(job, filters.query, locationForDistance)
                                 : null;
                             return (
                             <div

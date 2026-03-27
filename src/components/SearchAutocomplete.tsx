@@ -18,7 +18,7 @@ export default function SearchAutocomplete({ value, onChange, placeholder }: Sea
     const [showDropdown, setShowDropdown] = useState(false);
     const [activeIndex, setActiveIndex] = useState(-1);
     const containerRef = useRef<HTMLDivElement>(null);
-    const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
         if (debounceRef.current) clearTimeout(debounceRef.current);
