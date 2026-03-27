@@ -29,7 +29,7 @@ export default function PlatformStats() {
 
     const items = [
         { value: stats.totalJobs, label: 'Projects Posted' },
-        { value: stats.totalVendors, label: 'Verified Vendors' },
+        { value: stats.totalVendors, label: 'Active Vendors' },
         { value: stats.totalQuotes, label: 'Quotes Generated' },
     ];
 
