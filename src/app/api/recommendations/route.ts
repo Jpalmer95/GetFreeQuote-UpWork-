@@ -1,17 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { supabase } from '@/lib/supabase';
-
-async function getAuthUser(req: NextRequest) {
-    const auth = req.headers.get('authorization')?.replace('Bearer ', '');
-    if (!auth) return null;
-    const { data: { user } } = await supabase.auth.getUser(auth);
-    return user;
-}
+import { getAuthenticatedUser } from '@/lib/serverAuth';
 
 export async function GET(req: NextRequest) {
     try {
-        const user = await getAuthUser(req);
+        const user = await getAuthenticatedUser(req);
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const { searchParams } = new URL(req.url);

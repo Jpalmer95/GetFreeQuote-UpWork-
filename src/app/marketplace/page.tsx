@@ -145,7 +145,7 @@ export default function Marketplace() {
             }
         }, 300);
         return () => clearTimeout(timer);
-    }, [filters]);
+    }, [filters, vendorServiceAreas]);
 
     const subcategories = filters.industryVertical
         ? (INDUSTRY_SUBCATEGORIES as Record<string, string[]>)[filters.industryVertical] || []
