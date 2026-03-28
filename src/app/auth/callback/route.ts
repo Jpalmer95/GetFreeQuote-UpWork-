@@ -6,9 +6,12 @@ export async function GET(request: NextRequest) {
     const errorParam = requestUrl.searchParams.get('error');
     const errorDescription = requestUrl.searchParams.get('error_description');
 
-    const origin = requestUrl.origin.includes('localhost')
-        ? `https://${process.env.REPLIT_DEV_DOMAIN || requestUrl.host}`
-        : requestUrl.origin;
+    let origin: string;
+    if (process.env.REPLIT_DEV_DOMAIN) {
+        origin = `https://${process.env.REPLIT_DEV_DOMAIN}`;
+    } else {
+        origin = requestUrl.origin;
+    }
 
     if (errorParam) {
         const msg = encodeURIComponent(errorDescription || errorParam);
@@ -16,7 +19,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (code) {
-        return NextResponse.redirect(`${origin}/auth/confirm?code=${code}`);
+        return NextResponse.redirect(`${origin}/auth/confirm?code=${encodeURIComponent(code)}`);
     }
 
     return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent('Missing authentication code')}`);
