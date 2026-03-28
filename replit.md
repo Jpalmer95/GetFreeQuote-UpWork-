@@ -5,7 +5,7 @@ An AI-agent-native marketplace for estimates and bids across any industry — ho
 ## Architecture
 
 - **Framework**: Next.js 16 (App Router) with TypeScript
-- **Database/Auth**: Supabase (`@supabase/supabase-js`)
+- **Database/Auth**: Supabase (`@supabase/supabase-js`) — email/password + Google OAuth
 - **Styling**: CSS Modules + global utility classes in `globals.css`
 - **Font**: Outfit (Google Fonts, weights 300-900)
 - **Storage**: Supabase Storage (3 buckets: job-attachments, vendor-assets, community-images)
@@ -22,7 +22,10 @@ src/
     providers.tsx          # Client-only providers wrapper (AuthProvider)
     page.tsx               # Landing page (aurora hero, industry verticals, CTA)
     page.module.css
-    login/                 # Login / Sign Up page
+    login/                 # Login / Sign Up page (email/password + Google OAuth)
+    auth/
+      callback/            # Server route: receives Supabase auth redirects, forwards code to confirm page
+      confirm/             # Client page: exchanges auth code for session (email confirm + OAuth)
     dashboard/             # Project dashboard (timeline, quotes, agent log tabs)
     marketplace/           # Public project marketplace (industry/subcategory/tag filters)
     post-job/              # Post a new project form (dynamic fields per industry)
@@ -71,6 +74,7 @@ src/
     AuthContext.tsx        # Supabase auth state provider
   lib/
     supabase.ts            # Supabase client (browser/client-side)
+    auth-helpers.ts        # Auth URL helpers (getBaseUrl, getAuthCallbackUrl)
     supabaseAdmin.ts       # Supabase admin client (server-side, service role)
   services/
     jobService.ts          # Business logic layer

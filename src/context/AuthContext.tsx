@@ -3,7 +3,6 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Session, User } from '@supabase/supabase-js';
 
-// We can extend this to include our custom Profile data if we want
 interface AuthContextType {
     user: User | null;
     session: Session | null;
@@ -27,22 +26,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        // Check active session
         supabase.auth.getSession().then(({ data: { session } }) => {
             setSession(session);
             setUser(session?.user ?? null);
-            if (session?.user) fetchProfile(session.user.id);
+            if (session?.user) fetchOrCreateProfile(session.user);
             else setIsLoading(false);
         });
 
-        // Listen for changes
         const {
             data: { subscription },
         } = supabase.auth.onAuthStateChange((_event, session) => {
             setSession(session);
             setUser(session?.user ?? null);
             if (session?.user) {
-                fetchProfile(session.user.id);
+                fetchOrCreateProfile(session.user);
             } else {
                 setProfile(null);
                 setIsLoading(false);
@@ -52,16 +49,46 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return () => subscription.unsubscribe();
     }, []);
 
-    const fetchProfile = async (userId: string) => {
+    const fetchOrCreateProfile = async (authUser: User) => {
         try {
             const { data, error } = await supabase
                 .from('profiles')
                 .select('*')
-                .eq('id', userId)
+                .eq('id', authUser.id)
                 .single();
 
             if (!error && data) {
                 setProfile(data);
+                return;
+            }
+
+            if (error && error.code === 'PGRST116') {
+                const meta = authUser.user_metadata || {};
+                const fullName = meta.full_name || meta.name || '';
+                const role = meta.role || 'USER';
+
+                const { data: newProfile, error: insertError } = await supabase
+                    .from('profiles')
+                    .upsert({
+                        id: authUser.id,
+                        full_name: fullName,
+                        role: role,
+                        email: authUser.email,
+                    }, { onConflict: 'id' })
+                    .select('*')
+                    .single();
+
+                if (!insertError && newProfile) {
+                    setProfile(newProfile);
+                } else {
+                    console.error('Error creating profile:', insertError);
+                    const { data: refetchData } = await supabase
+                        .from('profiles')
+                        .select('*')
+                        .eq('id', authUser.id)
+                        .single();
+                    if (refetchData) setProfile(refetchData);
+                }
             }
         } catch (error) {
             console.error('Error fetching profile:', error);
