@@ -49,6 +49,105 @@
     opacity: 0.85;
 }
 
+.btnCta {
+    padding: 0.7rem 1.6rem;
+    border-radius: var(--radius-md);
+    background: linear-gradient(135deg, var(--primary), var(--secondary, #6366f1));
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.95rem;
+    border: none;
+    cursor: pointer;
+    font-family: var(--font-sans);
+    transition: opacity var(--dur-fast) ease, transform var(--dur-fast) ease;
+    text-decoration: none;
+}
+
+.btnCta:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.templateSection {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 1.5rem 2.5rem;
+}
+
+.templateHeading {
+    font-size: 1.35rem;
+    font-weight: 700;
+    margin-bottom: 0.35rem;
+}
+
+.templateSub {
+    font-size: 0.92rem;
+    color: rgba(255,255,255,0.45);
+    margin-bottom: 1.25rem;
+}
+
+.templateGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+}
+
+.templateCard {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.4rem;
+    padding: 1.25rem;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-subtle);
+    background: var(--surface-card);
+    cursor: pointer;
+    text-align: left;
+    font-family: var(--font-sans);
+    transition: border-color var(--dur-base) ease, transform var(--dur-base) ease;
+    color: inherit;
+}
+
+.templateCard:hover {
+    border-color: var(--primary);
+    transform: translateY(-2px);
+}
+
+.templateIcon {
+    font-size: 1.8rem;
+    margin-bottom: 0.15rem;
+}
+
+.templateCategory {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--primary-light);
+}
+
+.templateTitle {
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.templateDesc {
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.5);
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.templateGoal {
+    font-size: 0.78rem;
+    color: rgba(255,255,255,0.35);
+    margin-top: 0.25rem;
+}
+
 .layout {
     display: flex;
     max-width: 1400px;
@@ -299,6 +398,9 @@
         width: 100%;
     }
     .grid {
+        grid-template-columns: 1fr;
+    }
+    .templateGrid {
         grid-template-columns: 1fr;
     }
 }

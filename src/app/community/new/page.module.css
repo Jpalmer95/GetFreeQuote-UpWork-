@@ -30,6 +30,16 @@
     margin-bottom: 0.5rem;
 }
 
+.templateHint {
+    font-size: 0.88rem;
+    color: var(--primary-light);
+    margin-bottom: 0.5rem;
+    padding: 0.6rem 0.9rem;
+    background: rgba(79,142,247,0.08);
+    border: 1px solid rgba(79,142,247,0.2);
+    border-radius: var(--radius-sm);
+}
+
 .subtitle {
     font-size: 0.95rem;
     color: rgba(255,255,255,0.5);

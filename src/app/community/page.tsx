@@ -1,9 +1,11 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { db } from '@/services/db';
 import { CommunityProject, CommunityProjectCategory, COMMUNITY_CATEGORIES } from '@/types';
 import { useAuth } from '@/context/AuthContext';
+import { COMMUNITY_TEMPLATES } from '@/data/communityTemplates';
 import Navbar from '@/components/Navbar';
 import styles from './page.module.css';
 
@@ -31,6 +33,7 @@ function getBadgeClass(status: string): string {
 
 export default function CommunityPage() {
     const { user } = useAuth();
+    const router = useRouter();
     const [projects, setProjects] = useState<CommunityProject[]>([]);
     const [category, setCategory] = useState<CommunityProjectCategory | ''>('');
     const [search, setSearch] = useState('');
@@ -46,6 +49,14 @@ export default function CommunityPage() {
         return () => clearTimeout(timer);
     }, [category, search]);
 
+    const handleTemplateClick = (template: typeof COMMUNITY_TEMPLATES[0]) => {
+        if (!user) {
+            router.push(`/login?redirect=${encodeURIComponent('/community/new?template=' + template.id)}`);
+            return;
+        }
+        router.push(`/community/new?template=${template.id}`);
+    };
+
     return (
         <div className={styles.container}>
             <Navbar />
@@ -59,11 +70,35 @@ export default function CommunityPage() {
                     transparent smart contract-backed escrow.
                 </p>
                 <div className={styles.heroActions}>
-                    {user && (
+                    {user ? (
                         <Link href="/community/new" className={styles.btnPrimary}>
                             Start a Project
                         </Link>
+                    ) : (
+                        <Link href={`/login?redirect=${encodeURIComponent('/community/new')}`} className={styles.btnCta}>
+                            Sign in to Start a Project
+                        </Link>
                     )}
+                </div>
+            </div>
+
+            <div className={styles.templateSection}>
+                <h2 className={styles.templateHeading}>Start from a Template</h2>
+                <p className={styles.templateSub}>Pick a proven community project idea and customize it for your neighborhood.</p>
+                <div className={styles.templateGrid}>
+                    {COMMUNITY_TEMPLATES.map(t => (
+                        <button
+                            key={t.id}
+                            className={styles.templateCard}
+                            onClick={() => handleTemplateClick(t)}
+                        >
+                            <span className={styles.templateIcon}>{CATEGORY_ICONS[t.category] || '\u{2728}'}</span>
+                            <span className={styles.templateCategory}>{t.category}</span>
+                            <span className={styles.templateTitle}>{t.title}</span>
+                            <span className={styles.templateDesc}>{t.description}</span>
+                            <span className={styles.templateGoal}>Suggested goal: {formatCurrency(t.suggestedGoal)}</span>
+                        </button>
+                    ))}
                 </div>
             </div>
 

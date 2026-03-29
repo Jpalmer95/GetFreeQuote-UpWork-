@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { jobService } from '@/services/jobService';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
@@ -75,6 +76,7 @@ function getRelevanceScore(job: Job, query: string, location: string): { score: 
 
 export default function Marketplace() {
     const { user } = useAuth();
+    const router = useRouter();
     const [jobs, setJobs] = useState<Job[]>([]);
     const [error, setError] = useState<string | null>(null);
     const [vendorServiceAreas, setVendorServiceAreas] = useState<string[]>([]);
@@ -383,8 +385,24 @@ export default function Marketplace() {
                                 </div>
 
                                 <div className={styles.cardActions}>
-                                    <button className={styles.bidBtn}>Bid Now</button>
-                                    <button className={styles.detailsBtn}>View Details</button>
+                                    <button
+                                        className={styles.bidBtn}
+                                        onClick={() => {
+                                            if (!user) {
+                                                router.push(`/login?redirect=${encodeURIComponent(`/jobs/${job.id}`)}`);
+                                            } else {
+                                                router.push(`/jobs/${job.id}`);
+                                            }
+                                        }}
+                                    >
+                                        Bid Now
+                                    </button>
+                                    <button
+                                        className={styles.detailsBtn}
+                                        onClick={() => router.push(`/jobs/${job.id}`)}
+                                    >
+                                        View Details
+                                    </button>
                                 </div>
                             </div>
                             );

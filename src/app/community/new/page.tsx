@@ -1,15 +1,17 @@
 'use client';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { COMMUNITY_CATEGORIES, CommunityProjectCategory } from '@/types';
+import { COMMUNITY_TEMPLATES } from '@/data/communityTemplates';
 import Navbar from '@/components/Navbar';
 import FileUpload from '@/components/FileUpload';
 import styles from './page.module.css';
 
 export default function NewCommunityProject() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { user, session } = useAuth();
 
     const [title, setTitle] = useState('');
@@ -20,6 +22,22 @@ export default function NewCommunityProject() {
     const [imageUrl, setImageUrl] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
+    const [templateName, setTemplateName] = useState('');
+
+    useEffect(() => {
+        const templateId = searchParams.get('template');
+        if (templateId) {
+            const template = COMMUNITY_TEMPLATES.find(t => t.id === templateId);
+            if (template) {
+                setTitle(template.title);
+                setDescription(template.description);
+                setCategory(template.category);
+                setGoalAmount(String(template.suggestedGoal));
+                setLocation(template.locationPlaceholder);
+                setTemplateName(template.title);
+            }
+        }
+    }, [searchParams]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -80,6 +98,11 @@ export default function NewCommunityProject() {
                 </Link>
 
                 <h1 className={styles.title}>Start a Community Project</h1>
+                {templateName && (
+                    <p className={styles.templateHint}>
+                        Pre-filled from template: <strong>{templateName}</strong> — feel free to customize everything below.
+                    </p>
+                )}
                 <p className={styles.subtitle}>
                     Create a transparent, publicly-funded initiative with smart contract-backed escrow.
                 </p>

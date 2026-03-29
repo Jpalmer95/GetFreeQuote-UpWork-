@@ -74,7 +74,9 @@ function LoginForm() {
             } else {
                 const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
                 if (signInError) throw signInError;
-                router.push('/dashboard');
+                const redirectTo = searchParams.get('redirect');
+                const safeRedirect = redirectTo && redirectTo.startsWith('/') && !redirectTo.startsWith('//') ? redirectTo : '/dashboard';
+                router.push(safeRedirect);
             }
         } catch (err: unknown) {
             let message = 'An unexpected error occurred.';
