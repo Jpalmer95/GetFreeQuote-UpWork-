@@ -37,9 +37,14 @@ export default function Home() {
           <Link href="/login?mode=signup" className="btn-primary">
             Get Started Free
           </Link>
-          <Link href="/marketplace" className="btn-secondary">
-            Browse Marketplace
-          </Link>
+          <div className={styles.browseLinks}>
+            <Link href="/marketplace" className="btn-secondary">
+              Browse Marketplace
+            </Link>
+            <Link href="/community" className="btn-secondary">
+              Browse Community Projects
+            </Link>
+          </div>
         </div>
 
         <div className={styles.trustBar}>
