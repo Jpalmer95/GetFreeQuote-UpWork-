@@ -177,10 +177,12 @@ function LoginForm() {
                     </div>
                 )}
 
+                <p className={styles.comingSoonText}>Google login coming soon</p>
+
                 <button
                     type="button"
                     onClick={handleGoogleLogin}
-                    disabled={googleLoading}
+                    disabled={true}
                     className={styles.googleBtn}
                 >
                     {googleLoading ? (

@@ -154,6 +154,17 @@
     border-radius: var(--radius-sm);
 }
 
+/* ─── Coming Soon Text ─── */
+.comingSoonText {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.45);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    text-align: center;
+}
+
 /* ─── Google Button ─── */
 .googleBtn {
     display: flex;
@@ -170,16 +181,16 @@
     font-size: 0.93rem;
     font-weight: 600;
     cursor: pointer;
-    transition: background var(--dur-base) ease, border-color var(--dur-base) ease;
+    transition: background var(--dur-base) ease, border-color var(--dur-base) ease, opacity var(--dur-base) ease;
 }
 
-.googleBtn:hover {
+.googleBtn:hover:not(:disabled) {
     background: var(--surface-200);
     border-color: var(--border-highlight);
 }
 
 .googleBtn:disabled {
-    opacity: 0.6;
+    opacity: 0.5;
     cursor: not-allowed;
 }
 
