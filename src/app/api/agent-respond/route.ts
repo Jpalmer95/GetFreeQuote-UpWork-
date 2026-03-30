@@ -130,16 +130,18 @@ export async function POST(request: NextRequest) {
                                 is_agent_action: true,
                             });
 
-                            dispatchNotification({
-                                userId: vq.vendor_id,
-                                jobId,
-                                type: 'scope_change',
-                                priority: 'medium',
-                                title: 'Scope Update',
-                                message: `The customer updated project details for "${jobRow.title}". Review and revise your quote.`,
-                                actionRequired: true,
-                                actionUrl: '/vendor',
-                            }).catch(() => {});
+                            try {
+                                await dispatchNotification({
+                                    userId: vq.vendor_id,
+                                    jobId,
+                                    type: 'scope_change',
+                                    priority: 'medium',
+                                    title: 'Scope Update',
+                                    message: `The customer updated project details for "${jobRow.title}". Review and revise your quote.`,
+                                    actionRequired: true,
+                                    actionUrl: '/vendor',
+                                });
+                            } catch (e) { console.error('[agent-respond] dispatch error:', e); }
                         }
                     }
                 }
@@ -157,16 +159,18 @@ export async function POST(request: NextRequest) {
                     agent_config_id: callerConfig.id,
                 });
 
-                dispatchNotification({
-                    userId: caller.id,
-                    jobId,
-                    type: 'approval_needed',
-                    priority: 'high',
-                    title: 'Action Required',
-                    message: `Your message about "${jobRow.title}" has been flagged. Your agent recommends direct attention.`,
-                    actionRequired: true,
-                    actionUrl: '/dashboard',
-                }).catch(() => {});
+                try {
+                    await dispatchNotification({
+                        userId: caller.id,
+                        jobId,
+                        type: 'approval_needed',
+                        priority: 'high',
+                        title: 'Action Required',
+                        message: `Your message about "${jobRow.title}" has been flagged. Your agent recommends direct attention.`,
+                        actionRequired: true,
+                        actionUrl: '/dashboard',
+                    });
+                } catch (e) { console.error('[agent-respond] dispatch error:', e); }
                 responses.push('escalation_flagged');
             }
         }
@@ -178,16 +182,18 @@ export async function POST(request: NextRequest) {
                 .eq('job_id', jobId);
 
             for (const vq of (vendorQuotes || [])) {
-                dispatchNotification({
-                    userId: vq.vendor_id,
-                    jobId,
-                    type: 'new_message',
-                    priority: 'medium',
-                    title: 'New Message from Project Owner',
-                    message: `The project owner sent a message regarding "${jobRow.title}".`,
-                    actionRequired: false,
-                    actionUrl: '/vendor',
-                }).catch(() => {});
+                try {
+                    await dispatchNotification({
+                        userId: vq.vendor_id,
+                        jobId,
+                        type: 'new_message',
+                        priority: 'medium',
+                        title: 'New Message from Project Owner',
+                        message: `The project owner sent a message regarding "${jobRow.title}".`,
+                        actionRequired: false,
+                        actionUrl: '/vendor',
+                    });
+                } catch (e) { console.error('[agent-respond] dispatch error:', e); }
             }
             responses.push('vendors_notified');
         }
@@ -215,16 +221,18 @@ export async function POST(request: NextRequest) {
                 }
             }
 
-            dispatchNotification({
-                userId: jobRow.user_id,
-                jobId,
-                type: 'new_message',
-                priority: 'medium',
-                title: 'Vendor Message',
-                message: `A vendor sent a message regarding "${jobRow.title}".`,
-                actionRequired: false,
-                actionUrl: '/dashboard',
-            }).catch(() => {});
+            try {
+                await dispatchNotification({
+                    userId: jobRow.user_id,
+                    jobId,
+                    type: 'new_message',
+                    priority: 'medium',
+                    title: 'Vendor Message',
+                    message: `A vendor sent a message regarding "${jobRow.title}".`,
+                    actionRequired: false,
+                    actionUrl: '/dashboard',
+                });
+            } catch (e) { console.error('[agent-respond] dispatch error:', e); }
             responses.push('owner_notified');
         }
 
