@@ -1,0 +1,482 @@
+.page {
+    min-height: 100vh;
+    background: #f8fafc;
+}
+
+.main {
+    padding: 2rem 1rem;
+}
+
+.container {
+    max-width: 860px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 0.25rem;
+}
+
+.subtitle {
+    font-size: 0.95rem;
+    color: #6b7280;
+    margin: 0;
+}
+
+.docsLink {
+    color: #6366f1;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.docsLink:hover {
+    text-decoration: underline;
+}
+
+.createBtn {
+    padding: 0.6rem 1.25rem;
+    background: #6366f1;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.2s;
+}
+
+.createBtn:hover {
+    background: #4f46e5;
+}
+
+.newKeyBanner {
+    background: #f0fdf4;
+    border: 1.5px solid #16a34a;
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.newKeyHeader {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #15803d;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.newKeyIcon {
+    font-size: 1.1rem;
+}
+
+.newKeyRow {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.keyCode {
+    background: #dcfce7;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    font-family: monospace;
+    font-size: 0.85rem;
+    color: #166534;
+    word-break: break-all;
+    flex: 1;
+}
+
+.copyBtn {
+    padding: 0.4rem 0.9rem;
+    background: #16a34a;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.2s;
+}
+
+.copyBtn:hover {
+    background: #15803d;
+}
+
+.dismissBtn {
+    background: none;
+    border: 1px solid #16a34a;
+    color: #16a34a;
+    border-radius: 6px;
+    padding: 0.35rem 0.9rem;
+    font-size: 0.85rem;
+    cursor: pointer;
+    align-self: flex-start;
+    transition: background 0.2s;
+}
+
+.dismissBtn:hover {
+    background: #dcfce7;
+}
+
+.formCard {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.formTitle {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #111827;
+    margin: 0;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+}
+
+.input {
+    padding: 0.6rem 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: #111827;
+    transition: border-color 0.2s;
+}
+
+.input:focus {
+    outline: none;
+    border-color: #6366f1;
+}
+
+.scopes {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.scopeCheck {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    font-size: 0.9rem;
+    color: #374151;
+    cursor: pointer;
+}
+
+.scopeCheck input {
+    margin-top: 2px;
+    accent-color: #6366f1;
+}
+
+.formActions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+    padding-top: 0.25rem;
+}
+
+.cancelBtn {
+    padding: 0.55rem 1.1rem;
+    background: white;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    color: #374151;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.cancelBtn:hover {
+    background: #f3f4f6;
+}
+
+.submitBtn {
+    padding: 0.55rem 1.25rem;
+    background: #6366f1;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.submitBtn:hover:not(:disabled) {
+    background: #4f46e5;
+}
+
+.submitBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.error {
+    background: #fef2f2;
+    color: #dc2626;
+    padding: 0.6rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    margin: 0;
+}
+
+.loading {
+    text-align: center;
+    color: #6b7280;
+    padding: 2rem;
+}
+
+.empty {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #6b7280;
+}
+
+.emptyIcon {
+    font-size: 2.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.keyList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.keyCard {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    transition: opacity 0.2s;
+}
+
+.keyCard.inactive {
+    opacity: 0.6;
+}
+
+.keyMain {
+    flex: 1;
+    min-width: 0;
+}
+
+.keyInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.keyNameRow {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+}
+
+.keyName {
+    font-weight: 600;
+    color: #111827;
+    font-size: 0.95rem;
+}
+
+.keyStatus {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.15rem 0.5rem;
+    border-radius: 99px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.keyStatus.active {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.keyStatus.revoked {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.keyMeta {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    font-size: 0.8rem;
+    color: #6b7280;
+}
+
+.keyPrefix {
+    font-family: monospace;
+    background: #f3f4f6;
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    color: #374151;
+}
+
+.dot {
+    color: #d1d5db;
+}
+
+.keyActions {
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+.toggleBtn {
+    padding: 0.35rem 0.75rem;
+    background: white;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    color: #374151;
+    transition: background 0.2s;
+}
+
+.toggleBtn:hover {
+    background: #f3f4f6;
+}
+
+.revokeBtn {
+    padding: 0.35rem 0.75rem;
+    background: white;
+    border: 1px solid #fca5a5;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    color: #dc2626;
+    transition: background 0.2s;
+}
+
+.revokeBtn:hover {
+    background: #fef2f2;
+}
+
+.infoCard {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.infoTitle {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #111827;
+    margin: 0;
+}
+
+.infoText {
+    font-size: 0.9rem;
+    color: #374151;
+    margin: 0;
+    line-height: 1.5;
+}
+
+.infoText code {
+    background: #f3f4f6;
+    padding: 0.1rem 0.35rem;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.85rem;
+}
+
+.codeBlock {
+    background: #1e1e2e;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.codeHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    background: #2a2a3e;
+    font-size: 0.8rem;
+    color: #a0aec0;
+}
+
+.codeBlock code {
+    display: block;
+    padding: 0.75rem 1rem;
+    font-family: monospace;
+    font-size: 0.85rem;
+    color: #e2e8f0;
+    background: transparent;
+}
+
+.copySmall {
+    background: none;
+    border: 1px solid #4a5568;
+    color: #a0aec0;
+    border-radius: 4px;
+    padding: 0.15rem 0.5rem;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.copySmall:hover {
+    background: #2d3748;
+    color: white;
+}
+
+.infoLink {
+    margin: 0;
+}
+
+.infoLink a {
+    color: #6366f1;
+    font-size: 0.9rem;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.infoLink a:hover {
+    text-decoration: underline;
+}

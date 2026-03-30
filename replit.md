@@ -53,6 +53,13 @@ src/
       agent-instruct/      # POST/GET owner instructions for agent (writes to agent_instructions table)
       push-subscribe/      # POST save push subscription / DELETE remove subscription (VAPID/Web Push)
       sms-preferences/     # GET/PUT user phone_number and sms_enabled fields on profiles
+      api-keys/            # GET/POST/DELETE/PATCH — API key management (hashed with SHA-256, prefix shown only)
+      mcp/                 # MCP server (JSON-RPC 2.0 over HTTP) — GET returns capabilities, POST handles tool calls
+    settings/
+      api-keys/            # API Keys management UI (create, disable, revoke, scopes, expiry)
+      notifications/       # Email + SMS + Push notification preference settings
+    docs/
+      mcp/                 # MCP Integration Guide (Quick Start, tool reference, Claude Desktop config)
   components/
     Navbar.tsx             # Sticky glass navbar with notification bell + AI Agent link + Admin link for ADMIN role
     Navbar.module.css
@@ -97,6 +104,7 @@ supabase_verification_requests.sql   # Migration: verification_requests table + 
 supabase_realtime_setup.sql          # Migration: enable real-time for notifications, quotes, messages tables
 supabase_saved_searches.sql          # Migration: saved_searches table for vendor filter persistence
 supabase_migrations/001_agent_hub.sql # Migration: agent_instructions table + phone_number/sms_enabled/push columns on profiles
+supabase_migrations/002_mcp_api_keys.sql # Migration: api_keys table (SHA-256 hashed) for MCP authentication
 ```
 
 ## Data Model
@@ -120,7 +128,8 @@ The platform uses an industry-agnostic data model with AI agent infrastructure:
 - **Ledger Entries**: transparent transaction log (DONATION/EXPENSE) with tx hashes for full financial transparency
 - **Vendor Reviews**: rating/comment structure (data model only, collection flow deferred)
 - **Agent Actions**: audit log of all AI agent operations (scope_analysis, job_broadcast, vendor_match, auto_quote, clarification, escalation, etc.)
-- **Notifications**: prioritized alerts (low/medium/high/urgent) with action_required flag, types: quote_ready, approval_needed, scope_change, agent_summary, job_match, negotiation_update, new_message
+- **Notifications**: prioritized alerts (low/medium/high/urgent) with action_required flag, types: quote_ready, approval_needed, scope_change, agent_summary, job_match, negotiation_update, new_message, verification_update
+- **API Keys**: SHA-256 hashed keys with `bfk_` prefix, scopes (read/write), optional expiry, last_used_at tracking. Raw key shown once at creation only.
 - **Quote Comparison**: side-by-side comparison modal for 2+ quotes with sorting (price/timeline/best value), best-value scoring (price 45%, timeline 30%, rating 20%, verified 5%), accept/reject actions
 
 ## AI Agent System

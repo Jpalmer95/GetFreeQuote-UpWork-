@@ -108,6 +108,12 @@ export default function Navbar() {
                                 >
                                     AI Agent
                                 </Link>
+                                <Link
+                                    href="/settings/api-keys"
+                                    className={`${styles.link} ${pathname?.startsWith('/settings') ? styles.active : ''}`}
+                                >
+                                    API Keys
+                                </Link>
                                 {profile?.role === 'ADMIN' && (
                                     <Link
                                         href="/admin/verifications"
