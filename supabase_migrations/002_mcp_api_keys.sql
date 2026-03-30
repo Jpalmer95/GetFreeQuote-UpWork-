@@ -43,6 +43,11 @@ ALTER TABLE public.notifications
 ALTER TABLE public.api_keys
     ADD COLUMN IF NOT EXISTS request_count integer DEFAULT 0;
 
--- 4. Index for fast api key lookups
+-- 4. Add numeric budget columns to jobs for MCP range filtering
+ALTER TABLE public.jobs
+    ADD COLUMN IF NOT EXISTS budget_min numeric,
+    ADD COLUMN IF NOT EXISTS budget_max numeric;
+
+-- 5. Index for fast api key lookups
 CREATE INDEX IF NOT EXISTS api_keys_user_id_idx ON public.api_keys (user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS api_keys_hash_idx ON public.api_keys (key_hash) WHERE revoked_at IS NULL;

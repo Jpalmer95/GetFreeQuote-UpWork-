@@ -13,6 +13,8 @@ export interface JobRow {
     is_public: boolean;
     requires_permit: boolean;
     budget: string | null;
+    budget_min: number | null;
+    budget_max: number | null;
     industry_vertical: string;
     subcategory: string;
     urgency: string;

@@ -207,7 +207,7 @@ async function handleTool(
 
             let query = supabaseAdmin
                 .from('jobs')
-                .select('id, title, category, description, location, status, industry_vertical, subcategory, budget, min_budget, max_budget, urgency, tags, created_at, user_id, is_public')
+                .select('*')
                 .eq('status', status)
                 .order('created_at', { ascending: false })
                 .limit(limit);
@@ -221,8 +221,8 @@ async function handleTool(
             if (args.industry) query = query.eq('industry_vertical', args.industry as string);
             if (args.location) query = query.ilike('location', `%${args.location as string}%`);
             if (args.posted_after) query = query.gte('created_at', args.posted_after as string);
-            if (args.budget_min !== undefined) query = query.gte('min_budget', Number(args.budget_min));
-            if (args.budget_max !== undefined) query = query.lte('max_budget', Number(args.budget_max));
+            if (args.budget_min !== undefined) query = query.gte('budget_min', Number(args.budget_min));
+            if (args.budget_max !== undefined) query = query.lte('budget_max', Number(args.budget_max));
 
             const { data, error } = await query;
             if (error) return toolErr(error.message);
@@ -334,12 +334,13 @@ async function handleTool(
 
             const { data: jobRow, error: jobErr } = await supabaseAdmin
                 .from('jobs')
-                .select('id, user_id, status')
+                .select('id, user_id, status, is_public')
                 .eq('id', jobId)
                 .maybeSingle();
 
             if (jobErr) return toolErr(jobErr.message);
             if (!jobRow) return toolErr('Job not found', 'not_found');
+            if (!jobRow.is_public && jobRow.user_id !== userId) return toolErr('Job not found or access denied', 'not_found');
             if (jobRow.user_id === userId) return toolErr('You cannot quote on your own job', 'forbidden');
             if (jobRow.status !== 'OPEN') return toolErr(`Job is ${jobRow.status} and not accepting quotes`, 'invalid_state');
 
