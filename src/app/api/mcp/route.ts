@@ -11,7 +11,11 @@ function hashKey(key: string): string {
     return createHash('sha256').update(key).digest('hex');
 }
 
-async function authenticateApiKey(request: NextRequest): Promise<{ userId: string; scopes: string[]; keyId: string } | null> {
+const RATE_LIMIT_PER_MINUTE = 60;
+
+async function authenticateApiKey(request: NextRequest): Promise<
+    { userId: string; scopes: string[]; keyId: string } | { rateLimited: true } | null
+> {
     const authHeader = request.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) return null;
 
@@ -22,16 +26,28 @@ async function authenticateApiKey(request: NextRequest): Promise<{ userId: strin
 
     const { data, error } = await supabaseAdmin
         .from('api_keys')
-        .select('id, user_id, scopes, revoked_at')
+        .select('id, user_id, scopes, revoked_at, request_count, last_used_at')
         .eq('key_hash', hash)
         .is('revoked_at', null)
         .maybeSingle();
 
     if (error || !data) return null;
 
+    const now = new Date();
+    const lastUsed = data.last_used_at ? new Date(data.last_used_at) : null;
+    const isNewMinute = !lastUsed || now.getTime() - lastUsed.getTime() > 60_000;
+    const newCount = isNewMinute ? 1 : (data.request_count ?? 0) + 1;
+
+    if (!isNewMinute && (data.request_count ?? 0) >= RATE_LIMIT_PER_MINUTE) {
+        return { rateLimited: true };
+    }
+
     supabaseAdmin
         .from('api_keys')
-        .update({ last_used_at: new Date().toISOString() })
+        .update({
+            last_used_at: now.toISOString(),
+            request_count: newCount,
+        })
         .eq('id', data.id)
         .then(() => {});
 
@@ -51,14 +67,16 @@ interface McpTool {
 const TOOLS: McpTool[] = [
     {
         name: 'list_jobs',
-        description: 'Returns open jobs for the authenticated user, with optional filters for industry, location, and budget range.',
+        description: 'Returns jobs for the authenticated user (their own jobs), with optional filters for status, industry, location, budget range, and date.',
         inputSchema: {
             type: 'object',
             properties: {
-                status: { type: 'string', enum: ['OPEN', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'], description: 'Filter by job status. Omit for all.' },
+                status: { type: 'string', enum: ['OPEN', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'], description: 'Filter by job status. Default: OPEN.' },
                 industry: { type: 'string', description: 'Filter by industry vertical (e.g. "Home Services").' },
                 location: { type: 'string', description: 'Filter by location (partial match).' },
                 posted_after: { type: 'string', description: 'ISO 8601 date — only return jobs posted after this date.' },
+                budget_min: { type: 'number', description: 'Minimum budget in USD (inclusive).' },
+                budget_max: { type: 'number', description: 'Maximum budget in USD (inclusive).' },
                 limit: { type: 'integer', description: 'Max results (1–50, default 20).', minimum: 1, maximum: 50 },
             },
         },
@@ -183,24 +201,27 @@ async function handleTool(
     switch (toolName) {
         case 'list_jobs': {
             const limit = Math.min(50, Math.max(1, Number(args.limit) || 20));
+            const status = (args.status as string) || 'OPEN';
 
             let query = supabaseAdmin
                 .from('jobs')
                 .select('id, title, category, description, location, status, industry_vertical, subcategory, budget, urgency, tags, created_at')
                 .eq('user_id', userId)
+                .eq('status', status)
                 .order('created_at', { ascending: false })
                 .limit(limit);
 
-            if (args.status) query = query.eq('status', args.status as string);
             if (args.industry) query = query.eq('industry_vertical', args.industry as string);
             if (args.location) query = query.ilike('location', `%${args.location as string}%`);
             if (args.posted_after) query = query.gte('created_at', args.posted_after as string);
+            if (args.budget_min !== undefined) query = query.gte('budget', Number(args.budget_min));
+            if (args.budget_max !== undefined) query = query.lte('budget', Number(args.budget_max));
 
             const { data, error } = await query;
             if (error) return toolErr(error.message);
 
             const jobs = (data || []).map((r) => mapJobRow(r as JobRow));
-            return ok({ jobs, count: jobs.length });
+            return ok({ jobs, count: jobs.length, status_filter: status });
         }
 
         case 'get_job': {
@@ -232,10 +253,6 @@ async function handleTool(
         }
 
         case 'list_quotes': {
-            let query = supabaseAdmin
-                .from('quotes')
-                .select('id, job_id, vendor_name, amount, estimated_days, details, status, created_at');
-
             const jobId = args.job_id as string | undefined;
 
             if (jobId) {
@@ -245,21 +262,44 @@ async function handleTool(
                     .eq('id', jobId)
                     .maybeSingle();
 
-                if (jobRow?.user_id === userId) {
-                    query = query.eq('job_id', jobId);
-                } else {
-                    query = query.eq('job_id', jobId).eq('vendor_id', userId);
+                let query = supabaseAdmin
+                    .from('quotes')
+                    .select('id, job_id, vendor_name, amount, estimated_days, details, status, created_at')
+                    .eq('job_id', jobId);
+
+                if (jobRow?.user_id !== userId) {
+                    query = query.eq('vendor_id', userId);
                 }
+
+                if (args.status) query = query.eq('status', args.status as string);
+
+                const { data, error } = await query.order('created_at', { ascending: false }).limit(50);
+                if (error) return toolErr(error.message);
+                return ok({ quotes: data || [], count: (data || []).length });
             } else {
-                query = query.eq('vendor_id', userId);
+                const { data: clientJobIds } = await supabaseAdmin
+                    .from('jobs')
+                    .select('id')
+                    .eq('user_id', userId);
+
+                const ownedJobIds = (clientJobIds || []).map((j) => j.id);
+
+                let query = supabaseAdmin
+                    .from('quotes')
+                    .select('id, job_id, vendor_name, amount, estimated_days, details, status, created_at');
+
+                if (ownedJobIds.length > 0) {
+                    query = query.or(`vendor_id.eq.${userId},job_id.in.(${ownedJobIds.join(',')})`);
+                } else {
+                    query = query.eq('vendor_id', userId);
+                }
+
+                if (args.status) query = query.eq('status', args.status as string);
+
+                const { data, error } = await query.order('created_at', { ascending: false }).limit(50);
+                if (error) return toolErr(error.message);
+                return ok({ quotes: data || [], count: (data || []).length });
             }
-
-            if (args.status) query = query.eq('status', args.status as string);
-
-            const { data, error } = await query.order('created_at', { ascending: false }).limit(50);
-            if (error) return toolErr(error.message);
-
-            return ok({ quotes: data || [], count: (data || []).length });
         }
 
         case 'submit_quote': {
@@ -272,6 +312,26 @@ async function handleTool(
 
             if (!jobId || isNaN(amount) || amount <= 0) return toolErr('Valid job_id and positive amount are required');
             if (!details) return toolErr('details is required');
+
+            const { data: jobRow, error: jobErr } = await supabaseAdmin
+                .from('jobs')
+                .select('id, user_id, status')
+                .eq('id', jobId)
+                .maybeSingle();
+
+            if (jobErr) return toolErr(jobErr.message);
+            if (!jobRow) return toolErr('Job not found', 'not_found');
+            if (jobRow.user_id === userId) return toolErr('You cannot quote on your own job', 'forbidden');
+            if (jobRow.status !== 'OPEN') return toolErr(`Job is ${jobRow.status} and not accepting quotes`, 'invalid_state');
+
+            const { data: existingQuote } = await supabaseAdmin
+                .from('quotes')
+                .select('id')
+                .eq('job_id', jobId)
+                .eq('vendor_id', userId)
+                .maybeSingle();
+
+            if (existingQuote) return toolErr('You have already submitted a quote on this job. Use update_quote to revise it.', 'conflict');
 
             const { data: profileRow } = await supabaseAdmin
                 .from('vendor_profiles')
@@ -441,7 +501,9 @@ function makeJsonRpcError(id: unknown, code: number, message: string) {
     return { jsonrpc: '2.0', id: id ?? null, error: { code, message } };
 }
 
-async function handleJsonRpc(body: Record<string, unknown>, auth: { userId: string; scopes: string[]; keyId: string } | null) {
+type AuthResult = { userId: string; scopes: string[]; keyId: string } | { rateLimited: true } | null;
+
+async function handleJsonRpc(body: Record<string, unknown>, auth: AuthResult) {
     const id = body.id ?? null;
     const method = body.method as string | undefined;
     const params = (body.params || {}) as Record<string, unknown>;
@@ -452,6 +514,10 @@ async function handleJsonRpc(body: Record<string, unknown>, auth: { userId: stri
 
     if (!auth) {
         return makeJsonRpcError(id, -32001, 'Unauthorized: valid API key required (Authorization: Bearer bfk_...)');
+    }
+
+    if ('rateLimited' in auth) {
+        return makeJsonRpcError(id, -32029, `Rate limit exceeded: maximum ${RATE_LIMIT_PER_MINUTE} requests per minute per API key`);
     }
 
     if (method === 'initialize') {
@@ -560,23 +626,23 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await handleJsonRpc(body, auth);
-    const status = 'error' in result && result.error
-        ? (result.error as { code: number }).code === -32001 ? 401 : 400
-        : 200;
+    const errorCode = 'error' in result && result.error ? (result.error as { code: number }).code : 0;
+    const status = errorCode === -32001 ? 401 : errorCode === -32029 ? 429 : errorCode !== 0 ? 400 : 200;
 
     return NextResponse.json(result, { status });
 }
 
 export async function GET(request: NextRequest) {
     const auth = await authenticateApiKey(request);
+    const isAuthenticated = !!auth && !('rateLimited' in auth);
 
     return NextResponse.json({
         server: SERVER_NAME,
         version: SERVER_VERSION,
         protocol: MCP_VERSION,
         transport: 'http+sse',
-        authenticated: !!auth,
-        tools: auth ? TOOLS.map(t => ({ name: t.name, description: t.description })) : [],
+        authenticated: isAuthenticated,
+        tools: isAuthenticated ? TOOLS.map(t => ({ name: t.name, description: t.description })) : [],
         docs: '/docs/mcp',
         usage: {
             endpoint: 'POST /api/mcp',

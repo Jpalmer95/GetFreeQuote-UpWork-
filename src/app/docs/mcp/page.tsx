@@ -8,12 +8,14 @@ const TOOLS = [
     {
         name: 'list_jobs',
         scope: 'read',
-        description: 'Returns open jobs matching optional filters (industry, location, budget, posted_after).',
+        description: "Returns the authenticated user's jobs. Defaults to OPEN status. Supports budget range, industry, location, and date filters.",
         params: [
-            { name: 'status', type: 'string', optional: true, desc: 'Filter: OPEN | IN_PROGRESS | COMPLETED | CANCELLED' },
+            { name: 'status', type: 'string', optional: true, desc: 'Filter: OPEN (default) | IN_PROGRESS | COMPLETED | CANCELLED' },
             { name: 'industry', type: 'string', optional: true, desc: 'Filter by industry vertical' },
             { name: 'location', type: 'string', optional: true, desc: 'Partial location match' },
             { name: 'posted_after', type: 'string', optional: true, desc: 'ISO 8601 date' },
+            { name: 'budget_min', type: 'number', optional: true, desc: 'Minimum budget in USD (inclusive)' },
+            { name: 'budget_max', type: 'number', optional: true, desc: 'Maximum budget in USD (inclusive)' },
             { name: 'limit', type: 'integer', optional: true, desc: 'Max results (1–50, default 20)' },
         ],
     },
@@ -361,6 +363,9 @@ export default function McpDocsPage() {
                             </div>
                             <div className={styles.errorRow}>
                                 <code>-32001</code><span>Unauthorized — invalid, expired, or revoked API key</span>
+                            </div>
+                            <div className={styles.errorRow}>
+                                <code>-32029</code><span>Rate limit exceeded — 60 requests/minute per API key</span>
                             </div>
                         </div>
                         <p className={styles.bodyText}>

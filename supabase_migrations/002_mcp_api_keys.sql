@@ -39,6 +39,10 @@ ALTER TABLE public.notifications
         'new_message', 'verification_update'
     ));
 
--- 3. Index for fast api key lookups
+-- 3. Add request_count for basic rate tracking
+ALTER TABLE public.api_keys
+    ADD COLUMN IF NOT EXISTS request_count integer DEFAULT 0;
+
+-- 4. Index for fast api key lookups
 CREATE INDEX IF NOT EXISTS api_keys_user_id_idx ON public.api_keys (user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS api_keys_hash_idx ON public.api_keys (key_hash) WHERE revoked_at IS NULL;
