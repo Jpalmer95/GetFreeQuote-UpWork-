@@ -72,7 +72,7 @@ export interface MessageRow {
 
 export interface AgentActionRow {
     id: string;
-    job_id: string;
+    job_id: string | null;
     agent_config_id: string | null;
     user_id: string;
     action_type: string;

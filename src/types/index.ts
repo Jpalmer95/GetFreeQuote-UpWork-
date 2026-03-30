@@ -159,7 +159,7 @@ export interface AgentInstruction {
 
 export interface AgentAction {
     id: string;
-    jobId: string;
+    jobId: string | null;
     agentConfigId?: string;
     userId: string;
     actionType: AgentActionType;
