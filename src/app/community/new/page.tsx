@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
@@ -9,7 +9,7 @@ import Navbar from '@/components/Navbar';
 import FileUpload from '@/components/FileUpload';
 import styles from './page.module.css';
 
-export default function NewCommunityProject() {
+function NewCommunityProjectForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { user, session } = useAuth();
@@ -194,5 +194,13 @@ export default function NewCommunityProject() {
                 </form>
             </div>
         </div>
+    );
+}
+
+export default function NewCommunityProject() {
+    return (
+        <Suspense>
+            <NewCommunityProjectForm />
+        </Suspense>
     );
 }
