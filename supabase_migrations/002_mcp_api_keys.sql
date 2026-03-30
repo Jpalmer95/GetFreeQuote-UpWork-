@@ -10,8 +10,7 @@ CREATE TABLE IF NOT EXISTS public.api_keys (
     key_prefix text NOT NULL,
     scopes text[] NOT NULL DEFAULT '{"read","write"}',
     last_used_at timestamp with time zone,
-    expires_at timestamp with time zone,
-    is_active boolean DEFAULT true,
+    revoked_at timestamp with time zone,
     created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -42,4 +41,4 @@ ALTER TABLE public.notifications
 
 -- 3. Index for fast api key lookups
 CREATE INDEX IF NOT EXISTS api_keys_user_id_idx ON public.api_keys (user_id, created_at DESC);
-CREATE INDEX IF NOT EXISTS api_keys_hash_idx ON public.api_keys (key_hash) WHERE is_active = true;
+CREATE INDEX IF NOT EXISTS api_keys_hash_idx ON public.api_keys (key_hash) WHERE revoked_at IS NULL;

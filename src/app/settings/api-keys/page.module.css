@@ -288,7 +288,7 @@
     transition: opacity 0.2s;
 }
 
-.keyCard.inactive {
+.keyCard.revoked {
     opacity: 0.6;
 }
 
@@ -325,12 +325,12 @@
     letter-spacing: 0.04em;
 }
 
-.keyStatus.active {
+.keyStatus.activeBadge {
     background: #d1fae5;
     color: #065f46;
 }
 
-.keyStatus.revoked {
+.keyStatus.revokedBadge {
     background: #fee2e2;
     color: #991b1b;
 }

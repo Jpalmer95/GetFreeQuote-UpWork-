@@ -12,8 +12,7 @@ interface ApiKey {
     key_prefix: string;
     scopes: string[];
     last_used_at: string | null;
-    expires_at: string | null;
-    is_active: boolean;
+    revoked_at: string | null;
     created_at: string;
     raw_key?: string;
 }
@@ -27,7 +26,6 @@ export default function ApiKeysPage() {
     const [creating, setCreating] = useState(false);
     const [newKeyName, setNewKeyName] = useState('');
     const [newKeyScopes, setNewKeyScopes] = useState<string[]>(['read', 'write']);
-    const [newKeyExpiry, setNewKeyExpiry] = useState('');
     const [showForm, setShowForm] = useState(false);
     const [createdKey, setCreatedKey] = useState<ApiKey | null>(null);
     const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -60,19 +58,13 @@ export default function ApiKeysPage() {
         setCreating(true);
         setError('');
         try {
-            const body: Record<string, unknown> = {
-                name: newKeyName.trim(),
-                scopes: newKeyScopes,
-            };
-            if (newKeyExpiry) body.expires_at = new Date(newKeyExpiry).toISOString();
-
             const res = await fetch('/api/api-keys', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${session?.access_token}`,
                 },
-                body: JSON.stringify(body),
+                body: JSON.stringify({ name: newKeyName.trim(), scopes: newKeyScopes }),
             });
 
             const data = await res.json();
@@ -83,32 +75,20 @@ export default function ApiKeysPage() {
             setShowForm(false);
             setNewKeyName('');
             setNewKeyScopes(['read', 'write']);
-            setNewKeyExpiry('');
         } finally {
             setCreating(false);
         }
     }
 
-    async function deleteKey(id: string) {
-        if (!confirm('Revoke this API key? This cannot be undone.')) return;
+    async function revokeKey(id: string) {
+        if (!confirm('Revoke this API key? This cannot be undone — any agent using it will lose access.')) return;
         const res = await fetch(`/api/api-keys?id=${id}`, {
             method: 'DELETE',
             headers: { Authorization: `Bearer ${session?.access_token}` },
         });
-        if (res.ok) setKeys(prev => prev.filter(k => k.id !== id));
-    }
-
-    async function toggleKey(id: string, active: boolean) {
-        const res = await fetch('/api/api-keys', {
-            method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${session?.access_token}`,
-            },
-            body: JSON.stringify({ id, is_active: active }),
-        });
-        const data = await res.json();
-        if (res.ok) setKeys(prev => prev.map(k => k.id === id ? { ...k, ...data.key } : k));
+        if (res.ok) {
+            setKeys(prev => prev.map(k => k.id === id ? { ...k, revoked_at: new Date().toISOString() } : k));
+        }
     }
 
     function copyToClipboard(text: string, id: string) {
@@ -123,6 +103,8 @@ export default function ApiKeysPage() {
         );
     }
 
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://your-app.replit.app';
+
     if (isLoading || !user) return null;
 
     return (
@@ -134,8 +116,8 @@ export default function ApiKeysPage() {
                         <div>
                             <h1 className={styles.title}>API Keys</h1>
                             <p className={styles.subtitle}>
-                                Manage API keys for external integrations and MCP agent connections.{' '}
-                                <Link href="/docs/mcp" className={styles.docsLink}>View MCP Integration Guide</Link>
+                                Manage API keys for external agent integrations via MCP.{' '}
+                                <Link href="/docs/mcp" className={styles.docsLink}>View Integration Guide</Link>
                             </p>
                         </div>
                         <button
@@ -195,7 +177,7 @@ export default function ApiKeysPage() {
                                             onChange={() => toggleScope('read')}
                                         />
                                         <span>
-                                            <strong>Read</strong> — list jobs, quotes, notifications, agent actions
+                                            <strong>Read</strong> — list_jobs, get_job, list_quotes, get_notifications, get_agent_actions
                                         </span>
                                     </label>
                                     <label className={styles.scopeCheck}>
@@ -205,20 +187,10 @@ export default function ApiKeysPage() {
                                             onChange={() => toggleScope('write')}
                                         />
                                         <span>
-                                            <strong>Write</strong> — post jobs, submit quotes, send agent instructions
+                                            <strong>Write</strong> — submit_quote, update_quote, mark_notifications_read, post_agent_instruction
                                         </span>
                                     </label>
                                 </div>
-                            </div>
-                            <div className={styles.field}>
-                                <label className={styles.label}>Expiry (optional)</label>
-                                <input
-                                    className={styles.input}
-                                    type="date"
-                                    value={newKeyExpiry}
-                                    onChange={e => setNewKeyExpiry(e.target.value)}
-                                    min={new Date().toISOString().split('T')[0]}
-                                />
                             </div>
                             <div className={styles.formActions}>
                                 <button
@@ -247,60 +219,59 @@ export default function ApiKeysPage() {
                         </div>
                     ) : (
                         <div className={styles.keyList}>
-                            {keys.map(key => (
-                                <div key={key.id} className={`${styles.keyCard} ${!key.is_active ? styles.inactive : ''}`}>
-                                    <div className={styles.keyMain}>
-                                        <div className={styles.keyInfo}>
-                                            <div className={styles.keyNameRow}>
-                                                <span className={styles.keyName}>{key.name}</span>
-                                                <span className={`${styles.keyStatus} ${key.is_active ? styles.active : styles.revoked}`}>
-                                                    {key.is_active ? 'Active' : 'Disabled'}
-                                                </span>
-                                            </div>
-                                            <div className={styles.keyMeta}>
-                                                <code className={styles.keyPrefix}>{key.key_prefix}...</code>
-                                                <span className={styles.dot}>·</span>
-                                                <span>Scopes: {key.scopes.join(', ')}</span>
-                                                <span className={styles.dot}>·</span>
-                                                <span>Created {new Date(key.created_at).toLocaleDateString()}</span>
-                                                {key.last_used_at && (
-                                                    <>
-                                                        <span className={styles.dot}>·</span>
-                                                        <span>Last used {new Date(key.last_used_at).toLocaleDateString()}</span>
-                                                    </>
-                                                )}
-                                                {key.expires_at && (
-                                                    <>
-                                                        <span className={styles.dot}>·</span>
-                                                        <span>Expires {new Date(key.expires_at).toLocaleDateString()}</span>
-                                                    </>
-                                                )}
+                            {keys.map(key => {
+                                const isRevoked = !!key.revoked_at;
+                                return (
+                                    <div key={key.id} className={`${styles.keyCard} ${isRevoked ? styles.revoked : ''}`}>
+                                        <div className={styles.keyMain}>
+                                            <div className={styles.keyInfo}>
+                                                <div className={styles.keyNameRow}>
+                                                    <span className={styles.keyName}>{key.name}</span>
+                                                    <span className={`${styles.keyStatus} ${isRevoked ? styles.revokedBadge : styles.activeBadge}`}>
+                                                        {isRevoked ? 'Revoked' : 'Active'}
+                                                    </span>
+                                                </div>
+                                                <div className={styles.keyMeta}>
+                                                    <code className={styles.keyPrefix}>{key.key_prefix}...</code>
+                                                    <span className={styles.dot}>·</span>
+                                                    <span>Scopes: {key.scopes.join(', ')}</span>
+                                                    <span className={styles.dot}>·</span>
+                                                    <span>Created {new Date(key.created_at).toLocaleDateString()}</span>
+                                                    {key.last_used_at && (
+                                                        <>
+                                                            <span className={styles.dot}>·</span>
+                                                            <span>Last used {new Date(key.last_used_at).toLocaleDateString()}</span>
+                                                        </>
+                                                    )}
+                                                    {key.revoked_at && (
+                                                        <>
+                                                            <span className={styles.dot}>·</span>
+                                                            <span>Revoked {new Date(key.revoked_at).toLocaleDateString()}</span>
+                                                        </>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
+                                        {!isRevoked && (
+                                            <div className={styles.keyActions}>
+                                                <button
+                                                    className={styles.revokeBtn}
+                                                    onClick={() => revokeKey(key.id)}
+                                                >
+                                                    Revoke
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
-                                    <div className={styles.keyActions}>
-                                        <button
-                                            className={styles.toggleBtn}
-                                            onClick={() => toggleKey(key.id, !key.is_active)}
-                                        >
-                                            {key.is_active ? 'Disable' : 'Enable'}
-                                        </button>
-                                        <button
-                                            className={styles.revokeBtn}
-                                            onClick={() => deleteKey(key.id)}
-                                        >
-                                            Revoke
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     )}
 
                     <div className={styles.infoCard}>
                         <h3 className={styles.infoTitle}>Using Your API Key</h3>
                         <p className={styles.infoText}>
-                            Use your API key as a Bearer token when connecting to the BidFlow MCP server:
+                            Pass your API key as a Bearer token in the Authorization header:
                         </p>
                         <div className={styles.codeBlock}>
                             <div className={styles.codeHeader}>
@@ -315,10 +286,10 @@ export default function ApiKeysPage() {
                             <code>Authorization: Bearer bfk_your_key_here</code>
                         </div>
                         <p className={styles.infoText}>
-                            MCP Endpoint: <code>{typeof window !== 'undefined' ? window.location.origin : ''}/api/mcp</code>
+                            MCP Endpoint: <code>{origin}/api/mcp</code>
                         </p>
                         <p className={styles.infoLink}>
-                            <Link href="/docs/mcp">View full MCP Integration Guide →</Link>
+                            <Link href="/docs/mcp">View the full MCP Integration Guide →</Link>
                         </p>
                     </div>
                 </div>
