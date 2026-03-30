@@ -207,18 +207,22 @@ async function handleTool(
 
             let query = supabaseAdmin
                 .from('jobs')
-                .select('id, title, category, description, location, status, industry_vertical, subcategory, budget, urgency, tags, created_at, user_id')
+                .select('id, title, category, description, location, status, industry_vertical, subcategory, budget, min_budget, max_budget, urgency, tags, created_at, user_id, is_public')
                 .eq('status', status)
                 .order('created_at', { ascending: false })
                 .limit(limit);
 
-            if (mineOnly) query = query.eq('user_id', userId);
+            if (mineOnly) {
+                query = query.eq('user_id', userId);
+            } else {
+                query = query.or(`is_public.eq.true,user_id.eq.${userId}`);
+            }
 
             if (args.industry) query = query.eq('industry_vertical', args.industry as string);
             if (args.location) query = query.ilike('location', `%${args.location as string}%`);
             if (args.posted_after) query = query.gte('created_at', args.posted_after as string);
-            if (args.budget_min !== undefined) query = query.gte('budget', Number(args.budget_min));
-            if (args.budget_max !== undefined) query = query.lte('budget', Number(args.budget_max));
+            if (args.budget_min !== undefined) query = query.gte('min_budget', Number(args.budget_min));
+            if (args.budget_max !== undefined) query = query.lte('max_budget', Number(args.budget_max));
 
             const { data, error } = await query;
             if (error) return toolErr(error.message);
@@ -242,6 +246,10 @@ async function handleTool(
             if (!jobRow) return toolErr('Job not found', 'not_found');
 
             const isOwner = jobRow.user_id === userId;
+            const isVisible = isOwner || jobRow.is_public === true;
+
+            if (!isVisible) return toolErr('Job not found or access denied', 'not_found');
+
             const job = mapJobRow(jobRow as JobRow);
 
             const quotesQuery = supabaseAdmin
@@ -350,7 +358,9 @@ async function handleTool(
                 .eq('user_id', userId)
                 .maybeSingle();
 
-            const vendorName = profileRow?.company_name || 'Vendor';
+            if (!profileRow) return toolErr('A vendor profile is required to submit quotes. Please create one in Settings.', 'forbidden');
+
+            const vendorName = profileRow.company_name || 'Vendor';
 
             const { data, error } = await supabaseAdmin
                 .from('quotes')

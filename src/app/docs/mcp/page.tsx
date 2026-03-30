@@ -40,7 +40,7 @@ const TOOLS = [
     {
         name: 'submit_quote',
         scope: 'write',
-        description: 'Creates a new quote on a job. User must have a vendor profile.',
+        description: 'Creates a new quote on an open public job. Requires an active vendor profile. Cannot quote your own jobs or jobs that are not OPEN.',
         params: [
             { name: 'job_id', type: 'string', optional: false, desc: 'UUID of the job' },
             { name: 'amount', type: 'number', optional: false, desc: 'Quote amount in USD' },
