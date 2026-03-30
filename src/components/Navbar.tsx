@@ -49,7 +49,7 @@ export default function Navbar() {
     return (
         <header className={styles.header}>
             <div className={styles.inner}>
-                <Link href="/" className={styles.logo}>
+                <Link href={mounted && user ? '/dashboard' : '/'} className={styles.logo}>
                     <span className={styles.logoIcon}>B</span>
                     <span className="gradient-text">BidFlow</span>
                 </Link>
