@@ -8,9 +8,10 @@ const TOOLS = [
     {
         name: 'list_jobs',
         scope: 'read',
-        description: "Returns the authenticated user's jobs. Defaults to OPEN status. Supports budget range, industry, location, and date filters.",
+        description: 'Returns open marketplace jobs available for bidding. Each result includes an isOwner flag. Use mine=true to filter to only your own posted jobs.',
         params: [
             { name: 'status', type: 'string', optional: true, desc: 'Filter: OPEN (default) | IN_PROGRESS | COMPLETED | CANCELLED' },
+            { name: 'mine', type: 'boolean', optional: true, desc: 'If true, return only your own jobs (default: false)' },
             { name: 'industry', type: 'string', optional: true, desc: 'Filter by industry vertical' },
             { name: 'location', type: 'string', optional: true, desc: 'Partial location match' },
             { name: 'posted_after', type: 'string', optional: true, desc: 'ISO 8601 date' },

@@ -67,11 +67,12 @@ interface McpTool {
 const TOOLS: McpTool[] = [
     {
         name: 'list_jobs',
-        description: 'Returns jobs for the authenticated user (their own jobs), with optional filters for status, industry, location, budget range, and date.',
+        description: 'Returns open marketplace jobs available for bidding. Supports filters for industry, location, budget range, and posted date. Use mine=true to see only your own jobs.',
         inputSchema: {
             type: 'object',
             properties: {
                 status: { type: 'string', enum: ['OPEN', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'], description: 'Filter by job status. Default: OPEN.' },
+                mine: { type: 'boolean', description: 'If true, return only your own jobs. Default: false (all open jobs).' },
                 industry: { type: 'string', description: 'Filter by industry vertical (e.g. "Home Services").' },
                 location: { type: 'string', description: 'Filter by location (partial match).' },
                 posted_after: { type: 'string', description: 'ISO 8601 date — only return jobs posted after this date.' },
@@ -202,14 +203,16 @@ async function handleTool(
         case 'list_jobs': {
             const limit = Math.min(50, Math.max(1, Number(args.limit) || 20));
             const status = (args.status as string) || 'OPEN';
+            const mineOnly = args.mine === true;
 
             let query = supabaseAdmin
                 .from('jobs')
-                .select('id, title, category, description, location, status, industry_vertical, subcategory, budget, urgency, tags, created_at')
-                .eq('user_id', userId)
+                .select('id, title, category, description, location, status, industry_vertical, subcategory, budget, urgency, tags, created_at, user_id')
                 .eq('status', status)
                 .order('created_at', { ascending: false })
                 .limit(limit);
+
+            if (mineOnly) query = query.eq('user_id', userId);
 
             if (args.industry) query = query.eq('industry_vertical', args.industry as string);
             if (args.location) query = query.ilike('location', `%${args.location as string}%`);
@@ -220,8 +223,11 @@ async function handleTool(
             const { data, error } = await query;
             if (error) return toolErr(error.message);
 
-            const jobs = (data || []).map((r) => mapJobRow(r as JobRow));
-            return ok({ jobs, count: jobs.length, status_filter: status });
+            const jobs = (data || []).map((r) => ({
+                ...mapJobRow(r as JobRow),
+                isOwner: r.user_id === userId,
+            }));
+            return ok({ jobs, count: jobs.length, status_filter: status, mine: mineOnly });
         }
 
         case 'get_job': {
@@ -230,22 +236,27 @@ async function handleTool(
                 .from('jobs')
                 .select('*')
                 .eq('id', jobId)
-                .eq('user_id', userId)
                 .maybeSingle();
 
             if (error) return toolErr(error.message);
-            if (!jobRow) return toolErr('Job not found or access denied', 'not_found');
+            if (!jobRow) return toolErr('Job not found', 'not_found');
 
+            const isOwner = jobRow.user_id === userId;
             const job = mapJobRow(jobRow as JobRow);
 
-            const { data: quotes, count } = await supabaseAdmin
+            const quotesQuery = supabaseAdmin
                 .from('quotes')
                 .select('id, vendor_name, amount, estimated_days, status, created_at', { count: 'exact' })
                 .eq('job_id', jobId)
                 .order('created_at', { ascending: false });
 
+            const { data: quotes, count } = isOwner
+                ? await quotesQuery
+                : await quotesQuery.eq('vendor_id', userId);
+
             return ok({
                 job,
+                isOwner,
                 quote_count: count || 0,
                 quotes: quotes || [],
                 attachments_count: (job.attachments || []).length,
