@@ -399,9 +399,22 @@ async function handleTool(
             if (existing.status !== 'PENDING') return toolErr(`Cannot update a quote with status ${existing.status}`, 'invalid_state');
 
             const update: Record<string, unknown> = {};
-            if (args.amount !== undefined) update.amount = Number(args.amount);
-            if (args.estimated_days !== undefined) update.estimated_days = Math.max(1, Number(args.estimated_days));
-            if (args.details !== undefined) update.details = ((args.details as string) || '').trim();
+
+            if (args.amount !== undefined) {
+                const amt = Number(args.amount);
+                if (isNaN(amt) || amt <= 0) return toolErr('amount must be a positive number');
+                update.amount = amt;
+            }
+            if (args.estimated_days !== undefined) {
+                const days = Number(args.estimated_days);
+                if (isNaN(days) || days < 1) return toolErr('estimated_days must be a positive integer');
+                update.estimated_days = Math.round(days);
+            }
+            if (args.details !== undefined) {
+                const det = ((args.details as string) || '').trim();
+                if (!det) return toolErr('details cannot be empty when provided');
+                update.details = det;
+            }
 
             if (Object.keys(update).length === 0) return toolErr('At least one field (amount, estimated_days, details) must be provided');
 
