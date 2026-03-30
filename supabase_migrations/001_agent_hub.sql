@@ -28,8 +28,22 @@ CREATE POLICY "Users can insert own instructions." ON public.agent_instructions
 CREATE POLICY "Users can update own instructions." ON public.agent_instructions
     FOR UPDATE USING (auth.uid() = user_id);
 
--- 3. Index for fast user-based agent_actions lookups
+-- 3. Allow 'owner_instruction' action type and nullable job_id in agent_actions
+ALTER TABLE public.agent_actions
+    DROP CONSTRAINT IF EXISTS agent_actions_action_type_check;
+
+ALTER TABLE public.agent_actions
+    ADD CONSTRAINT agent_actions_action_type_check CHECK (action_type IN (
+        'job_broadcast', 'vendor_match', 'auto_quote', 'clarification_sent',
+        'clarification_received', 'scope_analysis', 'quote_comparison',
+        'escalation', 'negotiation', 'auto_approve', 'auto_reject', 'owner_instruction'
+    ));
+
+ALTER TABLE public.agent_actions
+    ALTER COLUMN job_id DROP NOT NULL;
+
+-- 4. Index for fast user-based agent_actions lookups
 CREATE INDEX IF NOT EXISTS agent_actions_user_id_idx ON public.agent_actions (user_id, created_at DESC);
 
--- 4. Index for agent_instructions
+-- 5. Index for agent_instructions
 CREATE INDEX IF NOT EXISTS agent_instructions_user_id_idx ON public.agent_instructions (user_id, created_at DESC);

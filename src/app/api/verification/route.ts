@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { sendNotificationEmail } from '@/services/serverEmail';
+import { dispatchNotification } from '@/services/notificationDispatcher';
 
 async function getAuthUser(req: NextRequest) {
     const authHeader = req.headers.get('authorization');
@@ -214,17 +214,15 @@ export async function POST(req: NextRequest) {
                 ? `Congratulations! Your company "${vendorProfile.company_name}" has been verified. You now have a verified badge on your profile.`
                 : `Your verification request for "${vendorProfile.company_name}" was not approved.${adminNotes ? ` Reason: ${adminNotes}` : ''} You can resubmit with updated documents.`;
 
-            await supabaseAdmin.from('notifications').insert({
-                user_id: vendorProfile.user_id,
+            await dispatchNotification({
+                userId: vendorProfile.user_id,
                 type: 'verification_update',
                 priority: decision === 'approved' ? 'medium' : 'high',
                 title: notifTitle,
                 message: notifMessage,
-                action_required: decision === 'rejected',
-                read: false,
+                actionRequired: decision === 'rejected',
+                actionUrl: '/vendor/profile',
             });
-
-            sendNotificationEmail(vendorProfile.user_id, 'verification_update', notifTitle, notifMessage, '/vendor/profile').catch(() => {});
 
             return NextResponse.json({ success: true });
         }

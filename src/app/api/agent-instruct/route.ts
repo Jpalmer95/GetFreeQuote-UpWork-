@@ -31,6 +31,17 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: error.message }, { status: 500 });
         }
 
+        await supabaseAdmin.from('agent_actions').insert({
+            job_id: null,
+            user_id: user.id,
+            action_type: 'owner_instruction',
+            summary: trimmed.length > 120 ? trimmed.substring(0, 117) + '...' : trimmed,
+            details: { instruction_id: data.id, full_instruction: trimmed },
+            automated: false,
+        }).then(({ error: actionErr }) => {
+            if (actionErr) console.warn('[agent-instruct] agent_actions insert warn:', actionErr.message);
+        });
+
         return NextResponse.json({ instruction: data });
     } catch (err: unknown) {
         const message = err instanceof Error ? err.message : 'Internal server error';

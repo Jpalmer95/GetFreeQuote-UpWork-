@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getAuthenticatedUser } from '@/lib/serverAuth';
-import { sendNotificationEmail } from '@/services/serverEmail';
+import { dispatchNotification } from '@/services/notificationDispatcher';
 
 export async function POST(request: NextRequest) {
     try {
@@ -106,19 +106,16 @@ export async function POST(request: NextRequest) {
                 });
             }
 
-            await supabaseAdmin.from('notifications').insert({
-                user_id: vendorId,
-                job_id: jobId,
+            await dispatchNotification({
+                userId: vendorId,
+                jobId: jobId || null,
                 type: 'milestone',
                 priority: 'high',
                 title: 'Quote Accepted!',
-                message: `Your quote of $${quote.amount} from ${quote.vendor_name} has been accepted.`,
-                action_required: false,
-                read: false,
+                message: `Your quote of $${quote.amount} for "${jobTitle}" has been accepted.`,
+                actionRequired: false,
+                actionUrl: '/vendor',
             });
-
-            sendNotificationEmail(vendorId, 'milestone', 'Quote Accepted!',
-                `Your quote of $${quote.amount} for "${jobTitle}" has been accepted.`, '/vendor').catch(() => {});
 
             if (jobId && jobUserId) {
                 await supabaseAdmin.from('agent_actions').insert({
@@ -157,19 +154,16 @@ export async function POST(request: NextRequest) {
                 });
             }
 
-            await supabaseAdmin.from('notifications').insert({
-                user_id: vendorId,
-                job_id: jobId,
+            await dispatchNotification({
+                userId: vendorId,
+                jobId: jobId || null,
                 type: 'negotiation_update',
                 priority: 'medium',
                 title: 'Quote Declined',
                 message: `Your quote of $${quote.amount} for "${jobTitle}" was not accepted.`,
-                action_required: false,
-                read: false,
+                actionRequired: false,
+                actionUrl: '/vendor',
             });
-
-            sendNotificationEmail(vendorId, 'negotiation_update', 'Quote Declined',
-                `Your quote of $${quote.amount} for "${jobTitle}" was not accepted.`, '/vendor').catch(() => {});
 
             if (jobId && jobUserId) {
                 await supabaseAdmin.from('agent_actions').insert({

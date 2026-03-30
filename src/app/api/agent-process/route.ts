@@ -147,7 +147,11 @@ async function logAction(jobId: string, userId: string, actionType: string, summ
 }
 
 async function createNotification(userId: string, jobId: string | null, type: string, priority: string, title: string, message: string, actionRequired: boolean, actionUrl?: string): Promise<void> {
-    dispatchNotification({ userId, jobId, type, priority, title, message, actionRequired, actionUrl }).catch(() => {});
+    try {
+        await dispatchNotification({ userId, jobId, type, priority, title, message, actionRequired, actionUrl });
+    } catch (err) {
+        console.error('[agent-process] Notification dispatch error:', err);
+    }
 }
 
 export async function POST(request: NextRequest) {
