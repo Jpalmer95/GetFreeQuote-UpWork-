@@ -36,8 +36,15 @@ export async function PUT(req: NextRequest) {
     let body: { phone_number?: string; sms_enabled?: boolean };
     try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
 
+    const E164_RE = /^\+[1-9]\d{6,14}$/;
     const updates: Record<string, unknown> = {};
-    if (typeof body.phone_number === 'string') updates.phone_number = body.phone_number;
+    if (typeof body.phone_number === 'string') {
+        const phone = body.phone_number.trim().replace(/[\s\-().]/g, '');
+        if (phone && !E164_RE.test(phone)) {
+            return NextResponse.json({ error: 'Phone number must be in E.164 format, e.g. +15551234567' }, { status: 400 });
+        }
+        updates.phone_number = phone || null;
+    }
     if (typeof body.sms_enabled === 'boolean') updates.sms_enabled = body.sms_enabled;
 
     const { error } = await supabaseAdmin

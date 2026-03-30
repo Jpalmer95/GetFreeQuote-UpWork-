@@ -6,6 +6,8 @@ import { sendPushNotification, PushSubscription } from '@/services/pushService';
 const SMS_PRIORITY_THRESHOLD = new Set(['high', 'urgent']);
 const PUSH_PRIORITY_THRESHOLD = new Set(['medium', 'high', 'urgent']);
 
+const E164_RE = /^\+[1-9]\d{6,14}$/;
+
 interface DispatchParams {
     userId: string;
     jobId?: string | null;
@@ -29,7 +31,7 @@ interface UserProfile {
 export async function dispatchNotification(params: DispatchParams): Promise<void> {
     const { userId, jobId, type, priority, title, message, actionRequired, actionUrl } = params;
 
-    await supabaseAdmin.from('notifications').insert({
+    const { error: insertError } = await supabaseAdmin.from('notifications').insert({
         user_id: userId,
         job_id: jobId || null,
         type,
@@ -41,16 +43,21 @@ export async function dispatchNotification(params: DispatchParams): Promise<void
         read: false,
     });
 
+    if (insertError) {
+        console.error('[dispatchNotification] Failed to insert notification:', insertError.message);
+    }
+
     let profile: UserProfile | null = null;
-    try {
-        const { data } = await supabaseAdmin
-            .from('profiles')
-            .select('email, email_preferences, phone_number, sms_enabled, push_enabled, push_subscription')
-            .eq('id', userId)
-            .single();
+    const { data, error: profileError } = await supabaseAdmin
+        .from('profiles')
+        .select('email, email_preferences, phone_number, sms_enabled, push_enabled, push_subscription')
+        .eq('id', userId)
+        .single();
+
+    if (profileError) {
+        console.error('[dispatchNotification] Failed to fetch profile for outbound channels:', profileError.message);
+    } else {
         profile = data as UserProfile | null;
-    } catch {
-        profile = null;
     }
 
     if (!profile) return;
@@ -64,18 +71,19 @@ export async function dispatchNotification(params: DispatchParams): Promise<void
             message,
             actionUrl,
             emailPreferences: profile.email_preferences || null,
-        }).catch(() => {});
+        }).catch(err => console.error('[dispatchNotification] Email send error:', err));
     }
 
-    if (profile.sms_enabled && profile.phone_number && SMS_PRIORITY_THRESHOLD.has(priority)) {
+    const phone = profile.phone_number?.trim();
+    if (profile.sms_enabled && phone && E164_RE.test(phone) && SMS_PRIORITY_THRESHOLD.has(priority)) {
         const smsBody = actionUrl
             ? `${title}: ${message} — View: ${process.env.NEXT_PUBLIC_APP_URL || ''}${actionUrl}`
             : `${title}: ${message}`;
-        sendSmsNotification(profile.phone_number, smsBody).catch(() => {});
+        sendSmsNotification(phone, smsBody).catch(err => console.error('[dispatchNotification] SMS send error:', err));
     }
 
     if (profile.push_enabled && profile.push_subscription && PUSH_PRIORITY_THRESHOLD.has(priority)) {
         const sub = profile.push_subscription as PushSubscription;
-        sendPushNotification(sub, title, message, actionUrl).catch(() => {});
+        sendPushNotification(sub, title, message, actionUrl).catch(err => console.error('[dispatchNotification] Push send error:', err));
     }
 }
