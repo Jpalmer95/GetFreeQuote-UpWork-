@@ -8,7 +8,7 @@ import {
     customerAgentId, vendorAgentId, SYSTEM_AGENT_ID,
     estimateHours,
 } from '@/services/serverMappers';
-import { sendNotificationEmail } from '@/services/serverEmail';
+import { dispatchNotification } from '@/services/notificationDispatcher';
 
 async function addMessage(jobId: string, senderId: string, senderType: string, content: string): Promise<void> {
     await supabaseAdmin.from('messages').insert({
@@ -147,19 +147,7 @@ async function logAction(jobId: string, userId: string, actionType: string, summ
 }
 
 async function createNotification(userId: string, jobId: string | null, type: string, priority: string, title: string, message: string, actionRequired: boolean, actionUrl?: string): Promise<void> {
-    await supabaseAdmin.from('notifications').insert({
-        user_id: userId,
-        job_id: jobId,
-        type,
-        priority,
-        title,
-        message,
-        action_required: actionRequired,
-        action_url: actionUrl,
-        read: false,
-    });
-
-    sendNotificationEmail(userId, type, title, message, actionUrl).catch(() => {});
+    dispatchNotification({ userId, jobId, type, priority, title, message, actionRequired, actionUrl }).catch(() => {});
 }
 
 export async function POST(request: NextRequest) {

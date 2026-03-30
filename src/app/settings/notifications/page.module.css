@@ -144,3 +144,41 @@
     opacity: 0.5;
     cursor: not-allowed;
 }
+
+.sectionLabel {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(255, 255, 255, 0.4);
+    margin-bottom: 0.6rem;
+}
+
+.phoneInput {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 6px;
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    padding: 0.45rem 0.75rem;
+    width: 180px;
+    transition: border-color 0.15s;
+    font-family: inherit;
+}
+
+.phoneInput:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.managePushLink {
+    font-size: 0.85rem;
+    color: var(--primary-light, #9b6dff);
+    text-decoration: none;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.managePushLink:hover {
+    text-decoration: underline;
+}

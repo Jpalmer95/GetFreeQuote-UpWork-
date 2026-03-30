@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
 
         const { data, error } = await supabaseAdmin
             .from('profiles')
-            .select('email_preferences')
+            .select('email_preferences, phone_number, sms_enabled')
             .eq('id', user.id)
             .single();
 
@@ -22,6 +22,8 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
             preferences: data.email_preferences || DEFAULT_EMAIL_PREFERENCES,
+            phone_number: data.phone_number || '',
+            sms_enabled: data.sms_enabled || false,
         });
     } catch (error: unknown) {
         const message = error instanceof Error ? error.message : 'Internal server error';

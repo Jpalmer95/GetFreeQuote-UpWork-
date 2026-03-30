@@ -7,7 +7,7 @@ import {
     mapAgentConfigRow,
     customerAgentId, vendorAgentId,
 } from '@/services/serverMappers';
-import { sendNotificationEmail } from '@/services/serverEmail';
+import { dispatchNotification } from '@/services/notificationDispatcher';
 
 export async function POST(request: NextRequest) {
     try {
@@ -130,19 +130,16 @@ export async function POST(request: NextRequest) {
                                 is_agent_action: true,
                             });
 
-                            await supabaseAdmin.from('notifications').insert({
-                                user_id: vq.vendor_id,
-                                job_id: jobId,
+                            dispatchNotification({
+                                userId: vq.vendor_id,
+                                jobId,
                                 type: 'scope_change',
                                 priority: 'medium',
                                 title: 'Scope Update',
                                 message: `The customer updated project details for "${jobRow.title}". Review and revise your quote.`,
-                                action_required: true,
-                                read: false,
-                            });
-
-                            sendNotificationEmail(vq.vendor_id, 'scope_change', 'Scope Update',
-                                `The customer updated project details for "${jobRow.title}". Review and revise your quote.`, '/vendor').catch(() => {});
+                                actionRequired: true,
+                                actionUrl: '/vendor',
+                            }).catch(() => {});
                         }
                     }
                 }
@@ -160,19 +157,16 @@ export async function POST(request: NextRequest) {
                     agent_config_id: callerConfig.id,
                 });
 
-                await supabaseAdmin.from('notifications').insert({
-                    user_id: caller.id,
-                    job_id: jobId,
+                dispatchNotification({
+                    userId: caller.id,
+                    jobId,
                     type: 'approval_needed',
                     priority: 'high',
                     title: 'Action Required',
                     message: `Your message about "${jobRow.title}" has been flagged. Your agent recommends direct attention.`,
-                    action_required: true,
-                    read: false,
-                });
-
-                sendNotificationEmail(caller.id, 'approval_needed', 'Action Required',
-                    `Your message about "${jobRow.title}" has been flagged. Your agent recommends direct attention.`, '/dashboard').catch(() => {});
+                    actionRequired: true,
+                    actionUrl: '/dashboard',
+                }).catch(() => {});
                 responses.push('escalation_flagged');
             }
         }
@@ -184,19 +178,16 @@ export async function POST(request: NextRequest) {
                 .eq('job_id', jobId);
 
             for (const vq of (vendorQuotes || [])) {
-                await supabaseAdmin.from('notifications').insert({
-                    user_id: vq.vendor_id,
-                    job_id: jobId,
+                dispatchNotification({
+                    userId: vq.vendor_id,
+                    jobId,
                     type: 'new_message',
                     priority: 'medium',
                     title: 'New Message from Project Owner',
                     message: `The project owner sent a message regarding "${jobRow.title}".`,
-                    action_required: false,
-                    read: false,
-                });
-
-                sendNotificationEmail(vq.vendor_id, 'new_message', 'New Message from Project Owner',
-                    `The project owner sent a message regarding "${jobRow.title}".`, '/vendor').catch(() => {});
+                    actionRequired: false,
+                    actionUrl: '/vendor',
+                }).catch(() => {});
             }
             responses.push('vendors_notified');
         }
@@ -224,19 +215,16 @@ export async function POST(request: NextRequest) {
                 }
             }
 
-            await supabaseAdmin.from('notifications').insert({
-                user_id: jobRow.user_id,
-                job_id: jobId,
+            dispatchNotification({
+                userId: jobRow.user_id,
+                jobId,
                 type: 'new_message',
                 priority: 'medium',
                 title: 'Vendor Message',
                 message: `A vendor sent a message regarding "${jobRow.title}".`,
-                action_required: false,
-                read: false,
-            });
-
-            sendNotificationEmail(jobRow.user_id, 'new_message', 'Vendor Message',
-                `A vendor sent a message regarding "${jobRow.title}".`, '/dashboard').catch(() => {});
+                actionRequired: false,
+                actionUrl: '/dashboard',
+            }).catch(() => {});
             responses.push('owner_notified');
         }
 

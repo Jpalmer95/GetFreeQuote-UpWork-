@@ -97,6 +97,12 @@ export default function Navbar() {
                                     Projects
                                 </Link>
                                 <Link
+                                    href="/agent-hub"
+                                    className={`${styles.link} ${pathname?.startsWith('/agent-hub') ? styles.active : ''}`}
+                                >
+                                    Agent Hub
+                                </Link>
+                                <Link
                                     href="/agent-settings"
                                     className={`${styles.link} ${pathname === '/agent-settings' ? styles.active : ''}`}
                                 >

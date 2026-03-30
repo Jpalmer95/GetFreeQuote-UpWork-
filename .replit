@@ -37,3 +37,14 @@ externalPort = 80
 deploymentTarget = "autoscale"
 run = ["npm", "run", "start"]
 build = ["npm", "run", "build"]
+
+[userenv]
+
+[userenv.shared]
+NEXT_PUBLIC_VAPID_PUBLIC_KEY = "BNSpbbksvDOO7WXWrwhglvOpMED-abwNuv6ibKEjWCka6ArCNDkbhAcM8jd6dDGSk9-8ENtx5jcND0bNaq17Zp4"
+VAPID_PRIVATE_KEY = "-Gug7vp0BJHOyPQQQYNnL5xCvwmg8AORpmOMDJ7ySRI"
+VAPID_SUBJECT = "mailto:notifications@bidflow.app"
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 120000

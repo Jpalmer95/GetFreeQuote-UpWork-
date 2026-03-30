@@ -41,6 +41,7 @@ src/
       estimating/          # Estimating template management (hourly, per-unit, flat, tiered, formula)
       team/                # Team member management (admin, estimator, field_worker roles)
     agent-settings/        # AI Agent configuration page
+    agent-hub/             # Agent Hub — live activity feed, owner instruction input, push notification setup
     admin/
       verifications/       # Admin-only verification request review panel (approve/reject with notes)
     api/
@@ -49,6 +50,9 @@ src/
       quote-action/        # Server-side quote accept/reject (POST)
       verification/        # Verification API (submit request, admin list, admin approve/reject)
       community/           # Community project API (donate, create-project, post-update, record-expense, post-to-marketplace) with atomic RPCs for donations & expenses
+      agent-instruct/      # POST/GET owner instructions for agent (writes to agent_instructions table)
+      push-subscribe/      # POST save push subscription / DELETE remove subscription (VAPID/Web Push)
+      sms-preferences/     # GET/PUT user phone_number and sms_enabled fields on profiles
   components/
     Navbar.tsx             # Sticky glass navbar with notification bell + AI Agent link + Admin link for ADMIN role
     Navbar.module.css
@@ -77,11 +81,14 @@ src/
     auth-helpers.ts        # Auth URL helpers (getBaseUrl, getAuthCallbackUrl)
     supabaseAdmin.ts       # Supabase admin client (server-side, service role)
   services/
-    jobService.ts          # Business logic layer
-    aiAgent.ts             # AI agent UI helpers (status labels, scoring display)
-    serverMappers.ts       # Shared typed row interfaces + mapper functions for server-side routes
-    db.ts                  # Database access layer (Supabase queries, mappers)
-    realtimeService.ts     # Centralized Supabase real-time subscription manager with reconnect and fallback
+    jobService.ts              # Business logic layer
+    aiAgent.ts                 # AI agent UI helpers (status labels, scoring display)
+    serverMappers.ts           # Shared typed row interfaces + mapper functions for server-side routes
+    db.ts                      # Database access layer (Supabase queries, mappers)
+    realtimeService.ts         # Centralized Supabase real-time subscription manager with reconnect and fallback
+    notificationDispatcher.ts  # Unified outbound notification router (in-app + email + SMS + push)
+    smsService.ts              # Twilio SMS service (gracefully degrades without credentials)
+    pushService.ts             # Web Push / VAPID notification service
   types/
     index.ts               # TypeScript types, agent configs, notifications
 public/                    # Static assets
@@ -89,6 +96,7 @@ supabase_schema.sql                  # Database schema reference
 supabase_verification_requests.sql   # Migration: verification_requests table + notification type update
 supabase_realtime_setup.sql          # Migration: enable real-time for notifications, quotes, messages tables
 supabase_saved_searches.sql          # Migration: saved_searches table for vendor filter persistence
+supabase_migrations/001_agent_hub.sql # Migration: agent_instructions table + phone_number/sms_enabled/push columns on profiles
 ```
 
 ## Data Model

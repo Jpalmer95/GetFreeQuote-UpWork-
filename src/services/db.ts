@@ -300,6 +300,40 @@ export const db = {
         return data.map(mapAgentAction);
     },
 
+    getAgentActionsByUser: async (userId: string, limit = 50, offset = 0): Promise<AgentAction[]> => {
+        const { data, error } = await supabase
+            .from('agent_actions')
+            .select('*')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false })
+            .range(offset, offset + limit - 1);
+        if (error) {
+            console.error('Error fetching agent actions by user:', formatSupabaseError(error));
+            return [];
+        }
+        return data.map(mapAgentAction);
+    },
+
+    getAgentInstructions: async (userId: string, limit = 50, offset = 0): Promise<import('@/types').AgentInstruction[]> => {
+        const { data, error } = await supabase
+            .from('agent_instructions')
+            .select('*')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false })
+            .range(offset, offset + limit - 1);
+        if (error) {
+            console.error('Error fetching agent instructions:', formatSupabaseError(error));
+            return [];
+        }
+        return (data || []).map((row: Record<string, unknown>) => ({
+            id: row.id as string,
+            userId: row.user_id as string,
+            instruction: row.instruction as string,
+            acknowledged: row.acknowledged as boolean,
+            createdAt: row.created_at as string,
+        }));
+    },
+
     createNotification: async (notif: Omit<Notification, 'id' | 'createdAt' | 'read'>): Promise<Notification> => {
         const { data, error } = await supabase.from('notifications').insert({
             user_id: notif.userId,

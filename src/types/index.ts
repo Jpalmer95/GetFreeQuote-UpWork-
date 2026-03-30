@@ -146,7 +146,16 @@ export type AgentActionType =
     | 'escalation'
     | 'negotiation'
     | 'auto_approve'
-    | 'auto_reject';
+    | 'auto_reject'
+    | 'owner_instruction';
+
+export interface AgentInstruction {
+    id: string;
+    userId: string;
+    instruction: string;
+    acknowledged: boolean;
+    createdAt: string;
+}
 
 export interface AgentAction {
     id: string;

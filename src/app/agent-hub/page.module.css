@@ -1,0 +1,358 @@
+.container {
+    min-height: 100vh;
+    background: var(--bg-primary);
+}
+
+.pageHeader {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 2rem 2rem 1rem;
+    max-width: 900px;
+    margin: 0 auto;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.pageHeader h2 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0 0 0.25rem;
+}
+
+.subtitle {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.headerLinks {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.headerLink {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.85rem;
+    text-decoration: none;
+    transition: color 0.15s;
+}
+
+.headerLink:hover {
+    color: #9b6dff;
+}
+
+.content {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 2rem 4rem;
+}
+
+.toast {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(155, 109, 255, 0.95);
+    color: #fff;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    z-index: 1000;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    animation: slideUp 0.25s ease;
+}
+
+@keyframes slideUp {
+    from { transform: translateX(-50%) translateY(10px); opacity: 0; }
+    to   { transform: translateX(-50%) translateY(0);   opacity: 1; }
+}
+
+.instructTitle {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #e6edf3;
+    margin-bottom: 0.35rem;
+}
+
+.instructDesc {
+    font-size: 0.83rem;
+    color: rgba(255, 255, 255, 0.45);
+    margin-bottom: 1rem;
+}
+
+.instructRow {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-end;
+}
+
+.instructInput {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: #e6edf3;
+    font-size: 0.9rem;
+    padding: 0.75rem 1rem;
+    resize: vertical;
+    font-family: inherit;
+    transition: border-color 0.15s;
+}
+
+.instructInput:focus {
+    outline: none;
+    border-color: #9b6dff;
+}
+
+.instructInput::placeholder {
+    color: rgba(255, 255, 255, 0.25);
+}
+
+.instructBtn {
+    padding: 0.6rem 1.25rem;
+    background: linear-gradient(135deg, #9b6dff, #6366f1);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity 0.15s;
+}
+
+.instructBtn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.pushBanner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.pushInfo {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+}
+
+.pushBell {
+    color: #9b6dff;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.pushTitle {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #e6edf3;
+    margin-bottom: 0.2rem;
+}
+
+.pushDesc {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.45);
+}
+
+.pushBtn {
+    padding: 0.5rem 1rem;
+    background: linear-gradient(135deg, #9b6dff, #6366f1);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: opacity 0.15s;
+}
+
+.pushBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pushBtnOff {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.feedSection {
+    margin-top: 0.5rem;
+}
+
+.feedTitle {
+    font-size: 1rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.7);
+    margin: 0 0 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 0.8rem;
+}
+
+.emptyState {
+    text-align: center;
+    color: rgba(255, 255, 255, 0.35);
+    font-size: 0.9rem;
+    padding: 3rem 1rem;
+    line-height: 1.8;
+}
+
+.setupLink {
+    color: #9b6dff;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.setupLink:hover {
+    text-decoration: underline;
+}
+
+.timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.feedItem {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    transition: background 0.15s;
+}
+
+.feedItem:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.feedItemAlert {
+    border-color: rgba(248, 81, 73, 0.3);
+    background: rgba(248, 81, 73, 0.04);
+}
+
+.feedItemInstruction {
+    border-color: rgba(155, 109, 255, 0.25);
+    background: rgba(155, 109, 255, 0.04);
+}
+
+.feedChip {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    border: 1px solid;
+    border-radius: 4px;
+    padding: 2px 6px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.feedBody {
+    flex: 1;
+    min-width: 0;
+}
+
+.feedMeta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.3rem;
+    flex-wrap: wrap;
+}
+
+.feedType {
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.feedTime {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.35);
+    flex-shrink: 0;
+}
+
+.feedSummary {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.75);
+    line-height: 1.5;
+}
+
+.feedLink {
+    display: inline-block;
+    margin-top: 0.4rem;
+    font-size: 0.8rem;
+    color: #9b6dff;
+    text-decoration: none;
+}
+
+.feedLink:hover {
+    text-decoration: underline;
+}
+
+.feedAck {
+    display: inline-block;
+    margin-top: 0.4rem;
+    font-size: 0.75rem;
+    color: #3fb950;
+}
+
+.loadMore {
+    display: block;
+    width: 100%;
+    margin-top: 1rem;
+    padding: 0.65rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.loadMore:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.loadMore:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+@media (max-width: 600px) {
+    .pageHeader {
+        padding: 1.25rem 1rem 0.75rem;
+    }
+    .content {
+        padding: 0 1rem 3rem;
+    }
+    .instructRow {
+        flex-direction: column;
+    }
+    .instructBtn {
+        width: 100%;
+    }
+    .pushBanner {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
