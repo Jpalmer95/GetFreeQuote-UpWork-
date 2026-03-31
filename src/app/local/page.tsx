@@ -200,7 +200,7 @@ export default function GoLocal() {
                             <input
                                 type="range"
                                 min={1}
-                                max={50}
+                                max={25}
                                 value={viewRadius}
                                 onChange={e => setViewRadius(Number(e.target.value))}
                                 className={styles.radiusSlider}
