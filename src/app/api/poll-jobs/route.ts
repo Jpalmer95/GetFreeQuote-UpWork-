@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { dispatchNotification } from '@/services/notificationDispatcher';
 import { mapJobRow, mapAgentConfigRow, JobRow, AgentConfigRow } from '@/services/serverMappers';
-import { Job, AgentConfig } from '@/types';
+import { matchVendorsToJob } from '@/services/vendorMatcher';
+import { Job } from '@/types';
 
 const EXPIRE_DAYS = 45;
 const REMINDER_DAYS = 7;
@@ -68,35 +69,30 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         try {
             const isOlderThan45Days = createdAt <= expireCutoff;
 
-            let isZombie = false;
-            const { count: acceptedCount } = await supabaseAdmin
+            const { count: staleAcceptedCount } = await supabaseAdmin
+                .from('quotes')
+                .select('*', { count: 'exact', head: true })
+                .eq('job_id', rawJob.id)
+                .eq('status', 'ACCEPTED')
+                .lte('created_at', zombieQuoteCutoff.toISOString());
+
+            const isZombie = (staleAcceptedCount ?? 0) > 0;
+
+            if (isZombie) {
+                await expireJob(rawJob.id, job.userId, job.title, 'zombie_accepted_quote', stats);
+                continue;
+            }
+
+            const { count: anyAcceptedCount } = await supabaseAdmin
                 .from('quotes')
                 .select('*', { count: 'exact', head: true })
                 .eq('job_id', rawJob.id)
                 .eq('status', 'ACCEPTED');
 
-            const hasAcceptedQuote = (acceptedCount ?? 0) > 0;
+            const hasAcceptedQuote = (anyAcceptedCount ?? 0) > 0;
 
             if (isOlderThan45Days && !hasAcceptedQuote) {
                 await expireJob(rawJob.id, job.userId, job.title, 'stale_no_activity', stats);
-                continue;
-            }
-
-            if (!isOlderThan45Days && hasAcceptedQuote) {
-                const { count: recentAccepted } = await supabaseAdmin
-                    .from('quotes')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('job_id', rawJob.id)
-                    .eq('status', 'ACCEPTED')
-                    .lte('created_at', zombieQuoteCutoff.toISOString());
-
-                if ((recentAccepted ?? 0) > 0) {
-                    isZombie = true;
-                }
-            }
-
-            if (isZombie) {
-                await expireJob(rawJob.id, job.userId, job.title, 'zombie_accepted_quote', stats);
                 continue;
             }
 
@@ -243,17 +239,27 @@ async function vendorRematchPass(
         const job = mapJobRow(rawJob as unknown as JobRow & { last_reminded_at: string | null });
 
         try {
-            const matched = matchVendorsToJob(job, recentVendors);
+            const matches = await matchVendorsToJob(job, recentVendors);
 
-            if (matched.length === 0) continue;
+            if (matches.length === 0) continue;
 
-            for (const vc of matched) {
+            for (const { config: vc, score, reasons } of matches) {
+                const { count: existingAction } = await supabaseAdmin
+                    .from('agent_actions')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('job_id', job.id)
+                    .eq('user_id', vc.userId)
+                    .eq('action_type', 'vendor_rematch')
+                    .gte('created_at', recentVendorCutoff.toISOString());
+
+                if ((existingAction ?? 0) > 0) continue;
+
                 await supabaseAdmin.from('agent_actions').insert({
                     job_id: job.id,
                     user_id: vc.userId,
                     action_type: 'vendor_rematch',
                     summary: `New vendor agent re-matched to existing job "${job.title}".`,
-                    details: { vendor_user_id: vc.userId, industries: vc.industries },
+                    details: { vendor_user_id: vc.userId, industries: vc.industries, score, reasons },
                     automated: true,
                 });
 
@@ -275,28 +281,6 @@ async function vendorRematchPass(
             stats.errors.push({ context: `rematch:job:${rawJob.id}`, error: msg });
         }
     }
-}
-
-function matchVendorsToJob(job: Job, vendors: AgentConfig[]): AgentConfig[] {
-    const budgetNum = job.budget ? parseFloat(String(job.budget).replace(/[^0-9.]/g, '')) : null;
-    const matched: AgentConfig[] = [];
-
-    for (const vc of vendors) {
-        if (vc.industries.length > 0 && !vc.industries.includes(job.industryVertical)) continue;
-        if (vc.maxBudget && budgetNum && budgetNum > vc.maxBudget) continue;
-        if (vc.minBudget && budgetNum && budgetNum < vc.minBudget) continue;
-        if (vc.serviceArea.length > 0 && job.location) {
-            const jobLoc = job.location.toLowerCase();
-            const inArea = vc.serviceArea.some((area: string) => {
-                const a = area.toLowerCase();
-                return jobLoc.includes(a) || a.includes(jobLoc);
-            });
-            if (!inArea) continue;
-        }
-        matched.push(vc);
-    }
-
-    return matched;
 }
 
 async function communityJobSeedPass(

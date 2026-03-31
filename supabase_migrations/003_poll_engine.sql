@@ -62,3 +62,21 @@ CREATE INDEX IF NOT EXISTS jobs_last_reminded_at_idx ON public.jobs (last_remind
 
 -- 7. Index for poll_runs (most recent first)
 CREATE INDEX IF NOT EXISTS poll_runs_run_at_idx ON public.poll_runs (run_at DESC);
+
+-- 8. RLS policies for poll_runs
+-- Enable RLS
+ALTER TABLE public.poll_runs ENABLE ROW LEVEL SECURITY;
+
+-- Only ADMIN users can read poll_runs (via their profile role)
+CREATE POLICY "poll_runs_admin_read" ON public.poll_runs
+    FOR SELECT
+    USING (
+        EXISTS (
+            SELECT 1 FROM public.profiles
+            WHERE profiles.id = auth.uid()
+            AND profiles.role = 'ADMIN'
+        )
+    );
+
+-- Only service role (bypasses RLS) can insert — no client-side INSERT policy
+-- This means poll runs are written only via the server-side poll engine with service key.
