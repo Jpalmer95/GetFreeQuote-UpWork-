@@ -112,14 +112,23 @@ export function matchVendorsToJob(
             const radiusLimit = job.radiusMiles ?? 25;
 
             if (vc.locationLat != null && vc.locationLng != null) {
+                // Primary path: geospatial hard filter using profile coordinates.
                 const dist = haversineMiles(jobLat, jobLng, vc.locationLat, vc.locationLng);
                 if (dist > radiusLimit) continue;
                 if (dist <= radiusLimit * 0.25) { score += 20; reasons.push('local_very_close'); }
                 else if (dist <= radiusLimit * 0.5) { score += 15; reasons.push('local_close'); }
                 else { score += 10; reasons.push('local_within_radius'); }
+            } else if (vc.serviceArea && vc.serviceArea.length > 0) {
+                // Fallback: vendor declared service areas but no coordinate on file.
+                // Use configured maxDistance as a proxy for radius eligibility.
+                if (vc.maxDistance != null && vc.maxDistance > radiusLimit) {
+                    // Declared service range is explicitly wider than the job radius — skip.
+                    continue;
+                }
+                score += 5;
+                reasons.push('local_service_area_fallback');
             } else {
-                // Vendor has no location coordinates — cannot verify they are within the
-                // required radius, so hard-exclude them from local matching.
+                // No coordinates and no service area — cannot place vendor geographically.
                 continue;
             }
         }

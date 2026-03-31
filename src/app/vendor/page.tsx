@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { jobService } from '@/services/jobService';
-import { Job, Notification, INDUSTRY_VERTICALS, IndustryVertical } from '@/types';
+import { Job, Notification, INDUSTRY_VERTICALS, IndustryVertical, VendorProfile } from '@/types';
 import { db } from '@/services/db';
 import { vendorApi } from '@/services/vendorApi';
 import { useAuth } from '@/context/AuthContext';
@@ -40,16 +40,7 @@ export default function VendorDashboard() {
     const [agentActive, setAgentActive] = useState(true);
     const [pendingInvites, setPendingInvites] = useState<PendingInvite[]>([]);
     const [acceptingId, setAcceptingId] = useState<string | null>(null);
-    const [viewerCoords, setViewerCoords] = useState<{ lat: number; lng: number } | null>(null);
-
-    useEffect(() => {
-        if (!navigator.geolocation) return;
-        navigator.geolocation.getCurrentPosition(
-            pos => setViewerCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-            () => {},
-            { timeout: 5000 }
-        );
-    }, []);
+    const [vendorProfile, setVendorProfile] = useState<VendorProfile | null>(null);
 
     useEffect(() => {
         if (!isLoading && !user) {
@@ -59,19 +50,26 @@ export default function VendorDashboard() {
         if (!user) return;
 
         const load = async () => {
-            const [allJobs, config, notifs, invites] = await Promise.all([
+            const [allJobs, config, notifs, invites, profile] = await Promise.all([
                 jobService.searchJobs({ industryVertical: industryFilter || undefined }),
                 db.getAgentConfig(user.id),
                 db.getNotifications(user.id),
                 vendorApi.getPendingInvitations(),
+                db.getVendorProfile(user.id),
             ]);
             setAvailableJobs(allJobs);
             setNotifications(notifs.filter(n => n.actionRequired));
             if (config) setAgentActive(config.isActive);
             setPendingInvites(invites);
+            if (profile) setVendorProfile(profile);
         };
         load();
     }, [industryFilter, user, isLoading, router]);
+
+    // Vendor location comes from stored profile, not browser geolocation.
+    const vendorCoords = (vendorProfile?.locationLat != null && vendorProfile?.locationLng != null)
+        ? { lat: vendorProfile.locationLat, lng: vendorProfile.locationLng }
+        : null;
 
     const handleAcceptInvite = async (memberId: string) => {
         setAcceptingId(memberId);
@@ -189,18 +187,20 @@ export default function VendorDashboard() {
 
                         <section className={styles.marketSection}>
                             {(() => {
+                                // Only classify a job as "nearby" when both the vendor profile
+                                // and the job have coordinates, and the vendor is within the job's radius.
                                 const nearbyJobs = availableJobs.filter(j => {
-                                    if (!j.isLocalRequest) return false;
-                                    if (!viewerCoords || j.locationLat == null || j.locationLng == null) return j.isLocalRequest;
-                                    const dist = haversineVendor(viewerCoords.lat, viewerCoords.lng, j.locationLat, j.locationLng);
+                                    if (!j.isLocalRequest || j.locationLat == null || j.locationLng == null) return false;
+                                    if (!vendorCoords) return false;
+                                    const dist = haversineVendor(vendorCoords.lat, vendorCoords.lng, j.locationLat, j.locationLng);
                                     return dist <= (j.radiusMiles ?? 25);
                                 });
                                 const regularJobs = availableJobs.filter(j => !nearbyJobs.includes(j));
 
                                 const renderCard = (job: Job) => {
                                     let localDist: number | null = null;
-                                    if (job.isLocalRequest && viewerCoords && job.locationLat != null && job.locationLng != null) {
-                                        localDist = haversineVendor(viewerCoords.lat, viewerCoords.lng, job.locationLat, job.locationLng);
+                                    if (job.isLocalRequest && vendorCoords && job.locationLat != null && job.locationLng != null) {
+                                        localDist = haversineVendor(vendorCoords.lat, vendorCoords.lng, job.locationLat, job.locationLng);
                                     }
                                     return (
                                         <div key={job.id} className={styles.jobCard}>
@@ -242,9 +242,9 @@ export default function VendorDashboard() {
                                                 {nearbyJobs
                                                     .slice()
                                                     .sort((a, b) => {
-                                                        if (!viewerCoords || a.locationLat == null || b.locationLat == null) return 0;
-                                                        const da = haversineVendor(viewerCoords.lat, viewerCoords.lng, a.locationLat!, a.locationLng!);
-                                                        const db2 = haversineVendor(viewerCoords.lat, viewerCoords.lng, b.locationLat!, b.locationLng!);
+                                                        if (!vendorCoords || a.locationLat == null || b.locationLat == null) return 0;
+                                                        const da = haversineVendor(vendorCoords.lat, vendorCoords.lng, a.locationLat, a.locationLng!);
+                                                        const db2 = haversineVendor(vendorCoords.lat, vendorCoords.lng, b.locationLat, b.locationLng!);
                                                         return da - db2;
                                                     })
                                                     .map(renderCard)}

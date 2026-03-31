@@ -291,6 +291,11 @@ export default function Dashboard() {
                                     <span className={STATUS_CLASS[job.status] || 'badge badge-muted'}>
                                         {job.status}
                                     </span>
+                                    {job.isLocalRequest && (
+                                        <span className="badge badge-blue" title={`Local request · ${job.radiusMiles ?? 25} mi radius`}>
+                                            📍 Local
+                                        </span>
+                                    )}
                                     <span className={styles.date}>
                                         {new Date(job.createdAt).toLocaleDateString()}
                                     </span>
