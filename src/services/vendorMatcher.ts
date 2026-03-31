@@ -111,11 +111,8 @@ export function matchVendorsToJob(
             const jobLng = job.locationLng;
             const radiusLimit = job.radiusMiles ?? 25;
 
-            const vendorLat = (vc as AgentConfig & { locationLat?: number }).locationLat;
-            const vendorLng = (vc as AgentConfig & { locationLng?: number }).locationLng;
-
-            if (vendorLat != null && vendorLng != null) {
-                const dist = haversineMiles(jobLat, jobLng, vendorLat, vendorLng);
+            if (vc.locationLat != null && vc.locationLng != null) {
+                const dist = haversineMiles(jobLat, jobLng, vc.locationLat, vc.locationLng);
                 if (dist > radiusLimit) continue;
                 if (dist <= radiusLimit * 0.25) { score += 20; reasons.push('local_very_close'); }
                 else if (dist <= radiusLimit * 0.5) { score += 15; reasons.push('local_close'); }

@@ -137,6 +137,8 @@ export interface AgentConfig {
     maxActiveJobs?: number;
     createdAt: string;
     updatedAt: string;
+    locationLat?: number;
+    locationLng?: number;
 }
 
 export type AgentActionType =
@@ -242,6 +244,8 @@ export interface VendorProfile {
     totalReviews: number;
     createdAt: string;
     updatedAt: string;
+    locationLat?: number;
+    locationLng?: number;
 }
 
 export type TeamMemberRole = 'admin' | 'estimator' | 'field_worker';

@@ -29,3 +29,11 @@ AS $$
             )
         )
 $$;
+
+-- Add location coordinates to vendor_profiles for haversine matching
+ALTER TABLE vendor_profiles
+    ADD COLUMN IF NOT EXISTS location_lat numeric(10, 7),
+    ADD COLUMN IF NOT EXISTS location_lng numeric(11, 7);
+
+CREATE INDEX IF NOT EXISTS idx_vendor_profiles_coords ON vendor_profiles(location_lat, location_lng)
+    WHERE location_lat IS NOT NULL;

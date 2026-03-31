@@ -223,16 +223,34 @@ export async function POST(request: NextRequest) {
         const allVendors = (vendorRows || []).map((r: AgentConfigRow) => mapAgentConfigRow(r as AgentConfigRow));
 
         const vendorUserIds = allVendors.map(v => v.userId);
-        const { data: activeQuoteRows } = vendorUserIds.length > 0
-            ? await supabaseAdmin.from('quotes').select('vendor_id').in('vendor_id', vendorUserIds).eq('status', 'ACCEPTED')
-            : { data: [] };
+
+        const [activeQuoteRowsResult, vendorProfileRows] = await Promise.all([
+            vendorUserIds.length > 0
+                ? supabaseAdmin.from('quotes').select('vendor_id').in('vendor_id', vendorUserIds).eq('status', 'ACCEPTED')
+                : Promise.resolve({ data: [] }),
+            vendorUserIds.length > 0
+                ? supabaseAdmin.from('vendor_profiles').select('user_id, location_lat, location_lng').in('user_id', vendorUserIds)
+                : Promise.resolve({ data: [] }),
+        ]);
 
         const vendorActiveJobCount = new Map<string, number>();
-        for (const q of activeQuoteRows ?? []) {
+        for (const q of activeQuoteRowsResult.data ?? []) {
             vendorActiveJobCount.set(q.vendor_id, (vendorActiveJobCount.get(q.vendor_id) ?? 0) + 1);
         }
 
-        const matched = matchVendorsToJob(job, allVendors, vendorActiveJobCount);
+        const vendorCoordMap = new Map<string, { lat: number; lng: number }>();
+        for (const vp of vendorProfileRows.data ?? []) {
+            if (vp.location_lat != null && vp.location_lng != null) {
+                vendorCoordMap.set(vp.user_id, { lat: vp.location_lat, lng: vp.location_lng });
+            }
+        }
+
+        const allVendorsWithCoords = allVendors.map(v => {
+            const coords = vendorCoordMap.get(v.userId);
+            return coords ? { ...v, locationLat: coords.lat, locationLng: coords.lng } : v;
+        });
+
+        const matched = matchVendorsToJob(job, allVendorsWithCoords, vendorActiveJobCount);
         const vendorConfigs = matched.map(m => m.config);
         const rejectedCount = allVendors.length - matched.length;
 

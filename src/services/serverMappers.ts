@@ -200,6 +200,8 @@ export interface VendorProfileRow {
     total_reviews: number;
     created_at: string;
     updated_at: string;
+    location_lat: number | null;
+    location_lng: number | null;
 }
 
 export function mapVendorProfileRow(row: VendorProfileRow): VendorProfile {
@@ -228,6 +230,8 @@ export function mapVendorProfileRow(row: VendorProfileRow): VendorProfile {
         totalReviews: row.total_reviews,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
+        locationLat: row.location_lat ?? undefined,
+        locationLng: row.location_lng ?? undefined,
     };
 }
 
