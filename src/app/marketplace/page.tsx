@@ -10,6 +10,16 @@ import Navbar from '@/components/Navbar';
 import SearchAutocomplete from '@/components/SearchAutocomplete';
 import SavedSearches from '@/components/SavedSearches';
 
+function haversineMarketplace(lat1: number, lng1: number, lat2: number, lng2: number): number {
+    const R = 3958.8;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLng / 2) ** 2;
+    return R * 2 * Math.asin(Math.sqrt(a));
+}
+
 const URGENCY_LABELS: Record<string, string> = {
     flexible: 'Flexible',
     within_month: 'This Month',
@@ -80,6 +90,7 @@ export default function Marketplace() {
     const [jobs, setJobs] = useState<Job[]>([]);
     const [error, setError] = useState<string | null>(null);
     const [vendorServiceAreas, setVendorServiceAreas] = useState<string[]>([]);
+    const [viewerCoords, setViewerCoords] = useState<{ lat: number; lng: number } | null>(null);
 
     useEffect(() => {
         if (!user) return;
@@ -95,6 +106,15 @@ export default function Marketplace() {
         };
         loadVendorProfile();
     }, [user]);
+
+    useEffect(() => {
+        if (!navigator.geolocation) return;
+        navigator.geolocation.getCurrentPosition(
+            pos => setViewerCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+            () => {},
+            { timeout: 5000 }
+        );
+    }, []);
 
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -331,16 +351,21 @@ export default function Marketplace() {
                                 <div className={styles.cardAccent} />
 
                                 <div className={styles.cardHeader}>
-                                    {job.isLocalRequest && (
-                                        <span className={styles.localBadge}>
-                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
-                                            </svg>
-                                            {relevance?.distance?.miles != null && job.locationLat != null
-                                                ? `Local · ${relevance.distance.miles < 1 ? '<1' : Math.round(relevance.distance.miles)} mi`
-                                                : 'Local'}
-                                        </span>
-                                    )}
+                                    {job.isLocalRequest && (() => {
+                                        let distLabel = 'Local';
+                                        if (viewerCoords && job.locationLat != null && job.locationLng != null) {
+                                            const dist = haversineMarketplace(viewerCoords.lat, viewerCoords.lng, job.locationLat, job.locationLng);
+                                            distLabel = `Local · ${dist < 1 ? '<1' : dist.toFixed(1)} mi`;
+                                        }
+                                        return (
+                                            <span className={styles.localBadge}>
+                                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
+                                                </svg>
+                                                {distLabel}
+                                            </span>
+                                        );
+                                    })()}
                                     <span className={styles.industryTag}>{job.industryVertical}</span>
                                     {job.communityProjectId && (
                                         <span className={styles.communityTag}>Community Funded</span>

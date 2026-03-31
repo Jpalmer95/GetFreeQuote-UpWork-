@@ -547,3 +547,37 @@
     padding: 2px 8px;
     border-radius: 20px;
 }
+
+.nearbySection {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.nearbySectionHeader {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0 12px;
+}
+
+.nearbyBadge {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.03em;
+}
+
+.nearbySectionDesc {
+    font-size: 0.8rem;
+    color: #6b7280;
+}
+
+.sectionDivider {
+    height: 1px;
+    background: rgba(255,255,255,0.07);
+    margin: 16px 0;
+}

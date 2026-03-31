@@ -1,15 +1,25 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { jobService } from '@/services/jobService';
 import { Job, Notification, INDUSTRY_VERTICALS, IndustryVertical } from '@/types';
 import { db } from '@/services/db';
 import { vendorApi } from '@/services/vendorApi';
 import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'next/navigation';
 import styles from './page.module.css';
 import Navbar from '@/components/Navbar';
 import VendorAnalytics from '@/components/VendorAnalytics';
+
+function haversineVendor(lat1: number, lng1: number, lat2: number, lng2: number): number {
+    const R = 3958.8;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLng / 2) ** 2;
+    return R * 2 * Math.asin(Math.sqrt(a));
+}
 
 type VendorTab = 'opportunities' | 'reviews';
 
@@ -30,6 +40,16 @@ export default function VendorDashboard() {
     const [agentActive, setAgentActive] = useState(true);
     const [pendingInvites, setPendingInvites] = useState<PendingInvite[]>([]);
     const [acceptingId, setAcceptingId] = useState<string | null>(null);
+    const [viewerCoords, setViewerCoords] = useState<{ lat: number; lng: number } | null>(null);
+
+    useEffect(() => {
+        if (!navigator.geolocation) return;
+        navigator.geolocation.getCurrentPosition(
+            pos => setViewerCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+            () => {},
+            { timeout: 5000 }
+        );
+    }, []);
 
     useEffect(() => {
         if (!isLoading && !user) {
@@ -168,38 +188,76 @@ export default function VendorDashboard() {
                         </aside>
 
                         <section className={styles.marketSection}>
-                            <div className={styles.feed}>
-                                {availableJobs.map(job => (
-                                    <div key={job.id} className={styles.jobCard}>
-                                        <div className={styles.jobHeader}>
-                                            <div className={styles.liveRow}>
-                                                <span className={styles.liveDot} />
-                                                <span className={styles.liveLabel}>Live</span>
+                            {(() => {
+                                const nearbyJobs = availableJobs.filter(j => {
+                                    if (!j.isLocalRequest) return false;
+                                    if (!viewerCoords || j.locationLat == null || j.locationLng == null) return j.isLocalRequest;
+                                    const dist = haversineVendor(viewerCoords.lat, viewerCoords.lng, j.locationLat, j.locationLng);
+                                    return dist <= (j.radiusMiles ?? 25);
+                                });
+                                const regularJobs = availableJobs.filter(j => !nearbyJobs.includes(j));
+
+                                const renderCard = (job: Job) => {
+                                    let localDist: number | null = null;
+                                    if (job.isLocalRequest && viewerCoords && job.locationLat != null && job.locationLng != null) {
+                                        localDist = haversineVendor(viewerCoords.lat, viewerCoords.lng, job.locationLat, job.locationLng);
+                                    }
+                                    return (
+                                        <div key={job.id} className={styles.jobCard}>
+                                            <div className={styles.jobHeader}>
+                                                <div className={styles.liveRow}>
+                                                    <span className={styles.liveDot} />
+                                                    <span className={styles.liveLabel}>Live</span>
+                                                </div>
+                                                {job.isLocalRequest && (
+                                                    <span className={styles.localBadge}>
+                                                        📍 {localDist != null ? `Local · ${localDist < 1 ? '<1' : localDist.toFixed(1)} mi` : `Local · ${job.radiusMiles ?? 25} mi radius`}
+                                                    </span>
+                                                )}
+                                                <span className={styles.tag}>{job.industryVertical}</span>
                                             </div>
-                                            {job.isLocalRequest && (
-                                                <span className={styles.localBadge}>
-                                                    📍 Local · {job.radiusMiles ?? 25} mi
-                                                </span>
-                                            )}
-                                            <span className={styles.tag}>{job.industryVertical}</span>
+                                            <h4>{job.title}</h4>
+                                            <p className={styles.jobSubcategory}>{job.subcategory || job.category}</p>
+                                            <p>{job.location}</p>
+                                            {job.budget && <p className={styles.jobBudget}>{job.budget}</p>}
+                                            <div className={styles.botAction}>
+                                                {agentActive ? (
+                                                    <span className={styles.success}>Agent Monitoring</span>
+                                                ) : (
+                                                    <button className={styles.quoteBtn}>Manual Quote</button>
+                                                )}
+                                            </div>
                                         </div>
-                                        <h4>{job.title}</h4>
-                                        <p className={styles.jobSubcategory}>{job.subcategory || job.category}</p>
-                                        <p>{job.location}</p>
-                                        {job.budget && <p className={styles.jobBudget}>{job.budget}</p>}
-                                        <div className={styles.botAction}>
-                                            {agentActive ? (
-                                                <span className={styles.success}>Agent Monitoring</span>
-                                            ) : (
-                                                <button className={styles.quoteBtn}>Manual Quote</button>
-                                            )}
-                                        </div>
+                                    );
+                                };
+
+                                return (
+                                    <div className={styles.feed}>
+                                        {nearbyJobs.length > 0 && (
+                                            <div className={styles.nearbySection}>
+                                                <div className={styles.nearbySectionHeader}>
+                                                    <span className={styles.nearbyBadge}>📍 Nearby</span>
+                                                    <span className={styles.nearbySectionDesc}>Local requests within your area — sorted by distance</span>
+                                                </div>
+                                                {nearbyJobs
+                                                    .slice()
+                                                    .sort((a, b) => {
+                                                        if (!viewerCoords || a.locationLat == null || b.locationLat == null) return 0;
+                                                        const da = haversineVendor(viewerCoords.lat, viewerCoords.lng, a.locationLat!, a.locationLng!);
+                                                        const db2 = haversineVendor(viewerCoords.lat, viewerCoords.lng, b.locationLat!, b.locationLng!);
+                                                        return da - db2;
+                                                    })
+                                                    .map(renderCard)}
+                                                {regularJobs.length > 0 && <div className={styles.sectionDivider} />}
+                                            </div>
+                                        )}
+                                        {regularJobs.map(renderCard)}
+                                        {availableJobs.length === 0 && (
+                                            <p className={styles.emptyFeed}>No active projects match your filters.</p>
+                                        )}
                                     </div>
-                                ))}
-                                {availableJobs.length === 0 && (
-                                    <p className={styles.emptyFeed}>No active projects match your filters.</p>
-                                )}
-                            </div>
+                                );
+                            })()}
                         </section>
                     </>
                 )}

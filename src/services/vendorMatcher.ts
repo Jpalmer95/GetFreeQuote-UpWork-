@@ -106,13 +106,28 @@ export function matchVendorsToJob(
         if (vc.autoQuote) { score += 10; reasons.push('auto_quote_enabled'); }
         if (vc.autoRespond) { score += 5; reasons.push('auto_respond_enabled'); }
 
-        if (job.isLocalRequest) {
-            if (vc.maxDistance && vc.maxDistance <= (job.radiusMiles ?? 25)) {
-                score += 15;
-                reasons.push('local_tight_radius');
+        if (job.isLocalRequest && job.locationLat != null && job.locationLng != null) {
+            const jobLat = job.locationLat;
+            const jobLng = job.locationLng;
+            const radiusLimit = job.radiusMiles ?? 25;
+
+            const vendorLat = (vc as AgentConfig & { locationLat?: number }).locationLat;
+            const vendorLng = (vc as AgentConfig & { locationLng?: number }).locationLng;
+
+            if (vendorLat != null && vendorLng != null) {
+                const dist = haversineMiles(jobLat, jobLng, vendorLat, vendorLng);
+                if (dist > radiusLimit) continue;
+                if (dist <= radiusLimit * 0.25) { score += 20; reasons.push('local_very_close'); }
+                else if (dist <= radiusLimit * 0.5) { score += 15; reasons.push('local_close'); }
+                else { score += 10; reasons.push('local_within_radius'); }
             } else {
-                score += 5;
-                reasons.push('local_request');
+                if (vc.maxDistance && vc.maxDistance <= radiusLimit) {
+                    score += 10;
+                    reasons.push('local_tight_service_area');
+                } else {
+                    score += 5;
+                    reasons.push('local_request_no_vendor_coords');
+                }
             }
         }
 
