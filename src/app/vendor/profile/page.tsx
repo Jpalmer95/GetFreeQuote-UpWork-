@@ -9,6 +9,7 @@ import { hasPermission, VendorRole, getRoleLabel } from '@/services/vendorAuth';
 import Navbar from '@/components/Navbar';
 import FileUpload from '@/components/FileUpload';
 import VerificationSection from '@/components/VerificationSection';
+import LocationResolver, { ResolvedLocation } from '@/components/LocationResolver';
 import styles from './page.module.css';
 
 export default function VendorProfileEdit() {
@@ -39,6 +40,7 @@ export default function VendorProfileEdit() {
         portfolioImages: [] as string[],
         portfolioDescriptions: [] as string[],
     });
+    const [vendorLocation, setVendorLocation] = useState<ResolvedLocation | null>(null);
 
     useEffect(() => {
         if (!isLoading && !user) { router.push('/login'); return; }
@@ -68,6 +70,9 @@ export default function VendorProfileEdit() {
                     portfolioImages: profile.portfolioImages,
                     portfolioDescriptions: profile.portfolioDescriptions,
                 });
+                if (profile.locationLat != null && profile.locationLng != null) {
+                    setVendorLocation({ lat: profile.locationLat, lng: profile.locationLng, label: 'Saved location' });
+                }
             } else {
                 setUserRole('owner');
                 setForm(prev => ({ ...prev, contactEmail: user.email || '' }));
@@ -126,6 +131,8 @@ export default function VendorProfileEdit() {
                 teamSize: parseInt(form.teamSize) || 1,
                 portfolioImages: form.portfolioImages,
                 portfolioDescriptions: form.portfolioDescriptions,
+                locationLat: vendorLocation?.lat,
+                locationLng: vendorLocation?.lng,
             });
             setProfileId(result.id);
             setSaved(true);
@@ -233,6 +240,20 @@ export default function VendorProfileEdit() {
                             <input className={styles.input} value={form.serviceAreas}
                                 onChange={e => setForm(p => ({ ...p, serviceAreas: e.target.value }))}
                                 placeholder="New York, Brooklyn, Queens" disabled={!canEdit} />
+                        </div>
+                        <div className={styles.formGroupFull}>
+                            <label className={styles.label}>
+                                📍 Your Business Location
+                                <span style={{ fontWeight: 400, color: 'rgba(255,255,255,0.5)', marginLeft: '0.5rem', fontSize: '0.85rem' }}>
+                                    Used for hyperlocal job matching (Go Local)
+                                </span>
+                            </label>
+                            {canEdit
+                                ? <LocationResolver value={vendorLocation} onChange={setVendorLocation} />
+                                : vendorLocation
+                                    ? <p style={{ color: 'rgba(255,255,255,0.7)', margin: 0 }}>📍 {vendorLocation.label}</p>
+                                    : <p style={{ color: 'rgba(255,255,255,0.4)', margin: 0 }}>No location set</p>
+                            }
                         </div>
                     </div>
                 </div>

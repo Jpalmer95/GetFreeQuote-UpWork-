@@ -123,12 +123,17 @@ export function matchVendorsToJob(
                 else if (dist <= radiusLimit * 0.5) { score += 15; reasons.push('local_close'); }
                 else { score += 10; reasons.push('local_within_radius'); }
             } else if (vc.serviceArea && vc.serviceArea.length > 0) {
-                // Fallback: vendor declared service areas but no coordinate on file.
-                // Use maxDistance as a proxy: if vendor's max range is smaller than the
-                // job's radius they can't cover it → exclude. If unset or >= radius → admit.
-                if (vc.maxDistance != null && vc.maxDistance < radiusLimit) {
-                    // Declared service range is smaller than the required radius — skip.
-                    continue;
+                // Fallback: vendor has declared service areas but no stored coordinates.
+                // Use text matching between vendor service areas and the job's location text
+                // as a deterministic locality gate (same algorithm as non-local path above).
+                // If service areas don't mention the job's location, exclude.
+                if (job.location) {
+                    const jobLocLower = job.location.toLowerCase();
+                    const areaMatch = vc.serviceArea.some((area: string) => {
+                        const areaLower = area.toLowerCase();
+                        return jobLocLower.includes(areaLower) || areaLower.includes(jobLocLower);
+                    });
+                    if (!areaMatch) continue;
                 }
                 score += 5;
                 reasons.push('local_service_area_fallback');

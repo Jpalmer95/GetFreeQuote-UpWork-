@@ -169,6 +169,8 @@ export async function POST(req: NextRequest) {
             team_size: body.teamSize || 1,
             portfolio_images: body.portfolioImages || [],
             portfolio_descriptions: body.portfolioDescriptions || [],
+            location_lat: body.locationLat ?? null,
+            location_lng: body.locationLng ?? null,
             updated_at: new Date().toISOString(),
         };
 

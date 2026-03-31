@@ -52,6 +52,8 @@ export const vendorApi = {
         teamSize: number;
         portfolioImages: string[];
         portfolioDescriptions: string[];
+        locationLat?: number;
+        locationLng?: number;
     }): Promise<VendorProfile> => {
         const data = await vendorPost({ action: 'upsert-profile', ...profile });
         return data.profile as VendorProfile;
