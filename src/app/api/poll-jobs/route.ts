@@ -3,13 +3,11 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { dispatchNotification } from '@/services/notificationDispatcher';
 import { mapJobRow, mapAgentConfigRow, JobRow, AgentConfigRow } from '@/services/serverMappers';
 import { matchVendorsToJob } from '@/services/vendorMatcher';
-import { Job } from '@/types';
 
 const EXPIRE_DAYS = 45;
 const REMINDER_DAYS = 7;
 const ZOMBIE_ACCEPTED_QUOTE_HOURS = 24;
 const RECENT_VENDOR_HOURS = 24;
-const COMMUNITY_SEED_WINDOW_HOURS = 24;
 const COMMUNITY_FUNDING_THRESHOLD = 0.5;
 
 interface PollStats {
@@ -48,9 +46,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const reminderCutoff = new Date(now.getTime() - REMINDER_DAYS * 24 * 60 * 60 * 1000);
     const zombieQuoteCutoff = new Date(now.getTime() - ZOMBIE_ACCEPTED_QUOTE_HOURS * 60 * 60 * 1000);
     const recentVendorCutoff = new Date(now.getTime() - RECENT_VENDOR_HOURS * 60 * 60 * 1000);
-    const communitySeedCutoff = new Date(now.getTime() - COMMUNITY_SEED_WINDOW_HOURS * 60 * 60 * 1000);
 
-    const { data: openJobs, error: fetchError } = await supabaseAdmin
+    const { data: openJobRows, error: fetchError } = await supabaseAdmin
         .from('jobs')
         .select('*')
         .eq('status', 'OPEN');
@@ -60,67 +57,146 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         return NextResponse.json({ error: fetchError.message }, { status: 500 });
     }
 
-    stats.jobsScanned = openJobs?.length ?? 0;
+    const openJobs = (openJobRows ?? []).map(
+        r => mapJobRow(r as unknown as JobRow & { last_reminded_at: string | null })
+    );
 
-    for (const rawJob of openJobs ?? []) {
-        const job = mapJobRow(rawJob as JobRow & { last_reminded_at: string | null });
-        const createdAt = new Date(job.createdAt);
+    stats.jobsScanned = openJobs.length;
 
-        try {
+    if (openJobs.length > 0) {
+        const jobIds = openJobs.map(j => j.id);
+
+        const { data: acceptedQuotes } = await supabaseAdmin
+            .from('quotes')
+            .select('job_id, created_at')
+            .in('job_id', jobIds)
+            .eq('status', 'ACCEPTED');
+
+        const staleAcceptedJobIds = new Set<string>();
+        const anyAcceptedJobIds = new Set<string>();
+        const quoteCountByJob = new Map<string, number>();
+
+        for (const q of acceptedQuotes ?? []) {
+            anyAcceptedJobIds.add(q.job_id);
+            if (new Date(q.created_at) <= zombieQuoteCutoff) {
+                staleAcceptedJobIds.add(q.job_id);
+            }
+        }
+
+        const { data: allQuotes } = await supabaseAdmin
+            .from('quotes')
+            .select('job_id')
+            .in('job_id', jobIds);
+
+        for (const q of allQuotes ?? []) {
+            quoteCountByJob.set(q.job_id, (quoteCountByJob.get(q.job_id) ?? 0) + 1);
+        }
+
+        const expireIds: string[] = [];
+        const expireReasons: Record<string, string> = {};
+        const reminderIds: string[] = [];
+
+        for (const job of openJobs) {
+            const rawRow = openJobRows!.find(r => (r as Record<string, unknown>).id === job.id) as Record<string, unknown> | undefined;
+            const lastRemindedAt = rawRow?.last_reminded_at as string | null;
+
+            if (staleAcceptedJobIds.has(job.id)) {
+                expireIds.push(job.id);
+                expireReasons[job.id] = 'zombie_accepted_quote';
+                continue;
+            }
+
+            const createdAt = new Date(job.createdAt);
             const isOlderThan45Days = createdAt <= expireCutoff;
 
-            const { count: staleAcceptedCount } = await supabaseAdmin
-                .from('quotes')
-                .select('*', { count: 'exact', head: true })
-                .eq('job_id', rawJob.id)
-                .eq('status', 'ACCEPTED')
-                .lte('created_at', zombieQuoteCutoff.toISOString());
-
-            const isZombie = (staleAcceptedCount ?? 0) > 0;
-
-            if (isZombie) {
-                await expireJob(rawJob.id, job.userId, job.title, 'zombie_accepted_quote', stats);
+            if (isOlderThan45Days && !anyAcceptedJobIds.has(job.id)) {
+                expireIds.push(job.id);
+                expireReasons[job.id] = 'stale_no_activity';
                 continue;
             }
 
-            const { count: anyAcceptedCount } = await supabaseAdmin
-                .from('quotes')
-                .select('*', { count: 'exact', head: true })
-                .eq('job_id', rawJob.id)
-                .eq('status', 'ACCEPTED');
-
-            const hasAcceptedQuote = (anyAcceptedCount ?? 0) > 0;
-
-            if (isOlderThan45Days && !hasAcceptedQuote) {
-                await expireJob(rawJob.id, job.userId, job.title, 'stale_no_activity', stats);
-                continue;
+            const quoteCount = quoteCountByJob.get(job.id) ?? 0;
+            if (createdAt <= reminderCutoff && !lastRemindedAt && quoteCount === 0) {
+                reminderIds.push(job.id);
             }
-
-            if (createdAt <= reminderCutoff && !rawJob.last_reminded_at) {
-                const { count: quoteCount } = await supabaseAdmin
-                    .from('quotes')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('job_id', rawJob.id);
-
-                if ((quoteCount ?? 0) === 0) {
-                    await remindOwner(rawJob.id, job.userId, job.title, stats);
-                }
-            }
-        } catch (err) {
-            const msg = err instanceof Error ? err.message : String(err);
-            stats.errors.push({ context: `job:${rawJob.id}`, error: msg });
         }
+
+        if (expireIds.length > 0) {
+            await supabaseAdmin
+                .from('jobs')
+                .update({ status: 'EXPIRED' })
+                .in('id', expireIds)
+                .eq('status', 'OPEN');
+
+            for (const jobId of expireIds) {
+                const job = openJobs.find(j => j.id === jobId)!;
+                const reason = expireReasons[jobId];
+                const isZombie = reason === 'zombie_accepted_quote';
+
+                await supabaseAdmin.from('agent_actions').insert({
+                    job_id: jobId,
+                    user_id: job.userId,
+                    action_type: 'job_expired',
+                    summary: `Job "${job.title}" automatically expired (reason: ${reason}).`,
+                    details: { reason, expire_days: isZombie ? null : EXPIRE_DAYS },
+                    automated: true,
+                });
+
+                await dispatchNotification({
+                    userId: job.userId,
+                    jobId,
+                    type: 'job_expired',
+                    priority: 'high',
+                    title: 'Job Listing Expired',
+                    message: isZombie
+                        ? `Your job "${job.title}" has been marked expired because an accepted quote has been pending for over ${ZOMBIE_ACCEPTED_QUOTE_HOURS} hours with no follow-through. Repost if you still need this work done.`
+                        : `Your job "${job.title}" has expired after ${EXPIRE_DAYS} days with no activity. Repost it to attract new bids.`,
+                    actionRequired: true,
+                    actionUrl: `/dashboard`,
+                });
+
+                stats.jobsExpired++;
+            }
+        }
+
+        if (reminderIds.length > 0) {
+            await supabaseAdmin
+                .from('jobs')
+                .update({ last_reminded_at: now.toISOString() })
+                .in('id', reminderIds);
+
+            for (const jobId of reminderIds) {
+                const job = openJobs.find(j => j.id === jobId)!;
+
+                await supabaseAdmin.from('agent_actions').insert({
+                    job_id: jobId,
+                    user_id: job.userId,
+                    action_type: 'job_reminder',
+                    summary: `7-day no-quote reminder sent for job "${job.title}".`,
+                    details: { reminder_days: REMINDER_DAYS },
+                    automated: true,
+                });
+
+                await dispatchNotification({
+                    userId: job.userId,
+                    jobId,
+                    type: 'job_reminder',
+                    priority: 'medium',
+                    title: 'Your Job Has No Quotes Yet',
+                    message: `"${job.title}" has been open for ${REMINDER_DAYS} days with no quotes. Consider broadening your criteria, updating the description, or adjusting your budget to attract vendors.`,
+                    actionRequired: false,
+                    actionUrl: `/jobs/${jobId}`,
+                });
+
+                stats.remindersSent++;
+            }
+        }
+
+        await vendorRematchPass(openJobs, recentVendorCutoff, stats);
     }
 
     try {
-        await vendorRematchPass(openJobs ?? [], recentVendorCutoff, stats);
-    } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        stats.errors.push({ context: 'vendor_rematch_pass', error: msg });
-    }
-
-    try {
-        await communityJobSeedPass(communitySeedCutoff, stats);
+        await communityJobSeedPass(stats);
     } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         stats.errors.push({ context: 'community_seed_pass', error: msg });
@@ -142,83 +218,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     });
 }
 
-async function expireJob(
-    jobId: string,
-    ownerId: string,
-    jobTitle: string,
-    reason: string,
-    stats: PollStats,
-): Promise<void> {
-    const { error } = await supabaseAdmin
-        .from('jobs')
-        .update({ status: 'EXPIRED' })
-        .eq('id', jobId)
-        .eq('status', 'OPEN');
-
-    if (error) throw new Error(`expire update: ${error.message}`);
-
-    await supabaseAdmin.from('agent_actions').insert({
-        job_id: jobId,
-        user_id: ownerId,
-        action_type: 'job_expired',
-        summary: `Job "${jobTitle}" automatically expired (reason: ${reason}).`,
-        details: { reason, expire_days: reason === 'stale_no_activity' ? EXPIRE_DAYS : null },
-        automated: true,
-    });
-
-    const isZombie = reason === 'zombie_accepted_quote';
-    await dispatchNotification({
-        userId: ownerId,
-        jobId,
-        type: 'job_expired',
-        priority: 'high',
-        title: 'Job Listing Expired',
-        message: isZombie
-            ? `Your job "${jobTitle}" has been marked expired because an accepted quote has been pending for over ${ZOMBIE_ACCEPTED_QUOTE_HOURS} hours with no follow-through. Repost if you still need this work done.`
-            : `Your job "${jobTitle}" has expired after ${EXPIRE_DAYS} days with no activity. Repost it to attract new bids.`,
-        actionRequired: true,
-        actionUrl: `/dashboard`,
-    });
-
-    stats.jobsExpired++;
-}
-
-async function remindOwner(
-    jobId: string,
-    ownerId: string,
-    jobTitle: string,
-    stats: PollStats,
-): Promise<void> {
-    await supabaseAdmin
-        .from('jobs')
-        .update({ last_reminded_at: new Date().toISOString() })
-        .eq('id', jobId);
-
-    await supabaseAdmin.from('agent_actions').insert({
-        job_id: jobId,
-        user_id: ownerId,
-        action_type: 'job_reminder',
-        summary: `7-day no-quote reminder sent for job "${jobTitle}".`,
-        details: { reminder_days: REMINDER_DAYS },
-        automated: true,
-    });
-
-    await dispatchNotification({
-        userId: ownerId,
-        jobId,
-        type: 'job_reminder',
-        priority: 'medium',
-        title: 'Your Job Has No Quotes Yet',
-        message: `"${jobTitle}" has been open for ${REMINDER_DAYS} days with no quotes. Consider broadening your criteria, updating the description, or adjusting your budget to attract vendors.`,
-        actionRequired: false,
-        actionUrl: `/jobs/${jobId}`,
-    });
-
-    stats.remindersSent++;
-}
-
 async function vendorRematchPass(
-    openJobs: Record<string, unknown>[],
+    openJobs: ReturnType<typeof mapJobRow>[],
     recentVendorCutoff: Date,
     stats: PollStats,
 ): Promise<void> {
@@ -234,25 +235,32 @@ async function vendorRematchPass(
     if (!recentVendorRows || recentVendorRows.length === 0) return;
 
     const recentVendors = recentVendorRows.map((r) => mapAgentConfigRow(r as AgentConfigRow));
+    const jobIds = openJobs.map(j => j.id);
+    const vendorUserIds = recentVendors.map(v => v.userId);
 
-    for (const rawJob of openJobs) {
-        const job = mapJobRow(rawJob as unknown as JobRow & { last_reminded_at: string | null });
+    const { data: existingRematchRows } = await supabaseAdmin
+        .from('agent_actions')
+        .select('job_id, user_id')
+        .in('job_id', jobIds)
+        .in('user_id', vendorUserIds)
+        .eq('action_type', 'vendor_rematch')
+        .gte('created_at', recentVendorCutoff.toISOString());
 
+    const existingRematchSet = new Set<string>(
+        (existingRematchRows ?? []).map(r => `${r.job_id}:${r.user_id}`)
+    );
+
+    for (const job of openJobs) {
         try {
             const matches = await matchVendorsToJob(job, recentVendors);
 
             if (matches.length === 0) continue;
 
             for (const { config: vc, score, reasons } of matches) {
-                const { count: existingAction } = await supabaseAdmin
-                    .from('agent_actions')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('job_id', job.id)
-                    .eq('user_id', vc.userId)
-                    .eq('action_type', 'vendor_rematch')
-                    .gte('created_at', recentVendorCutoff.toISOString());
+                const dedupeKey = `${job.id}:${vc.userId}`;
+                if (existingRematchSet.has(dedupeKey)) continue;
 
-                if ((existingAction ?? 0) > 0) continue;
+                existingRematchSet.add(dedupeKey);
 
                 await supabaseAdmin.from('agent_actions').insert({
                     job_id: job.id,
@@ -278,58 +286,71 @@ async function vendorRematchPass(
             }
         } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
-            stats.errors.push({ context: `rematch:job:${rawJob.id}`, error: msg });
+            stats.errors.push({ context: `rematch:job:${job.id}`, error: msg });
         }
     }
 }
 
-async function communityJobSeedPass(
-    windowCutoff: Date,
-    stats: PollStats,
-): Promise<void> {
+async function communityJobSeedPass(stats: PollStats): Promise<void> {
+    const { data: lastRun } = await supabaseAdmin
+        .from('poll_runs')
+        .select('run_at')
+        .order('run_at', { ascending: false })
+        .limit(1)
+        .single();
+
+    const lastRunAt = lastRun?.run_at ? new Date(lastRun.run_at) : new Date(0);
+
     const { data: recentProjects } = await supabaseAdmin
         .from('community_projects')
         .select('id, creator_id, title, description, category, location, goal_amount, current_funding')
-        .gte('created_at', windowCutoff.toISOString())
-        .neq('status', 'CANCELLED');
+        .neq('status', 'CANCELLED')
+        .gte('created_at', lastRunAt.toISOString());
 
     const { data: fundingProjects } = await supabaseAdmin
         .from('community_projects')
         .select('id, creator_id, title, description, category, location, goal_amount, current_funding')
         .neq('status', 'CANCELLED')
-        .lt('created_at', windowCutoff.toISOString());
+        .lt('created_at', lastRunAt.toISOString());
+
+    const recentSet = new Set((recentProjects ?? []).map(p => p.id));
+
+    const fundingCrossed = (fundingProjects ?? []).filter(p => {
+        if (!p.goal_amount || p.goal_amount <= 0) return false;
+        return (p.current_funding / p.goal_amount) >= COMMUNITY_FUNDING_THRESHOLD;
+    });
 
     const allProjects = [
         ...(recentProjects ?? []),
-        ...(fundingProjects ?? []).filter(p => {
-            if (!p.goal_amount || p.goal_amount <= 0) return false;
-            return (p.current_funding / p.goal_amount) >= COMMUNITY_FUNDING_THRESHOLD;
-        }),
+        ...fundingCrossed.filter(p => !recentSet.has(p.id)),
     ];
 
-    const uniqueProjects = Array.from(new Map(allProjects.map(p => [p.id, p])).values());
+    if (allProjects.length === 0) return;
 
-    for (const cp of uniqueProjects) {
+    const projectIds = allProjects.map(p => p.id);
+    const { data: linkedJobs } = await supabaseAdmin
+        .from('jobs')
+        .select('community_project_id')
+        .in('community_project_id', projectIds);
+
+    const alreadySeeded = new Set((linkedJobs ?? []).map(j => j.community_project_id));
+
+    const categoryMap: Record<string, string> = {
+        'Parks & Recreation': 'Home Services',
+        'Infrastructure': 'Commercial Construction',
+        'Education': 'Professional Services',
+        'Arts & Culture': 'Events & Entertainment',
+        'Environment': 'Home Services',
+        'Public Safety': 'Commercial Construction',
+        'Community Spaces': 'Commercial Construction',
+        'Open Source': 'Technology',
+        'Other': 'Other',
+    };
+
+    for (const cp of allProjects) {
+        if (alreadySeeded.has(cp.id)) continue;
+
         try {
-            const { count: existingCount } = await supabaseAdmin
-                .from('jobs')
-                .select('*', { count: 'exact', head: true })
-                .eq('community_project_id', cp.id);
-
-            if ((existingCount ?? 0) > 0) continue;
-
-            const categoryMap: Record<string, string> = {
-                'Parks & Recreation': 'Home Services',
-                'Infrastructure': 'Commercial Construction',
-                'Education': 'Professional Services',
-                'Arts & Culture': 'Events & Entertainment',
-                'Environment': 'Home Services',
-                'Public Safety': 'Commercial Construction',
-                'Community Spaces': 'Commercial Construction',
-                'Open Source': 'Technology',
-                'Other': 'Other',
-            };
-
             const industryVertical = categoryMap[cp.category] || 'Other';
 
             const { error: insertError } = await supabaseAdmin.from('jobs').insert({
