@@ -118,13 +118,9 @@ export function matchVendorsToJob(
                 else if (dist <= radiusLimit * 0.5) { score += 15; reasons.push('local_close'); }
                 else { score += 10; reasons.push('local_within_radius'); }
             } else {
-                if (vc.maxDistance && vc.maxDistance <= radiusLimit) {
-                    score += 10;
-                    reasons.push('local_tight_service_area');
-                } else {
-                    score += 5;
-                    reasons.push('local_request_no_vendor_coords');
-                }
+                // Vendor has no location coordinates — cannot verify they are within the
+                // required radius, so hard-exclude them from local matching.
+                continue;
             }
         }
 

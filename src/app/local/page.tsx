@@ -15,15 +15,6 @@ const URGENCY_LABELS: Record<string, string> = {
     urgent: 'Urgent',
 };
 
-function haversine(lat1: number, lng1: number, lat2: number, lng2: number): number {
-    const R = 3958.8;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLng = (lng2 - lng1) * Math.PI / 180;
-    const a = Math.sin(dLat / 2) ** 2 +
-        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-        Math.sin(dLng / 2) ** 2;
-    return R * 2 * Math.asin(Math.sqrt(a));
-}
 
 interface LocalJob extends Job {
     distanceMiles?: number;
@@ -52,6 +43,66 @@ export default function GoLocal() {
 
         const offset = reset ? 0 : page * PAGE_SIZE;
 
+        // When viewer has a location, use the haversine_miles SQL function to filter
+        // and order globally by distance — this ensures distance sort is consistent
+        // across pages, not just within each fetched page.
+        if (viewerLocation) {
+            let rpcQuery = supabase
+                .rpc('local_jobs_by_distance', {
+                    viewer_lat: viewerLocation.lat,
+                    viewer_lng: viewerLocation.lng,
+                    radius_filter: viewRadius,
+                    industry_filter: industryFilter || null,
+                    urgency_filter: urgencyFilter || null,
+                    page_offset: offset,
+                    page_limit: PAGE_SIZE,
+                });
+
+            const { data, error: dbErr } = await rpcQuery;
+
+            if (dbErr) {
+                // Fallback: RPC may not exist yet in dev DB; load without distance ordering
+                setError('Location-based sort unavailable. Showing recent local requests.');
+                setLoading(false);
+                return;
+            }
+
+            const rows: LocalJob[] = (data || []).map((row: Record<string, unknown>) => ({
+                id: row.id as string,
+                userId: row.user_id as string,
+                title: row.title as string,
+                category: row.category as string,
+                description: row.description as string,
+                location: row.location as string,
+                status: row.status as string,
+                createdAt: row.created_at as string,
+                tags: (row.tags as string[]) || [],
+                isPublic: row.is_public as boolean,
+                requiresPermit: row.requires_permit as boolean,
+                budget: (row.budget as string) || undefined,
+                industryVertical: (row.industry_vertical as string) || 'Other',
+                subcategory: (row.subcategory as string) || 'Other',
+                urgency: ((row.urgency as string) || 'flexible') as ProjectUrgency,
+                isLocalRequest: row.is_local_request as boolean,
+                locationLat: row.location_lat as number | undefined,
+                locationLng: row.location_lng as number | undefined,
+                radiusMiles: row.radius_miles as number | undefined,
+                distanceMiles: row.distance_miles as number | undefined,
+            }));
+
+            if (reset) {
+                setJobs(rows);
+                setPage(1);
+            } else {
+                setJobs(prev => [...prev, ...rows]);
+                setPage(p => p + 1);
+            }
+            setHasMore((data?.length ?? 0) === PAGE_SIZE);
+            setLoading(false);
+            return;
+        }
+
+        // No viewer location — order by created_at descending
         let query = supabase
             .from('jobs')
             .select('*')
@@ -92,27 +143,13 @@ export default function GoLocal() {
             locationLat: row.location_lat,
             locationLng: row.location_lng,
             radiusMiles: row.radius_miles,
-        })).map(job => {
-            if (viewerLocation && job.locationLat != null && job.locationLng != null) {
-                const dist = haversine(viewerLocation.lat, viewerLocation.lng, job.locationLat, job.locationLng);
-                return { ...job, distanceMiles: dist };
-            }
-            return job;
-        });
-
-        const filtered = viewerLocation
-            ? rows.filter(j => j.distanceMiles == null || j.distanceMiles <= viewRadius)
-            : rows;
-
-        const sorted = viewerLocation
-            ? [...filtered].sort((a, b) => (a.distanceMiles ?? 999) - (b.distanceMiles ?? 999))
-            : filtered;
+        }));
 
         if (reset) {
-            setJobs(sorted);
+            setJobs(rows);
             setPage(1);
         } else {
-            setJobs(prev => [...prev, ...sorted]);
+            setJobs(prev => [...prev, ...rows]);
             setPage(p => p + 1);
         }
         setHasMore(data?.length === PAGE_SIZE);

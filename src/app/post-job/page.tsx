@@ -48,6 +48,7 @@ export default function PostJob() {
     const [isLocalRequest, setIsLocalRequest] = useState(false);
     const [localLocation, setLocalLocation] = useState<ResolvedLocation | null>(null);
     const [radiusMiles, setRadiusMiles] = useState(10);
+    const [localLocationError, setLocalLocationError] = useState('');
 
     const subcategories = (INDUSTRY_SUBCATEGORIES as Record<string, string[]>)[formData.industryVertical] || ['Other'];
     const isCustomIndustry = formData.industryVertical === 'Other';
@@ -71,6 +72,11 @@ export default function PostJob() {
         e.preventDefault();
         if (!user) return;
 
+        if (isLocalRequest && !localLocation) {
+            setLocalLocationError('Please set your location before posting a local request.');
+            return;
+        }
+        setLocalLocationError('');
         setLoading(true);
 
         const tagList = [
@@ -362,7 +368,12 @@ export default function PostJob() {
 
                             <div className={styles.inputGroup}>
                                 <label>Your Location</label>
-                                <LocationResolver value={localLocation} onChange={setLocalLocation} />
+                                <LocationResolver value={localLocation} onChange={loc => { setLocalLocation(loc); setLocalLocationError(''); }} />
+                                {localLocationError && (
+                                    <p style={{ color: 'var(--color-error, #f87171)', fontSize: '0.85rem', marginTop: '0.25rem' }}>
+                                        {localLocationError}
+                                    </p>
+                                )}
                             </div>
 
                             <div className={styles.inputGroup}>
