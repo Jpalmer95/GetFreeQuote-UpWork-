@@ -13,8 +13,8 @@ interface PollRunRow {
     duration_ms: number | null;
     jobs_scanned: number;
     jobs_expired: number;
-    jobs_reminded: number;
-    jobs_rematched: number;
+    reminders_sent: number;
+    vendor_rematches: number;
     community_seeds: number;
     errors: { context: string; error: string }[];
     triggered_by: string;
@@ -115,8 +115,8 @@ export default function AdminPolling() {
     }
 
     const totalExpired = runs.reduce((s, r) => s + (r.jobs_expired ?? 0), 0);
-    const totalReminded = runs.reduce((s, r) => s + (r.jobs_reminded ?? 0), 0);
-    const totalRematched = runs.reduce((s, r) => s + (r.jobs_rematched ?? 0), 0);
+    const totalReminded = runs.reduce((s, r) => s + (r.reminders_sent ?? 0), 0);
+    const totalRematched = runs.reduce((s, r) => s + (r.vendor_rematches ?? 0), 0);
     const totalSeeds = runs.reduce((s, r) => s + (r.community_seeds ?? 0), 0);
 
     return (
@@ -153,8 +153,8 @@ export default function AdminPolling() {
                     <div className={styles.resultBanner}>
                         <strong>Poll completed</strong> — Scanned: {lastResult.jobsScanned as number},
                         Expired: {lastResult.jobsExpired as number},
-                        Reminded: {lastResult.jobsReminded as number},
-                        Re-matched: {lastResult.jobsRematched as number},
+                        Reminded: {lastResult.remindersSent as number},
+                        Re-matched: {lastResult.vendorRematches as number},
                         Community seeds: {lastResult.communitySeeds as number}
                         {lastResult.durationMs ? ` (${lastResult.durationMs as number}ms)` : ''}
                     </div>
@@ -221,10 +221,10 @@ export default function AdminPolling() {
                                             <strong>{run.jobs_expired ?? 0}</strong> expired
                                         </span>
                                         <span className={styles.runStat}>
-                                            <strong>{run.jobs_reminded ?? 0}</strong> reminded
+                                            <strong>{run.reminders_sent ?? 0}</strong> reminded
                                         </span>
                                         <span className={styles.runStat}>
-                                            <strong>{run.jobs_rematched ?? 0}</strong> re-matched
+                                            <strong>{run.vendor_rematches ?? 0}</strong> re-matched
                                         </span>
                                         <span className={styles.runStat}>
                                             <strong>{run.community_seeds ?? 0}</strong> seeds

@@ -951,6 +951,11 @@
     transition: background 0.2s;
 }
 
-.repostBtn:hover {
+.repostBtn:not(:disabled):hover {
     background: rgba(239, 68, 68, 0.3);
+}
+
+.repostBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }

@@ -14,8 +14,8 @@ const COMMUNITY_FUNDING_THRESHOLD = 0.5;
 interface PollStats {
     jobsScanned: number;
     jobsExpired: number;
-    jobsReminded: number;
-    jobsRematched: number;
+    remindersSent: number;
+    vendorRematches: number;
     communitySeeds: number;
     errors: { context: string; error: string }[];
 }
@@ -36,8 +36,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const stats: PollStats = {
         jobsScanned: 0,
         jobsExpired: 0,
-        jobsReminded: 0,
-        jobsRematched: 0,
+        remindersSent: 0,
+        vendorRematches: 0,
         communitySeeds: 0,
         errors: [],
     };
@@ -66,24 +66,37 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         const createdAt = new Date(job.createdAt);
 
         try {
-            const isExpiredByAge = createdAt <= expireCutoff;
+            const isOlderThan45Days = createdAt <= expireCutoff;
 
             let isZombie = false;
-            if (!isExpiredByAge) {
-                const { count: acceptedCount } = await supabaseAdmin
+            const { count: acceptedCount } = await supabaseAdmin
+                .from('quotes')
+                .select('*', { count: 'exact', head: true })
+                .eq('job_id', rawJob.id)
+                .eq('status', 'ACCEPTED');
+
+            const hasAcceptedQuote = (acceptedCount ?? 0) > 0;
+
+            if (isOlderThan45Days && !hasAcceptedQuote) {
+                await expireJob(rawJob.id, job.userId, job.title, 'stale_no_activity', stats);
+                continue;
+            }
+
+            if (!isOlderThan45Days && hasAcceptedQuote) {
+                const { count: recentAccepted } = await supabaseAdmin
                     .from('quotes')
                     .select('*', { count: 'exact', head: true })
                     .eq('job_id', rawJob.id)
                     .eq('status', 'ACCEPTED')
                     .lte('created_at', zombieQuoteCutoff.toISOString());
 
-                if ((acceptedCount ?? 0) > 0) {
+                if ((recentAccepted ?? 0) > 0) {
                     isZombie = true;
                 }
             }
 
-            if (isExpiredByAge || isZombie) {
-                await expireJob(rawJob.id, job.userId, job.title, isZombie ? 'zombie_accepted_quote' : 'stale_no_activity', stats);
+            if (isZombie) {
+                await expireJob(rawJob.id, job.userId, job.title, 'zombie_accepted_quote', stats);
                 continue;
             }
 
@@ -126,8 +139,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         durationMs,
         jobsScanned: stats.jobsScanned,
         jobsExpired: stats.jobsExpired,
-        jobsReminded: stats.jobsReminded,
-        jobsRematched: stats.jobsRematched,
+        remindersSent: stats.remindersSent,
+        vendorRematches: stats.vendorRematches,
         communitySeeds: stats.communitySeeds,
         errors: stats.errors,
     });
@@ -205,7 +218,7 @@ async function remindOwner(
         actionUrl: `/jobs/${jobId}`,
     });
 
-    stats.jobsReminded++;
+    stats.remindersSent++;
 }
 
 async function vendorRematchPass(
@@ -255,7 +268,7 @@ async function vendorRematchPass(
                     actionUrl: `/vendor`,
                 });
 
-                stats.jobsRematched++;
+                stats.vendorRematches++;
             }
         } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
@@ -372,8 +385,8 @@ async function writePollRun(stats: PollStats, durationMs: number): Promise<strin
             duration_ms: durationMs,
             jobs_scanned: stats.jobsScanned,
             jobs_expired: stats.jobsExpired,
-            jobs_reminded: stats.jobsReminded,
-            jobs_rematched: stats.jobsRematched,
+            reminders_sent: stats.remindersSent,
+            vendor_rematches: stats.vendorRematches,
             community_seeds: stats.communitySeeds,
             errors: stats.errors,
             triggered_by: 'api',

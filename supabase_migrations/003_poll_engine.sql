@@ -22,8 +22,8 @@ CREATE TABLE IF NOT EXISTS public.poll_runs (
     duration_ms integer,
     jobs_scanned integer DEFAULT 0,
     jobs_expired integer DEFAULT 0,
-    jobs_reminded integer DEFAULT 0,
-    jobs_rematched integer DEFAULT 0,
+    reminders_sent integer DEFAULT 0,
+    vendor_rematches integer DEFAULT 0,
     community_seeds integer DEFAULT 0,
     errors jsonb DEFAULT '[]'::jsonb,
     triggered_by text DEFAULT 'cron'

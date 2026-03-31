@@ -158,8 +158,8 @@ export interface PollRun {
     finishedAt?: string;
     jobsScanned: number;
     jobsExpired: number;
-    jobsReminded: number;
-    jobsRematched: number;
+    remindersSent: number;
+    vendorRematches: number;
     errors: unknown[];
     triggeredBy: string;
 }

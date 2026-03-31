@@ -68,6 +68,30 @@ export default function Dashboard() {
     const [sendingReply, setSendingReply] = useState(false);
     const [showComparison, setShowComparison] = useState(false);
     const [vendorInfo, setVendorInfo] = useState<Record<string, { rating?: number; isVerified: boolean }>>({});
+    const [reposting, setReposting] = useState(false);
+
+    const handleRepost = useCallback(async (jobId: string) => {
+        if (reposting) return;
+        setReposting(true);
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+            if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+            const res = await fetch('/api/repost-job', {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({ jobId }),
+            });
+            const data = await res.json();
+            if (res.ok && data.jobId) {
+                router.push(`/jobs/${data.jobId}`);
+            }
+        } catch (err) {
+            console.error('Repost failed:', err);
+        } finally {
+            setReposting(false);
+        }
+    }, [reposting, router]);
 
     const handleSendReply = useCallback(async () => {
         if (!selectedJob || !replyText.trim() || sendingReply) return;
@@ -350,16 +374,20 @@ export default function Dashboard() {
 
                             {selectedJob.status === 'EXPIRED' && (
                                 <div className={styles.expiredBanner}>
-                                    <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
+                                    <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ flexShrink: 0 }}>
                                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd"/>
                                     </svg>
                                     <div className={styles.expiredBannerContent}>
                                         <strong>This listing has expired</strong>
-                                        <span>No bids were received in 30 days. Repost this job to attract new vendors.</span>
+                                        <span>No bids were received in 45 days. Repost this job to attract new vendors.</span>
                                     </div>
-                                    <Link href="/post-job" className={styles.repostBtn}>
-                                        Repost Job
-                                    </Link>
+                                    <button
+                                        className={styles.repostBtn}
+                                        onClick={() => handleRepost(selectedJob.id)}
+                                        disabled={reposting}
+                                    >
+                                        {reposting ? 'Reposting...' : 'Repost Job'}
+                                    </button>
                                 </div>
                             )}
 
