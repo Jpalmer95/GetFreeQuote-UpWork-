@@ -36,8 +36,12 @@ export default function GoLocal() {
     const [industryFilter, setIndustryFilter] = useState('');
     const [urgencyFilter, setUrgencyFilter] = useState('');
     const loaderRef = useRef<HTMLDivElement | null>(null);
+    const loadingRef = useRef(false);
+    const loadJobsRef = useRef<((reset: boolean) => Promise<void>) | null>(null);
 
     const loadJobs = useCallback(async (reset: boolean = false) => {
+        if (loadingRef.current) return;
+        loadingRef.current = true;
         setLoading(true);
         setError(null);
 
@@ -90,6 +94,7 @@ export default function GoLocal() {
                     setPage(p => p + 1);
                 }
                 setHasMore((rpcData?.length ?? 0) === PAGE_SIZE);
+                loadingRef.current = false;
                 setLoading(false);
                 return;
             }
@@ -114,6 +119,7 @@ export default function GoLocal() {
 
         if (fallbackErr) {
             setError('Could not load local requests. Please try again.');
+            loadingRef.current = false;
             setLoading(false);
             return;
         }
@@ -148,8 +154,13 @@ export default function GoLocal() {
             setPage(p => p + 1);
         }
         setHasMore((fallbackData?.length ?? 0) === PAGE_SIZE);
+        loadingRef.current = false;
         setLoading(false);
     }, [page, viewerLocation, viewRadius, industryFilter, urgencyFilter]);
+
+    useEffect(() => {
+        loadJobsRef.current = loadJobs;
+    }, [loadJobs]);
 
     useEffect(() => {
         loadJobs(true);
@@ -157,12 +168,15 @@ export default function GoLocal() {
 
     useEffect(() => {
         if (!loaderRef.current || !hasMore) return;
+        const sentinel = loaderRef.current;
         const obs = new IntersectionObserver(entries => {
-            if (entries[0].isIntersecting && !loading) loadJobs(false);
+            if (entries[0].isIntersecting && !loadingRef.current) {
+                loadJobsRef.current?.(false);
+            }
         }, { rootMargin: '200px' });
-        obs.observe(loaderRef.current);
+        obs.observe(sentinel);
         return () => obs.disconnect();
-    }, [loaderRef, hasMore, loading, loadJobs]);
+    }, [hasMore]);
 
     const subcats = industryFilter
         ? (INDUSTRY_SUBCATEGORIES as Record<string, string[]>)[industryFilter] || []
