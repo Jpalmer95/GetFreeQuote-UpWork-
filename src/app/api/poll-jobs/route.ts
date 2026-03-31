@@ -313,7 +313,9 @@ async function communityJobSeedPass(stats: PollStats): Promise<Record<string, nu
         .limit(1)
         .maybeSingle();
 
-    const lastRunAt = lastRun?.run_at ? new Date(lastRun.run_at) : new Date(0);
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const rawLastRunAt = lastRun?.run_at ? new Date(lastRun.run_at) : null;
+    const lastRunAt = rawLastRunAt ?? twentyFourHoursAgo;
     const previousSnapshot: Record<string, number> = (lastRun?.funding_snapshot as Record<string, number>) ?? {};
 
     const { data: allProjects } = await supabaseAdmin

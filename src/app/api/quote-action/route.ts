@@ -61,10 +61,14 @@ export async function POST(request: NextRequest) {
         }
 
         const newStatus = action === 'accept' ? 'ACCEPTED' : 'REJECTED';
+        const updateFields: Record<string, unknown> = { status: newStatus };
+        if (action === 'accept') {
+            updateFields.accepted_at = new Date().toISOString();
+        }
 
         const { data: quote, error: quoteError } = await supabaseAdmin
             .from('quotes')
-            .update({ status: newStatus })
+            .update(updateFields)
             .eq('id', quoteId)
             .select('*')
             .single();

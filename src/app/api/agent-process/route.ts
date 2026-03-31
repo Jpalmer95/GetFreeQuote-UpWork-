@@ -404,7 +404,7 @@ export async function POST(request: NextRequest) {
 
                     if (customerConfig?.autoApproveBelow && amount <= customerConfig.autoApproveBelow) {
                         await supabaseAdmin.from('quotes')
-                            .update({ status: 'ACCEPTED' })
+                            .update({ status: 'ACCEPTED', accepted_at: new Date().toISOString() })
                             .eq('id', insertedQuote.id);
 
                         await supabaseAdmin.from('jobs')
