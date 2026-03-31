@@ -203,7 +203,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             }
         }
 
-        await vendorRematchPass(openJobs, recentVendorCutoff, stats);
+        const expireIdSet = new Set(expireIds);
+        const stillOpenJobs = openJobs.filter(j => !expireIdSet.has(j.id));
+        await vendorRematchPass(stillOpenJobs, recentVendorCutoff, stats);
     }
 
     let fundingSnapshot: Record<string, number> = {};
