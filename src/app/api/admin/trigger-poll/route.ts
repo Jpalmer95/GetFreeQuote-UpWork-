@@ -30,6 +30,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${serviceKey}`,
         },
+        body: JSON.stringify({ triggered_by: 'admin_manual' }),
     });
 
     const data = await pollRes.json();

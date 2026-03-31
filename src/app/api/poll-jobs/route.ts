@@ -31,6 +31,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    let triggeredBy = 'api';
+    try {
+        const body = await req.json() as { triggered_by?: string };
+        if (body?.triggered_by) triggeredBy = body.triggered_by;
+    } catch {
+        /* no body is fine */
+    }
+
     const runStart = Date.now();
     const stats: PollStats = {
         jobsScanned: 0,
@@ -53,7 +61,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         .eq('status', 'OPEN');
 
     if (fetchError) {
-        await writePollRun(stats, Date.now() - runStart, {});
+        await writePollRun(stats, Date.now() - runStart, {}, triggeredBy);
         return NextResponse.json({ error: fetchError.message }, { status: 500 });
     }
 
@@ -207,7 +215,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     const durationMs = Date.now() - runStart;
-    const runId = await writePollRun(stats, durationMs, fundingSnapshot);
+    const runId = await writePollRun(stats, durationMs, fundingSnapshot, triggeredBy);
 
     return NextResponse.json({
         success: true,
@@ -415,6 +423,7 @@ async function writePollRun(
     stats: PollStats,
     durationMs: number,
     fundingSnapshot: Record<string, number>,
+    triggeredBy: string,
 ): Promise<string | null> {
     const { data, error } = await supabaseAdmin
         .from('poll_runs')
@@ -427,7 +436,7 @@ async function writePollRun(
             vendor_rematches: stats.vendorRematches,
             community_seeds: stats.communitySeeds,
             errors: stats.errors,
-            triggered_by: 'api',
+            triggered_by: triggeredBy,
             funding_snapshot: fundingSnapshot,
         })
         .select('id')
