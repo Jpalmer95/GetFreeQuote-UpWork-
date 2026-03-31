@@ -43,7 +43,7 @@ export const db = {
         subcategory?: string;
         urgency?: string;
     }): Promise<Job[]> => {
-        let query = supabase.from('jobs').select('*').eq('is_public', true).in('status', ['OPEN']);
+        let query = supabase.from('jobs').select('*').eq('is_public', true).eq('status', 'OPEN');
 
         if (filters.category) {
             query = query.eq('category', filters.category);

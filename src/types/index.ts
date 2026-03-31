@@ -68,7 +68,7 @@ export interface Job {
     category: JobCategory;
     description: string;
     location: string;
-    status: 'OPEN' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'EXPIRED';
+    status: 'OPEN' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'EXPIRED' | 'DRAFT';
     createdAt: string;
     tags: string[];
     isPublic: boolean;

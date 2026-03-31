@@ -8,23 +8,23 @@ ALTER TABLE public.jobs
 
 ALTER TABLE public.jobs
     ADD CONSTRAINT jobs_status_check CHECK (status IN (
-        'OPEN', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'EXPIRED'
+        'OPEN', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'EXPIRED', 'DRAFT'
     ));
 
--- 2. Add last_reminded_at and reminder_count columns to jobs
+-- 2. Add last_reminded_at column to jobs (used to ensure reminder is sent only once per job)
 ALTER TABLE public.jobs
-    ADD COLUMN IF NOT EXISTS last_reminded_at timestamp with time zone,
-    ADD COLUMN IF NOT EXISTS reminder_count integer DEFAULT 0;
+    ADD COLUMN IF NOT EXISTS last_reminded_at timestamp with time zone;
 
 -- 3. Create poll_runs audit table
 CREATE TABLE IF NOT EXISTS public.poll_runs (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-    started_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
-    finished_at timestamp with time zone,
+    run_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+    duration_ms integer,
     jobs_scanned integer DEFAULT 0,
     jobs_expired integer DEFAULT 0,
     jobs_reminded integer DEFAULT 0,
     jobs_rematched integer DEFAULT 0,
+    community_seeds integer DEFAULT 0,
     errors jsonb DEFAULT '[]'::jsonb,
     triggered_by text DEFAULT 'cron'
 );
@@ -59,3 +59,6 @@ CREATE INDEX IF NOT EXISTS jobs_status_created_at_idx ON public.jobs (status, cr
 
 CREATE INDEX IF NOT EXISTS jobs_last_reminded_at_idx ON public.jobs (last_reminded_at)
     WHERE status = 'OPEN';
+
+-- 7. Index for poll_runs (most recent first)
+CREATE INDEX IF NOT EXISTS poll_runs_run_at_idx ON public.poll_runs (run_at DESC);
