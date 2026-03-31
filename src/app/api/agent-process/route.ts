@@ -255,8 +255,12 @@ export async function POST(request: NextRequest) {
                 `Vendor agent matched to project "${job.title}" (score: ${matchInfo?.score || 0})`,
                 { industry: job.industryVertical, vendorSpecialties: vc.specialties, matchScore: matchInfo?.score, matchReasons: matchInfo?.reasons }, vc.id);
 
-            await createNotification(vc.userId, job.id, 'job_match', 'medium', 'New Project Match',
-                `A new ${job.industryVertical} project "${job.title}" matches your expertise.`, false, '/vendor');
+            const localNote = job.isLocalRequest
+                ? ` This is a local request within ${job.radiusMiles ?? 25} mi.`
+                : '';
+            await createNotification(vc.userId, job.id, 'job_match', 'medium',
+                job.isLocalRequest ? 'New Local Request Match' : 'New Project Match',
+                `A new ${job.industryVertical} project "${job.title}" matches your expertise.${localNote}`, false, '/vendor');
 
             if (vc.autoQuote) {
                 const hours = estimateHours(job);

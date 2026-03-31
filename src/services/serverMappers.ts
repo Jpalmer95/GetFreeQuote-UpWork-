@@ -25,6 +25,10 @@ export interface JobRow {
     timeline_end: string | null;
     community_project_id: string | null;
     last_reminded_at: string | null;
+    is_local_request: boolean | null;
+    location_lat: number | null;
+    location_lng: number | null;
+    radius_miles: number | null;
 }
 
 export interface AgentConfigRow {
@@ -122,6 +126,10 @@ export function mapJobRow(row: JobRow): Job {
         timelineStart: row.timeline_start || undefined,
         timelineEnd: row.timeline_end || undefined,
         communityProjectId: row.community_project_id || undefined,
+        isLocalRequest: row.is_local_request ?? false,
+        locationLat: row.location_lat ?? undefined,
+        locationLng: row.location_lng ?? undefined,
+        radiusMiles: row.radius_miles ?? undefined,
     };
 }
 

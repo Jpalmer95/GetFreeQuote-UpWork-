@@ -176,6 +176,11 @@ export default function VendorDashboard() {
                                                 <span className={styles.liveDot} />
                                                 <span className={styles.liveLabel}>Live</span>
                                             </div>
+                                            {job.isLocalRequest && (
+                                                <span className={styles.localBadge}>
+                                                    📍 Local · {job.radiusMiles ?? 25} mi
+                                                </span>
+                                            )}
                                             <span className={styles.tag}>{job.industryVertical}</span>
                                         </div>
                                         <h4>{job.title}</h4>

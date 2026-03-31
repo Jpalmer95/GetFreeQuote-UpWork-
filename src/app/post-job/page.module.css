@@ -199,3 +199,48 @@
         font-size: 0.88rem;
     }
 }
+
+.localSection {
+    border: 1px solid rgba(99,102,241,0.3);
+    border-radius: 10px;
+    padding: 16px;
+    background: rgba(99,102,241,0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.localHeader {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.localBadge {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.04em;
+}
+
+.localDesc {
+    font-size: 0.82rem;
+    color: #94a3b8;
+}
+
+.radiusSlider {
+    width: 100%;
+    margin: 4px 0;
+    accent-color: #6366f1;
+    cursor: pointer;
+}
+
+.radiusLabels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: #6b7280;
+}

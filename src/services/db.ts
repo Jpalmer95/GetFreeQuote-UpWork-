@@ -120,6 +120,10 @@ export const db = {
             timeline_start: job.timelineStart,
             timeline_end: job.timelineEnd,
             community_project_id: job.communityProjectId || null,
+            is_local_request: job.isLocalRequest ?? false,
+            location_lat: job.locationLat ?? null,
+            location_lng: job.locationLng ?? null,
+            radius_miles: job.radiusMiles ?? null,
             status: 'OPEN'
         }).select().single();
 

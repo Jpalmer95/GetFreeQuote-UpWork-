@@ -6,6 +6,16 @@ export interface VendorMatch {
     reasons: string[];
 }
 
+function haversineMiles(lat1: number, lng1: number, lat2: number, lng2: number): number {
+    const R = 3958.8;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLng / 2) ** 2;
+    return R * 2 * Math.asin(Math.sqrt(a));
+}
+
 export function matchVendorsToJob(
     job: Job,
     vendors: AgentConfig[],
@@ -95,6 +105,16 @@ export function matchVendorsToJob(
 
         if (vc.autoQuote) { score += 10; reasons.push('auto_quote_enabled'); }
         if (vc.autoRespond) { score += 5; reasons.push('auto_respond_enabled'); }
+
+        if (job.isLocalRequest) {
+            if (vc.maxDistance && vc.maxDistance <= (job.radiusMiles ?? 25)) {
+                score += 15;
+                reasons.push('local_tight_radius');
+            } else {
+                score += 5;
+                reasons.push('local_request');
+            }
+        }
 
         matched.push({ config: vc, score, reasons });
     }

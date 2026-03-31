@@ -36,7 +36,7 @@ export const INDUSTRY_VERTICALS: KnownIndustryVertical[] = [
 export const INDUSTRY_SUBCATEGORIES: Record<KnownIndustryVertical, string[]> = {
     'Home Services': ['Plumbing', 'Electrical', 'HVAC', 'Roofing', 'Painting', 'Landscaping', 'Cleaning', 'Pest Control', 'Handyman', 'Other'],
     'Commercial Construction': ['General Contracting', 'Concrete & Foundation', 'Steel & Framing', 'Electrical Systems', 'Mechanical / HVAC', 'Plumbing Systems', 'Interior Finish', 'Demolition', 'Site Work', 'Other'],
-    'Gig Work': ['Delivery', 'Moving & Hauling', 'Assembly', 'Personal Shopping', 'Pet Care', 'Tutoring', 'Photography', 'Videography', 'Other'],
+    'Gig Work': ['Delivery', 'Moving & Hauling', 'Assembly', 'Personal Shopping', 'Pet Care', 'Tutoring', 'Photography', 'Videography', 'Food & Beverage Coverage', 'Roadside Assistance', 'Same-Day Labor', 'Grocery/Errand Run', 'Event Staff', 'Other'],
     'Events & Entertainment': ['Catering', 'DJ / Music', 'Photography', 'Videography', 'Venue Rental', 'Event Planning', 'Floral Design', 'Lighting & AV', 'Other'],
     'Trade Labor': ['Welding', 'Carpentry', 'Masonry', 'Tile Work', 'Drywall', 'Insulation', 'Glazing', 'Flooring', 'Other'],
     'Day Labor': ['General Labor', 'Warehouse', 'Construction Help', 'Yard Work', 'Clean-Up', 'Loading / Unloading', 'Other'],
@@ -83,6 +83,10 @@ export interface Job {
     timelineStart?: string;
     timelineEnd?: string;
     communityProjectId?: string;
+    isLocalRequest?: boolean;
+    locationLat?: number;
+    locationLng?: number;
+    radiusMiles?: number;
 }
 
 export interface Quote {

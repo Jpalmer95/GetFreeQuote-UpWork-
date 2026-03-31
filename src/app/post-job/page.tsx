@@ -6,6 +6,7 @@ import { IndustryVertical, INDUSTRY_VERTICALS, INDUSTRY_SUBCATEGORIES, ProjectUr
 import styles from './page.module.css';
 import { useAuth } from '@/context/AuthContext';
 import FileUpload from '@/components/FileUpload';
+import LocationResolver, { ResolvedLocation } from '@/components/LocationResolver';
 
 const URGENCY_OPTIONS: { value: ProjectUrgency; label: string }[] = [
     { value: 'flexible', label: 'Flexible Timeline' },
@@ -44,6 +45,9 @@ export default function PostJob() {
     });
     const [attachmentUrls, setAttachmentUrls] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
+    const [isLocalRequest, setIsLocalRequest] = useState(false);
+    const [localLocation, setLocalLocation] = useState<ResolvedLocation | null>(null);
+    const [radiusMiles, setRadiusMiles] = useState(10);
 
     const subcategories = (INDUSTRY_SUBCATEGORIES as Record<string, string[]>)[formData.industryVertical] || ['Other'];
     const isCustomIndustry = formData.industryVertical === 'Other';
@@ -94,6 +98,10 @@ export default function PostJob() {
                 timelineEnd: formData.timelineEnd || undefined,
                 tags: tagList,
                 attachments: attachmentUrls,
+                isLocalRequest,
+                locationLat: isLocalRequest && localLocation ? localLocation.lat : undefined,
+                locationLng: isLocalRequest && localLocation ? localLocation.lng : undefined,
+                radiusMiles: isLocalRequest ? radiusMiles : undefined,
             });
 
             router.push('/dashboard?new=true');
@@ -331,7 +339,48 @@ export default function PostJob() {
                                 <span className={styles.checkboxHint}>If unchecked, only invited vendors can see this project.</span>
                             </div>
                         </label>
+
+                        <label className={styles.checkboxRow}>
+                            <input
+                                type="checkbox"
+                                checked={isLocalRequest}
+                                onChange={(e) => setIsLocalRequest(e.target.checked)}
+                            />
+                            <div className={styles.checkboxLabel}>
+                                <span className={styles.checkboxTitle}>📍 Make this a Local Request</span>
+                                <span className={styles.checkboxHint}>Restrict to vendors near your location — ideal for same-day, urgent, or in-person tasks.</span>
+                            </div>
+                        </label>
                     </div>
+
+                    {isLocalRequest && (
+                        <div className={styles.localSection}>
+                            <div className={styles.localHeader}>
+                                <span className={styles.localBadge}>Go Local</span>
+                                <span className={styles.localDesc}>Set your location and how far away vendors can be</span>
+                            </div>
+
+                            <div className={styles.inputGroup}>
+                                <label>Your Location</label>
+                                <LocationResolver value={localLocation} onChange={setLocalLocation} />
+                            </div>
+
+                            <div className={styles.inputGroup}>
+                                <label>Search Radius: <strong>{radiusMiles} mi</strong></label>
+                                <input
+                                    type="range"
+                                    min={1}
+                                    max={25}
+                                    value={radiusMiles}
+                                    onChange={e => setRadiusMiles(Number(e.target.value))}
+                                    className={styles.radiusSlider}
+                                />
+                                <div className={styles.radiusLabels}>
+                                    <span>1 mi</span><span>25 mi</span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     <button type="submit" className={styles.submitButton} disabled={loading}>
                         {loading ? (

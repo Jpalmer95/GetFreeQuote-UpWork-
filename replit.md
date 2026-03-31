@@ -62,9 +62,14 @@ src/
       notifications/       # Email + SMS + Push notification preference settings
     docs/
       mcp/                 # MCP Integration Guide (Quick Start, tool reference, Claude Desktop config)
+  local/
+    page.tsx               # Go Local feed — infinite-scroll of nearby local requests; LocationResolver with 3 modes; distance sort; filters
+    page.module.css
   components/
-    Navbar.tsx             # Sticky glass navbar with notification bell + AI Agent link + Admin link for ADMIN role
+    Navbar.tsx             # Sticky glass navbar with notification bell + AI Agent link + Admin link for ADMIN role; Go Local link
     Navbar.module.css
+    LocationResolver.tsx   # Reusable 3-mode location input: browser geolocation / zip code / city autocomplete (Nominatim)
+    LocationResolver.module.css
     NotificationPanel.tsx  # Notification dropdown with real-time updates (Supabase subscriptions, fallback polling)
     NotificationPanel.module.css
     QuoteComparison.tsx    # Side-by-side quote comparison modal with sort and best-value scoring
@@ -107,6 +112,9 @@ supabase_realtime_setup.sql          # Migration: enable real-time for notificat
 supabase_saved_searches.sql          # Migration: saved_searches table for vendor filter persistence
 supabase_migrations/001_agent_hub.sql # Migration: agent_instructions table + phone_number/sms_enabled/push columns on profiles
 supabase_migrations/002_mcp_api_keys.sql # Migration: api_keys table (SHA-256 hashed) for MCP authentication
+supabase_migrations/003_poll_engine.sql  # Migration: EXPIRED/DRAFT status, last_reminded_at, poll_runs table + RLS
+supabase_migrations/004_poll_engine_v2.sql # Migration: quotes.accepted_at, poll_runs.funding_snapshot
+supabase_migrations/005_go_local.sql     # Migration: jobs.is_local_request, location_lat/lng, radius_miles + haversine_miles()
 ```
 
 ## Data Model

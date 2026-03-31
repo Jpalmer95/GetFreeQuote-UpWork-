@@ -41,6 +41,9 @@ export default function Home() {
             <Link href="/marketplace" className="btn-secondary">
               Browse Marketplace
             </Link>
+            <Link href="/local" className="btn-secondary">
+              Go Local
+            </Link>
             <Link href="/community" className="btn-secondary">
               Browse Community Projects
             </Link>

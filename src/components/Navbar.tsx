@@ -77,6 +77,12 @@ export default function Navbar() {
                             Marketplace
                         </Link>
                         <Link
+                            href="/local"
+                            className={`${styles.link} ${styles.localLink} ${pathname === '/local' ? styles.active : ''}`}
+                        >
+                            Go Local
+                        </Link>
+                        <Link
                             href="/community"
                             className={`${styles.link} ${pathname?.startsWith('/community') ? styles.active : ''}`}
                         >
