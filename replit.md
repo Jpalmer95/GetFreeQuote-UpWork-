@@ -44,6 +44,7 @@ src/
     agent-hub/             # Agent Hub — live activity feed, owner instruction input, push notification setup
     admin/
       verifications/       # Admin-only verification request review panel (approve/reject with notes)
+      polling/             # Admin-only poll engine dashboard (run history, stats, manual trigger)
     api/
       agent-process/       # Server-side AI agent orchestration (POST) — vendor matching with location, capacity, specialty, budget scoring
       agent-respond/       # Multi-turn conversation handler (POST) — scope updates, escalation, vendor notifications
@@ -55,6 +56,7 @@ src/
       sms-preferences/     # GET/PUT user phone_number and sms_enabled fields on profiles
       api-keys/            # GET/POST/DELETE/PATCH — API key management (hashed with SHA-256, prefix shown only)
       mcp/                 # MCP server (JSON-RPC 2.0 over HTTP) — GET returns capabilities, POST handles tool calls
+      poll-jobs/           # POST run poll cycle (stale job expiry + reminders + vendor rematch) | GET recent runs — auth: POLL_SECRET header
     settings/
       api-keys/            # API Keys management UI (create, disable, revoke, scopes, expiry)
       notifications/       # Email + SMS + Push notification preference settings
@@ -180,6 +182,7 @@ All global CSS custom properties live in `src/app/globals.css`:
 - `NEXT_PUBLIC_SUPABASE_URL` — Supabase project URL
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Supabase public anon key
 - `SUPABASE_SERVICE_ROLE_KEY` — Supabase service role key (server-side only, for agent orchestration)
+- `POLL_SECRET` — Secret token for `POST /api/poll-jobs`; set in cron job as `Authorization: Bearer <POLL_SECRET>`
 
 ## Running the App
 

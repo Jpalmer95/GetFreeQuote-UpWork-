@@ -24,6 +24,7 @@ export interface JobRow {
     timeline_start: string | null;
     timeline_end: string | null;
     community_project_id: string | null;
+    last_reminded_at: string | null;
 }
 
 export interface AgentConfigRow {

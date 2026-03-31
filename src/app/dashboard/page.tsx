@@ -20,6 +20,7 @@ const STATUS_CLASS: Record<string, string> = {
     IN_PROGRESS: 'badge badge-amber',
     COMPLETED:   'badge badge-green',
     CANCELLED:   'badge badge-muted',
+    EXPIRED:     'badge badge-muted',
 };
 
 const URGENCY_LABELS: Record<string, string> = {
@@ -41,6 +42,9 @@ const ACTION_ICONS: Record<string, string> = {
     negotiation: '🔄',
     auto_approve: '✅',
     auto_reject: '❌',
+    job_expired: '⏰',
+    job_reminder: '🔔',
+    vendor_rematch: '🔁',
 };
 
 type DetailTab = 'timeline' | 'quotes' | 'agent-log' | 'digest';
@@ -244,6 +248,7 @@ export default function Dashboard() {
                             <option value="IN_PROGRESS">In Progress</option>
                             <option value="COMPLETED">Completed</option>
                             <option value="CANCELLED">Cancelled</option>
+                            <option value="EXPIRED">Expired</option>
                         </select>
                     </div>
 
@@ -325,6 +330,21 @@ export default function Dashboard() {
                                     </div>
                                 )}
                             </div>
+
+                            {selectedJob.status === 'EXPIRED' && (
+                                <div className={styles.expiredBanner}>
+                                    <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd"/>
+                                    </svg>
+                                    <div className={styles.expiredBannerContent}>
+                                        <strong>This listing has expired</strong>
+                                        <span>No bids were received in 30 days. Repost this job to attract new vendors.</span>
+                                    </div>
+                                    <Link href="/post-job" className={styles.repostBtn}>
+                                        Repost Job
+                                    </Link>
+                                </div>
+                            )}
 
                             {selectedJob.status === 'OPEN' && (
                                 <RecommendedVendors jobId={selectedJob.id} />

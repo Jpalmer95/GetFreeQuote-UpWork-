@@ -68,7 +68,7 @@ export interface Job {
     category: JobCategory;
     description: string;
     location: string;
-    status: 'OPEN' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+    status: 'OPEN' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'EXPIRED';
     createdAt: string;
     tags: string[];
     isPublic: boolean;
@@ -147,7 +147,22 @@ export type AgentActionType =
     | 'negotiation'
     | 'auto_approve'
     | 'auto_reject'
-    | 'owner_instruction';
+    | 'owner_instruction'
+    | 'job_expired'
+    | 'job_reminder'
+    | 'vendor_rematch';
+
+export interface PollRun {
+    id: string;
+    startedAt: string;
+    finishedAt?: string;
+    jobsScanned: number;
+    jobsExpired: number;
+    jobsReminded: number;
+    jobsRematched: number;
+    errors: unknown[];
+    triggeredBy: string;
+}
 
 export interface AgentInstruction {
     id: string;
@@ -372,7 +387,9 @@ export type NotificationType =
     | 'negotiation_update'
     | 'milestone'
     | 'new_message'
-    | 'verification_update';
+    | 'verification_update'
+    | 'job_reminder'
+    | 'job_expired';
 
 export type NotificationPriority = 'low' | 'medium' | 'high' | 'urgent';
 
