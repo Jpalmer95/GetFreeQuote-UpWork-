@@ -38,9 +38,14 @@ export default function GoLocal() {
     const loaderRef = useRef<HTMLDivElement | null>(null);
     const loadingRef = useRef(false);
     const loadJobsRef = useRef<((reset: boolean) => Promise<void>) | null>(null);
+    const pendingResetRef = useRef(false);
 
     const loadJobs = useCallback(async (reset: boolean = false) => {
-        if (loadingRef.current) return;
+        if (loadingRef.current) {
+            if (reset) pendingResetRef.current = true;
+            return;
+        }
+        pendingResetRef.current = false;
         loadingRef.current = true;
         setLoading(true);
         setError(null);
@@ -94,8 +99,7 @@ export default function GoLocal() {
                     setPage(p => p + 1);
                 }
                 setHasMore((rpcData?.length ?? 0) === PAGE_SIZE);
-                loadingRef.current = false;
-                setLoading(false);
+                finish();
                 return;
             }
             // RPC not available — fall through to created_at query as fallback.
@@ -119,8 +123,7 @@ export default function GoLocal() {
 
         if (fallbackErr) {
             setError('Could not load local requests. Please try again.');
-            loadingRef.current = false;
-            setLoading(false);
+            finish();
             return;
         }
 
@@ -154,8 +157,16 @@ export default function GoLocal() {
             setPage(p => p + 1);
         }
         setHasMore((fallbackData?.length ?? 0) === PAGE_SIZE);
-        loadingRef.current = false;
-        setLoading(false);
+        finish();
+
+        function finish() {
+            loadingRef.current = false;
+            setLoading(false);
+            if (pendingResetRef.current) {
+                pendingResetRef.current = false;
+                loadJobsRef.current?.(true);
+            }
+        }
     }, [page, viewerLocation, viewRadius, industryFilter, urgencyFilter]);
 
     useEffect(() => {
