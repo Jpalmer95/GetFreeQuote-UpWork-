@@ -1,5 +1,4 @@
 import { Job, AgentConfig } from '@/types';
-import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 export interface VendorMatch {
     config: AgentConfig;
@@ -7,7 +6,11 @@ export interface VendorMatch {
     reasons: string[];
 }
 
-export async function matchVendorsToJob(job: Job, vendors: AgentConfig[]): Promise<VendorMatch[]> {
+export function matchVendorsToJob(
+    job: Job,
+    vendors: AgentConfig[],
+    vendorActiveJobCount: Map<string, number>,
+): VendorMatch[] {
     const budgetNum = job.budget ? parseFloat(String(job.budget).replace(/[^0-9.]/g, '')) : null;
     const matched: VendorMatch[] = [];
 
@@ -64,16 +67,10 @@ export async function matchVendorsToJob(job: Job, vendors: AgentConfig[]): Promi
         }
 
         if (vc.maxActiveJobs) {
-            const { count: activeQuoteCount } = await supabaseAdmin
-                .from('quotes')
-                .select('*', { count: 'exact', head: true })
-                .eq('vendor_id', vc.userId)
-                .eq('status', 'ACCEPTED');
+            const activeCount = vendorActiveJobCount.get(vc.userId) ?? 0;
+            if (activeCount >= vc.maxActiveJobs) continue;
 
-            if (activeQuoteCount !== null && activeQuoteCount >= vc.maxActiveJobs) {
-                continue;
-            }
-            const capacityUsed = activeQuoteCount ? activeQuoteCount / vc.maxActiveJobs : 0;
+            const capacityUsed = activeCount / vc.maxActiveJobs;
             if (capacityUsed < 0.5) {
                 score += 10;
                 reasons.push('high_capacity_available');

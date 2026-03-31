@@ -44,7 +44,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const now = new Date();
     const expireCutoff = new Date(now.getTime() - EXPIRE_DAYS * 24 * 60 * 60 * 1000);
     const reminderCutoff = new Date(now.getTime() - REMINDER_DAYS * 24 * 60 * 60 * 1000);
-    const zombieQuoteCutoff = new Date(now.getTime() - ZOMBIE_ACCEPTED_QUOTE_HOURS * 60 * 60 * 1000);
+    const zombieAcceptedCutoff = new Date(now.getTime() - ZOMBIE_ACCEPTED_QUOTE_HOURS * 60 * 60 * 1000);
     const recentVendorCutoff = new Date(now.getTime() - RECENT_VENDOR_HOURS * 60 * 60 * 1000);
 
     const { data: openJobRows, error: fetchError } = await supabaseAdmin
@@ -53,7 +53,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         .eq('status', 'OPEN');
 
     if (fetchError) {
-        await writePollRun(stats, Date.now() - runStart);
+        await writePollRun(stats, Date.now() - runStart, {});
         return NextResponse.json({ error: fetchError.message }, { status: 500 });
     }
 
@@ -66,29 +66,34 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (openJobs.length > 0) {
         const jobIds = openJobs.map(j => j.id);
 
-        const { data: acceptedQuotes } = await supabaseAdmin
-            .from('quotes')
-            .select('job_id, created_at')
-            .in('job_id', jobIds)
-            .eq('status', 'ACCEPTED');
+        const [quotesResult, allQuotesResult] = await Promise.all([
+            supabaseAdmin
+                .from('quotes')
+                .select('job_id, accepted_at, created_at')
+                .in('job_id', jobIds)
+                .eq('status', 'ACCEPTED'),
+            supabaseAdmin
+                .from('quotes')
+                .select('job_id')
+                .in('job_id', jobIds),
+        ]);
 
-        const staleAcceptedJobIds = new Set<string>();
+        const acceptedQuotes = quotesResult.data ?? [];
+        const allQuotes = allQuotesResult.data ?? [];
+
+        const zombieJobIds = new Set<string>();
         const anyAcceptedJobIds = new Set<string>();
         const quoteCountByJob = new Map<string, number>();
 
-        for (const q of acceptedQuotes ?? []) {
+        for (const q of acceptedQuotes) {
             anyAcceptedJobIds.add(q.job_id);
-            if (new Date(q.created_at) <= zombieQuoteCutoff) {
-                staleAcceptedJobIds.add(q.job_id);
+            const acceptedTimestamp = q.accepted_at ? new Date(q.accepted_at) : new Date(q.created_at);
+            if (acceptedTimestamp <= zombieAcceptedCutoff) {
+                zombieJobIds.add(q.job_id);
             }
         }
 
-        const { data: allQuotes } = await supabaseAdmin
-            .from('quotes')
-            .select('job_id')
-            .in('job_id', jobIds);
-
-        for (const q of allQuotes ?? []) {
+        for (const q of allQuotes) {
             quoteCountByJob.set(q.job_id, (quoteCountByJob.get(q.job_id) ?? 0) + 1);
         }
 
@@ -100,16 +105,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             const rawRow = openJobRows!.find(r => (r as Record<string, unknown>).id === job.id) as Record<string, unknown> | undefined;
             const lastRemindedAt = rawRow?.last_reminded_at as string | null;
 
-            if (staleAcceptedJobIds.has(job.id)) {
+            if (zombieJobIds.has(job.id)) {
                 expireIds.push(job.id);
                 expireReasons[job.id] = 'zombie_accepted_quote';
                 continue;
             }
 
             const createdAt = new Date(job.createdAt);
-            const isOlderThan45Days = createdAt <= expireCutoff;
-
-            if (isOlderThan45Days && !anyAcceptedJobIds.has(job.id)) {
+            if (createdAt <= expireCutoff && !anyAcceptedJobIds.has(job.id)) {
                 expireIds.push(job.id);
                 expireReasons[job.id] = 'stale_no_activity';
                 continue;
@@ -195,15 +198,16 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         await vendorRematchPass(openJobs, recentVendorCutoff, stats);
     }
 
+    let fundingSnapshot: Record<string, number> = {};
     try {
-        await communityJobSeedPass(stats);
+        fundingSnapshot = await communityJobSeedPass(stats);
     } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         stats.errors.push({ context: 'community_seed_pass', error: msg });
     }
 
     const durationMs = Date.now() - runStart;
-    const runId = await writePollRun(stats, durationMs);
+    const runId = await writePollRun(stats, durationMs, fundingSnapshot);
 
     return NextResponse.json({
         success: true,
@@ -235,31 +239,41 @@ async function vendorRematchPass(
     if (!recentVendorRows || recentVendorRows.length === 0) return;
 
     const recentVendors = recentVendorRows.map((r) => mapAgentConfigRow(r as AgentConfigRow));
-    const jobIds = openJobs.map(j => j.id);
     const vendorUserIds = recentVendors.map(v => v.userId);
+    const jobIds = openJobs.map(j => j.id);
 
-    const { data: existingRematchRows } = await supabaseAdmin
-        .from('agent_actions')
-        .select('job_id, user_id')
-        .in('job_id', jobIds)
-        .in('user_id', vendorUserIds)
-        .eq('action_type', 'vendor_rematch')
-        .gte('created_at', recentVendorCutoff.toISOString());
+    const [activeQuotesResult, existingRematchResult] = await Promise.all([
+        supabaseAdmin
+            .from('quotes')
+            .select('vendor_id')
+            .in('vendor_id', vendorUserIds)
+            .eq('status', 'ACCEPTED'),
+        supabaseAdmin
+            .from('agent_actions')
+            .select('job_id, user_id')
+            .in('job_id', jobIds)
+            .in('user_id', vendorUserIds)
+            .eq('action_type', 'vendor_rematch')
+            .gte('created_at', recentVendorCutoff.toISOString()),
+    ]);
+
+    const vendorActiveJobCount = new Map<string, number>();
+    for (const q of activeQuotesResult.data ?? []) {
+        vendorActiveJobCount.set(q.vendor_id, (vendorActiveJobCount.get(q.vendor_id) ?? 0) + 1);
+    }
 
     const existingRematchSet = new Set<string>(
-        (existingRematchRows ?? []).map(r => `${r.job_id}:${r.user_id}`)
+        (existingRematchResult.data ?? []).map(r => `${r.job_id}:${r.user_id}`)
     );
 
     for (const job of openJobs) {
         try {
-            const matches = await matchVendorsToJob(job, recentVendors);
-
+            const matches = matchVendorsToJob(job, recentVendors, vendorActiveJobCount);
             if (matches.length === 0) continue;
 
             for (const { config: vc, score, reasons } of matches) {
                 const dedupeKey = `${job.id}:${vc.userId}`;
                 if (existingRematchSet.has(dedupeKey)) continue;
-
                 existingRematchSet.add(dedupeKey);
 
                 await supabaseAdmin.from('agent_actions').insert({
@@ -291,47 +305,55 @@ async function vendorRematchPass(
     }
 }
 
-async function communityJobSeedPass(stats: PollStats): Promise<void> {
+async function communityJobSeedPass(stats: PollStats): Promise<Record<string, number>> {
     const { data: lastRun } = await supabaseAdmin
         .from('poll_runs')
-        .select('run_at')
+        .select('run_at, funding_snapshot')
         .order('run_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
     const lastRunAt = lastRun?.run_at ? new Date(lastRun.run_at) : new Date(0);
+    const previousSnapshot: Record<string, number> = (lastRun?.funding_snapshot as Record<string, number>) ?? {};
 
-    const { data: recentProjects } = await supabaseAdmin
+    const { data: allProjects } = await supabaseAdmin
         .from('community_projects')
-        .select('id, creator_id, title, description, category, location, goal_amount, current_funding')
-        .neq('status', 'CANCELLED')
-        .gte('created_at', lastRunAt.toISOString());
+        .select('id, creator_id, title, description, category, location, goal_amount, current_funding, created_at')
+        .neq('status', 'CANCELLED');
 
-    const { data: fundingProjects } = await supabaseAdmin
-        .from('community_projects')
-        .select('id, creator_id, title, description, category, location, goal_amount, current_funding')
-        .neq('status', 'CANCELLED')
-        .lt('created_at', lastRunAt.toISOString());
+    const projects = allProjects ?? [];
 
-    const recentSet = new Set((recentProjects ?? []).map(p => p.id));
+    const currentSnapshot: Record<string, number> = {};
+    for (const p of projects) {
+        if (p.goal_amount && p.goal_amount > 0) {
+            currentSnapshot[p.id] = p.current_funding / p.goal_amount;
+        }
+    }
 
-    const fundingCrossed = (fundingProjects ?? []).filter(p => {
-        if (!p.goal_amount || p.goal_amount <= 0) return false;
-        return (p.current_funding / p.goal_amount) >= COMMUNITY_FUNDING_THRESHOLD;
-    });
+    const eligibleProjectIds: string[] = [];
+    for (const p of projects) {
+        const createdAt = new Date(p.created_at ?? 0);
+        const isNewProject = createdAt > lastRunAt;
 
-    const allProjects = [
-        ...(recentProjects ?? []),
-        ...fundingCrossed.filter(p => !recentSet.has(p.id)),
-    ];
+        const currentRatio = p.goal_amount && p.goal_amount > 0
+            ? p.current_funding / p.goal_amount
+            : 0;
+        const prevRatio = previousSnapshot[p.id] ?? 0;
+        const crossedThreshold =
+            currentRatio >= COMMUNITY_FUNDING_THRESHOLD &&
+            prevRatio < COMMUNITY_FUNDING_THRESHOLD;
 
-    if (allProjects.length === 0) return;
+        if (isNewProject || crossedThreshold) {
+            eligibleProjectIds.push(p.id);
+        }
+    }
 
-    const projectIds = allProjects.map(p => p.id);
+    if (eligibleProjectIds.length === 0) return currentSnapshot;
+
     const { data: linkedJobs } = await supabaseAdmin
         .from('jobs')
         .select('community_project_id')
-        .in('community_project_id', projectIds);
+        .in('community_project_id', eligibleProjectIds);
 
     const alreadySeeded = new Set((linkedJobs ?? []).map(j => j.community_project_id));
 
@@ -347,8 +369,11 @@ async function communityJobSeedPass(stats: PollStats): Promise<void> {
         'Other': 'Other',
     };
 
-    for (const cp of allProjects) {
-        if (alreadySeeded.has(cp.id)) continue;
+    for (const projectId of eligibleProjectIds) {
+        if (alreadySeeded.has(projectId)) continue;
+
+        const cp = projects.find(p => p.id === projectId);
+        if (!cp) continue;
 
         try {
             const industryVertical = categoryMap[cp.category] || 'Other';
@@ -380,9 +405,15 @@ async function communityJobSeedPass(stats: PollStats): Promise<void> {
             stats.errors.push({ context: `community_seed:${cp.id}`, error: msg });
         }
     }
+
+    return currentSnapshot;
 }
 
-async function writePollRun(stats: PollStats, durationMs: number): Promise<string | null> {
+async function writePollRun(
+    stats: PollStats,
+    durationMs: number,
+    fundingSnapshot: Record<string, number>,
+): Promise<string | null> {
     const { data, error } = await supabaseAdmin
         .from('poll_runs')
         .insert({
@@ -395,6 +426,7 @@ async function writePollRun(stats: PollStats, durationMs: number): Promise<strin
             community_seeds: stats.communitySeeds,
             errors: stats.errors,
             triggered_by: 'api',
+            funding_snapshot: fundingSnapshot,
         })
         .select('id')
         .single();
