@@ -62,7 +62,11 @@ export function matchVendorsToJob(
             reasons.push('budget_in_range');
         }
 
-        if (vc.serviceArea.length > 0 && job.location) {
+        // For local requests, skip legacy text service-area filtering: geospatial
+        // radius matching is handled below with real coordinates. Text matching
+        // would incorrectly exclude vendors inside the radius whose service-area
+        // text doesn't string-match job.location.
+        if (!job.isLocalRequest && vc.serviceArea.length > 0 && job.location) {
             const jobLocationLower = job.location.toLowerCase();
             const locationMatch = vc.serviceArea.some((area: string) => {
                 const areaLower = area.toLowerCase();
@@ -120,9 +124,10 @@ export function matchVendorsToJob(
                 else { score += 10; reasons.push('local_within_radius'); }
             } else if (vc.serviceArea && vc.serviceArea.length > 0) {
                 // Fallback: vendor declared service areas but no coordinate on file.
-                // Use configured maxDistance as a proxy for radius eligibility.
-                if (vc.maxDistance != null && vc.maxDistance > radiusLimit) {
-                    // Declared service range is explicitly wider than the job radius — skip.
+                // Use maxDistance as a proxy: if vendor's max range is smaller than the
+                // job's radius they can't cover it → exclude. If unset or >= radius → admit.
+                if (vc.maxDistance != null && vc.maxDistance < radiusLimit) {
+                    // Declared service range is smaller than the required radius — skip.
                     continue;
                 }
                 score += 5;
