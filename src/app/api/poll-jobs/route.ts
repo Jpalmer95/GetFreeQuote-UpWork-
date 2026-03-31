@@ -365,7 +365,8 @@ async function communityJobSeedPass(stats: PollStats): Promise<Record<string, nu
     const { data: linkedJobs } = await supabaseAdmin
         .from('jobs')
         .select('community_project_id')
-        .in('community_project_id', eligibleProjectIds);
+        .in('community_project_id', eligibleProjectIds)
+        .eq('status', 'DRAFT');
 
     const alreadySeeded = new Set((linkedJobs ?? []).map(j => j.community_project_id));
 
