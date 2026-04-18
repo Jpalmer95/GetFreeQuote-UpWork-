@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Replit agent state
+.local/
+.agents/
+.replit
+replit.md
