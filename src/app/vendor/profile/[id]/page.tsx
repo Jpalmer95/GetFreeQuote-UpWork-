@@ -4,6 +4,9 @@ import Link from 'next/link';
 import { VendorProfile, VendorReview } from '@/types';
 import { db } from '@/services/db';
 import Navbar from '@/components/Navbar';
+import TrustScoreBadge from '@/components/TrustScoreBadge';
+import { calculateTrustScore } from '@/services/trustScore';
+import { TrustScoreBreakdown } from '@/types';
 import styles from './page.module.css';
 
 export default function PublicVendorProfile({ params }: { params: Promise<{ id: string }> }) {

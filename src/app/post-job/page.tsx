@@ -7,6 +7,10 @@ import styles from './page.module.css';
 import { useAuth } from '@/context/AuthContext';
 import FileUpload from '@/components/FileUpload';
 import LocationResolver, { ResolvedLocation } from '@/components/LocationResolver';
+import PriceEstimationWidget from '@/components/PriceEstimationWidget';
+import ScopeBreakdownDisplay from '@/components/ScopeBreakdownDisplay';
+import { PriceEstimate, ScopeBreakdown } from '@/types';
+import { parseScope } from '@/services/scopeBreakdown';
 
 const URGENCY_OPTIONS: { value: ProjectUrgency; label: string }[] = [
     { value: 'flexible', label: 'Flexible Timeline' },
@@ -48,6 +52,8 @@ export default function PostJob() {
     const [isLocalRequest, setIsLocalRequest] = useState(false);
     const [localLocation, setLocalLocation] = useState<ResolvedLocation | null>(null);
     const [radiusMiles, setRadiusMiles] = useState(10);
+    const [priceEstimate, setPriceEstimate] = useState<PriceEstimate | null>(null);
+    const [scopeBreakdown, setScopeBreakdown] = useState<ScopeBreakdown | null>(null);
     const [localLocationError, setLocalLocationError] = useState('');
 
     const subcategories = (INDUSTRY_SUBCATEGORIES as Record<string, string[]>)[formData.industryVertical] || ['Other'];
@@ -57,6 +63,33 @@ export default function PostJob() {
     useEffect(() => {
         setFormData(prev => ({ ...prev, subcategory: subcategories[0], customSubcategory: '' }));
     }, [formData.industryVertical]);
+
+    // Price estimation effect
+    useEffect(() => {
+        if (formData.description.length > 20 && formData.location.length > 2) {
+            const { estimatePrice } = require('@/services/priceEstimation');
+            const estimate = estimatePrice({
+                category: isCustomIndustry ? formData.customIndustry : formData.industryVertical,
+                subcategory: isCustomSubcategory ? formData.customSubcategory : formData.subcategory,
+                description: formData.description,
+                location: formData.location,
+                squareFootage: formData.squareFootage,
+                urgency: formData.urgency,
+            });
+            setPriceEstimate(estimate);
+
+            // Also parse scope
+            const scope = parseScope({
+                jobId: 'preview',
+                description: formData.description,
+                category: isCustomIndustry ? formData.customIndustry : formData.industryVertical,
+                subcategory: isCustomSubcategory ? formData.customSubcategory : formData.subcategory,
+                location: formData.location,
+                squareFootage: formData.squareFootage,
+            });
+            setScopeBreakdown(scope);
+        }
+    }, [formData.description, formData.location, formData.industryVertical, formData.subcategory, formData.urgency, formData.squareFootage]);
 
     const showPhysicalFields = ['Home Services', 'Commercial Construction', 'Trade Labor'].includes(formData.industryVertical);
 
@@ -239,6 +272,28 @@ export default function PostJob() {
                             className="field-textarea"
                         />
                     </div>
+
+                    {/* AI Price Estimation */}
+                    {priceEstimate && formData.description.length > 20 && (
+                        <div className={styles.inputGroup} style={{ marginTop: '16px' }}>
+                            <PriceEstimationWidget
+                                category={isCustomIndustry ? formData.customIndustry : formData.industryVertical}
+                                subcategory={isCustomSubcategory ? formData.customSubcategory : formData.subcategory}
+                                description={formData.description}
+                                location={formData.location}
+                                squareFootage={formData.squareFootage}
+                                urgency={formData.urgency}
+                                onEstimateReady={setPriceEstimate}
+                            />
+                        </div>
+                    )}
+
+                    {/* Scope Breakdown */}
+                    {scopeBreakdown && scopeBreakdown.phases.length > 1 && (
+                        <div className={styles.inputGroup} style={{ marginTop: '16px' }}>
+                            <ScopeBreakdownDisplay scope={scopeBreakdown} />
+                        </div>
+                    )}
 
                     <div className={styles.inputGroup}>
                         <label>Tags (comma-separated, optional)</label>
