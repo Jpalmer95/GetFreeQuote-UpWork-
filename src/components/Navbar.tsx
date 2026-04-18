@@ -88,6 +88,18 @@ export default function Navbar() {
                         >
                             Community
                         </Link>
+                        <Link
+                            href="/group-buys"
+                            className={`${styles.link} ${pathname === '/group-buys' ? styles.active : ''}`}
+                        >
+                            Materials
+                        </Link>
+                        <Link
+                            href="/pools"
+                            className={`${styles.link} ${pathname === '/pools' ? styles.active : ''}`}
+                        >
+                            Pools
+                        </Link>
                         {showUser && (
                             <>
                                 <Link
@@ -101,6 +113,24 @@ export default function Navbar() {
                                     className={`${styles.link} ${pathname?.startsWith('/projects') ? styles.active : ''}`}
                                 >
                                     Projects
+                                </Link>
+                                <Link
+                                    href="/escrow"
+                                    className={`${styles.link} ${pathname === '/escrow' ? styles.active : ''}`}
+                                >
+                                    Escrow
+                                </Link>
+                                <Link
+                                    href="/apprentice"
+                                    className={`${styles.link} ${pathname === '/apprentice' ? styles.active : ''}`}
+                                >
+                                    Apprentice
+                                </Link>
+                                <Link
+                                    href="/vendor/analytics"
+                                    className={`${styles.link} ${pathname === '/vendor/analytics' ? styles.active : ''}`}
+                                >
+                                    Analytics
                                 </Link>
                                 <Link
                                     href="/agent-hub"

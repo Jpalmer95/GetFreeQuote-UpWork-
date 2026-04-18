@@ -5,6 +5,8 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { Job, INDUSTRY_VERTICALS, INDUSTRY_SUBCATEGORIES, KnownIndustryVertical, ProjectUrgency } from '@/types';
 import Navbar from '@/components/Navbar';
+import SurgePricingIndicator from '@/components/SurgePricingIndicator';
+import { calculateSurge } from '@/services/surgePricing';
 import LocationResolver, { ResolvedLocation } from '@/components/LocationResolver';
 import styles from './page.module.css';
 

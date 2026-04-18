@@ -7,6 +7,8 @@ import { useAuth } from '@/context/AuthContext';
 import { Job, IndustryVertical, KnownIndustryVertical, INDUSTRY_VERTICALS, INDUSTRY_SUBCATEGORIES } from '@/types';
 import styles from './page.module.css';
 import Navbar from '@/components/Navbar';
+import LeadQualityBadge from '@/components/LeadQualityBadge';
+import { calculateLeadQuality } from '@/services/leadQuality';
 import SearchAutocomplete from '@/components/SearchAutocomplete';
 import SavedSearches from '@/components/SavedSearches';
 

@@ -9,6 +9,8 @@ import { supabase } from '@/lib/supabase';
 import { realtimeService } from '@/services/realtimeService';
 import styles from './page.module.css';
 import Navbar from '@/components/Navbar';
+import CommunityCreditsWallet from '@/components/CommunityCreditsWallet';
+import { CommunityCredits } from '@/types';
 import QuoteComparison, { CompareQuotesButton } from '@/components/QuoteComparison';
 import ClientAnalytics from '@/components/ClientAnalytics';
 import RecommendedVendors from '@/components/RecommendedVendors';
