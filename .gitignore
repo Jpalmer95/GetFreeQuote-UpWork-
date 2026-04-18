@@ -45,3 +45,4 @@ next-env.d.ts
 .agents/
 .replit
 replit.md
+.token_tmp
