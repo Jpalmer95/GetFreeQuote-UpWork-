@@ -5,8 +5,8 @@
  * for bulk contractor pricing on shared work.
  */
 
-import { NeighborhoodPool, PoolParticipant } from '@/types';
-import { haversineDistance, GPSPoint } from './gpsTracking';
+import { NeighborhoodPool, PoolParticipant, GPSPoint } from '@/types';
+import { haversineDistance } from './gpsTracking';
 
 // Pool discount tiers based on number of participants
 const POOL_DISCOUNT_TIERS: { minParticipants: number; discountPercent: number }[] = [
