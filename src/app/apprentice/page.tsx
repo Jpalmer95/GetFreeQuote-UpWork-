@@ -15,8 +15,8 @@ const MOCK_APPRENTICES: { apprentice: ApprenticeProfile; logs: ApprenticeLog[] }
             createdAt: '2026-01-15T00:00:00Z',
         },
         logs: [
-            { id: 'l1', apprenticeId: 'app1', mentorId: 'm1', date: '2026-04-15T00:00:00Z', hoursWorked: 8, skillsPracticed: ['pipe cutting', 'soldering', 'fitting'] },
-            { id: 'l2', apprenticeId: 'app1', mentorId: 'm1', date: '2026-04-14T00:00:00Z', hoursWorked: 8, skillsPracticed: ['drain cleaning', 'fixture install'] },
+            { id: 'l1', apprenticeId: 'app1', mentorId: 'm1', date: '2026-04-15T00:00:00Z', hoursWorked: 8, skillsPracticed: ['pipe cutting', 'soldering', 'fitting'], photos: [] },
+            { id: 'l2', apprenticeId: 'app1', mentorId: 'm1', date: '2026-04-14T00:00:00Z', hoursWorked: 8, skillsPracticed: ['drain cleaning', 'fixture install'], photos: [] },
         ],
     },
     {
