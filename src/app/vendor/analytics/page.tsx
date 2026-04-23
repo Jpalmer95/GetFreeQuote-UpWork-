@@ -13,7 +13,7 @@ const MOCK_ANALYTICS: VendorAnalytics = {
     avgResponseTimeMinutes: 35, responseTimePercentile: 78,
     avgRating: 4.7, ratingTrend: 'improving',
     revenueTotal: 51000, revenuePerJob: 4250,
-    repeatCustomerRate: 0.25, topCategories: [
+    repeatCustomerRate: 0.25, totalCustomers: 32, topCategories: [
         { category: 'Plumbing', count: 8, winRate: 0.5 },
         { category: 'HVAC', count: 5, winRate: 0.4 },
         { category: 'Home Services', count: 5, winRate: 0.4 },
