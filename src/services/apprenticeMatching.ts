@@ -5,8 +5,8 @@
  * for on-the-job training and mentorship.
  */
 
-import { ApprenticeProfile, MentorProfile, ApprenticeLog, ApprenticeStatus } from '@/types';
-import { haversineDistance, GPSPoint } from './gpsTracking';
+import { ApprenticeProfile, MentorProfile, ApprenticeLog, ApprenticeStatus, GPSPoint } from '@/types';
+import { haversineDistance } from './gpsTracking';
 
 interface MatchScore {
     mentor: MentorProfile;
