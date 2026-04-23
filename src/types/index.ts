@@ -778,6 +778,7 @@ export interface VendorAnalytics {
     revenueTotal: number;
     revenuePerJob: number;
     repeatCustomerRate: number;
+    totalCustomers: number;
     topCategories: { category: string; count: number; winRate: number }[];
     customerSatisfactionScore: number;
     onTimeCompletionRate: number;
