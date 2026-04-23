@@ -116,6 +116,7 @@ export function calculateVendorAnalytics(input: AnalyticsInput): VendorAnalytics
         revenueTotal: Math.round(revenueTotal),
         revenuePerJob: Math.round(revenuePerJob),
         repeatCustomerRate: Math.round(repeatCustomerRate * 1000) / 1000,
+        totalCustomers,
         topCategories,
         customerSatisfactionScore,
         onTimeCompletionRate: Math.round(onTimeCompletionRate * 1000) / 1000,
