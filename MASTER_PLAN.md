@@ -103,9 +103,9 @@ separate marketplace.**
 ### Phase 3 — JIT Instant Market (services + item/tool sharing)
 - [x] GPS local **service** discovery (`/local` + `GPSTrackingMap`, geohash radius).
 - [x] JIT service requests via the `jobs` table (`is_local_request`, lat/lng, radius).
-- [ ] **GAP — JIT ITEM/TOOL SHARING (rent-or-sell):** no data model exists. BLOCKED on
-      a new `item_listings` table (migration ready in `supabase_jit.sql`). Apply the
-      SQL in Supabase Dashboard to enable the listing/rent/sell surface.
+- [x] **JIT ITEM/TOOL SHARING (rent-or-sell) — BUILT 2026-08-12:** `item_listings` table applied to
+      Supabase (`supabase_jit.sql`), `/api/jit/items` + `/api/jit/items/[id]` API, `/jit` marketplace
+      page with list-an-item form, navbar link. Live.
 
 ### Phase 4 — BuildUp (community & donation-funded builds)
 - [x] Community projects + transparent funding (`community_projects`, `donations`,
@@ -116,10 +116,12 @@ separate marketplace.**
       buyer/seller handled off-platform for now.
 
 ### Phase 5 — Oracle Data Integration & Agent API
-- [ ] **GAP — ORACLE EVENT EMITTER + AGENT API:** nothing exists. BLOCKED on a signed
-      event/outbox store (migration ready in `supabase_oracle.sql`). Design: emit
-      signed structured events for every job/gig/JIT/negotiation; expose an agent API
-      + webhooks; microtransaction billing (L402-style). Apply SQL to enable.
+- [x] **ORACLE EVENT OUTBOX — BUILT 2026-08-12:** `oracle_events` table applied
+      (`supabase_oracle.sql`), `emitOracleEvent` service (HMAC-signed), wired into JIT
+      create/update/delete + review creation, and `/api/oracle/poll` relay endpoint
+      (guarded by `ORACLE_POLL_SECRET`) for the future paid agent-oracle.
+- [ ] Agent API + webhooks + microtransaction billing (L402-style) — next step; relay
+      the outbox to a real oracle ingest endpoint.
 
 ## Future Roadmap (post-launch — do not execute yet)
 
@@ -132,8 +134,8 @@ separate marketplace.**
 
 ## Metadata
 
-- **Date:** 2026-08-12 (updated to reflect verified current state)
+- **Date:** 2026-08-12 (updated: reviews, JIT item-sharing, and oracle outbox now live)
 - **Owner:** Jonathan (Jpalmer95)
-- **Status:** Active — reviews flow shipped; JIT item-sharing + oracle blocked on
-  Supabase SQL migration (SQL ready, apply via Dashboard).
+- **Status:** Active — reviews flow, JIT item/tool sharing, and oracle event outbox shipped
+  and verified. Remaining: oracle agent API + webhooks + billing; escrow excluded per owner.
 - **Note:** This document is authoritative for roadmap decisions.
