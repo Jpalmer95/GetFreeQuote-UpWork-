@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/serverAuth';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { emitOracleEvent } from '@/services/oracle';
 
 /**
  * Vendor reviews API.
@@ -85,6 +86,7 @@ export async function POST(request: NextRequest) {
         });
 
         if (!rpcError && rpcReview) {
+            await emitOracleEvent({ eventType: 'review.created', entityType: 'vendor_review', entityId: rpcReview.id, payload: { vendorProfileId, rating } });
             return NextResponse.json({ success: true, data: rpcReview }, { status: 201 });
         }
 
@@ -106,6 +108,7 @@ export async function POST(request: NextRequest) {
         }
 
         await recomputeVendorRating(vendorProfileId);
+        await emitOracleEvent({ eventType: 'review.created', entityType: 'vendor_review', entityId: review.id, payload: { vendorProfileId, rating } });
 
         return NextResponse.json({ success: true, data: review }, { status: 201 });
     } catch (err: any) {

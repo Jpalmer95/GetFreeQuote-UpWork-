@@ -273,6 +273,34 @@ export interface VendorReview {
     createdAt: string;
 }
 
+export type ItemListingType = 'RENT' | 'SELL' | 'BOTH';
+export type ItemListingStatus = 'AVAILABLE' | 'RENTED' | 'SOLD' | 'UNAVAILABLE';
+
+export interface ItemListing {
+    id: string;
+    ownerId: string;
+    ownerName: string;
+    itemName: string;
+    category: string;
+    description: string;
+    listingType: ItemListingType;
+    sellPrice?: number;
+    rentPricePerDay?: number;
+    rentPricePerWeek?: number;
+    deposit: number;
+    availableFrom?: string;
+    availableUntil?: string;
+    locationText: string;
+    locationLat?: number;
+    locationLng?: number;
+    radiusMiles: number;
+    images: string[];
+    status: ItemListingStatus;
+    isActive: boolean;
+    createdAt: string;
+    updatedAt: string;
+}
+
 export type ProjectStatus = 'PLANNING' | 'ACTIVE' | 'ON_HOLD' | 'COMPLETED' | 'CANCELLED';
 
 export type PhaseStatus = 'NOT_STARTED' | 'WAITING_QUOTES' | 'QUOTED' | 'IN_PROGRESS' | 'COMPLETED' | 'BLOCKED';

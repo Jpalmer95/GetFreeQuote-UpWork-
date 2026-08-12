@@ -1,4 +1,4 @@
-import { Job, AgentConfig, IndustryVertical, VendorProfile, EstimatingTemplate, EstimatingLineItem, TeamMember, VendorReview, Project, ProjectPhase, CommunityProject, Donation, CommunityProjectUpdate, LedgerEntry } from '@/types';
+import { Job, AgentConfig, IndustryVertical, VendorProfile, EstimatingTemplate, EstimatingLineItem, TeamMember, VendorReview, Project, ProjectPhase, CommunityProject, Donation, CommunityProjectUpdate, LedgerEntry, ItemListing, ItemListingType, ItemListingStatus } from '@/types';
 
 export interface JobRow {
     id: string;
@@ -314,6 +314,58 @@ export function mapVendorReviewRow(row: VendorReviewRow): VendorReview {
         rating: row.rating,
         comment: row.comment,
         createdAt: row.created_at,
+    };
+}
+
+export interface ItemListingRow {
+    id: string;
+    owner_id: string;
+    owner_name: string;
+    item_name: string;
+    category: string;
+    description: string;
+    listing_type: string;
+    sell_price: number | null;
+    rent_price_per_day: number | null;
+    rent_price_per_week: number | null;
+    deposit: number | null;
+    available_from: string | null;
+    available_until: string | null;
+    location_text: string;
+    location_lat: number | null;
+    location_lng: number | null;
+    radius_miles: number | null;
+    images: string[];
+    status: string;
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
+}
+
+export function mapItemListingRow(row: ItemListingRow): ItemListing {
+    return {
+        id: row.id,
+        ownerId: row.owner_id,
+        ownerName: row.owner_name,
+        itemName: row.item_name,
+        category: row.category,
+        description: row.description,
+        listingType: row.listing_type as ItemListingType,
+        sellPrice: row.sell_price ?? undefined,
+        rentPricePerDay: row.rent_price_per_day ?? undefined,
+        rentPricePerWeek: row.rent_price_per_week ?? undefined,
+        deposit: row.deposit ?? 0,
+        availableFrom: row.available_from ?? undefined,
+        availableUntil: row.available_until ?? undefined,
+        locationText: row.location_text,
+        locationLat: row.location_lat ?? undefined,
+        locationLng: row.location_lng ?? undefined,
+        radiusMiles: row.radius_miles ?? 25,
+        images: row.images || [],
+        status: row.status as ItemListingStatus,
+        isActive: row.is_active,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
     };
 }
 

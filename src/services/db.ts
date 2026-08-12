@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { Job, Quote, Message, AgentConfig, AgentAction, Notification, IndustryVertical, VendorProfile, EstimatingTemplate, TeamMember, TeamMemberRole, VendorReview, Project, ProjectPhase, CommunityProject, Donation, CommunityProjectUpdate, LedgerEntry } from '@/types';
+import { Job, Quote, Message, AgentConfig, AgentAction, Notification, IndustryVertical, VendorProfile, EstimatingTemplate, TeamMember, TeamMemberRole, VendorReview, Project, ProjectPhase, CommunityProject, Donation, CommunityProjectUpdate, LedgerEntry, ItemListing, ItemListingType, ItemListingStatus } from '@/types';
 import {
     JobRow, AgentConfigRow, QuoteRow, MessageRow, AgentActionRow, NotificationRow,
     VendorProfileRow, EstimatingTemplateRow, TeamMemberRow, VendorReviewRow,
@@ -8,6 +8,7 @@ import {
     mapJobRow, mapAgentConfigRow, mapVendorProfileRow, mapEstimatingTemplateRow,
     mapTeamMemberRow, mapVendorReviewRow, mapProjectRow, mapProjectPhaseRow,
     mapCommunityProjectRow, mapDonationRow, mapCommunityProjectUpdateRow, mapLedgerEntryRow,
+    ItemListingRow, mapItemListingRow,
 } from './serverMappers';
 
 function formatSupabaseError(error: unknown): string {
@@ -623,6 +624,86 @@ export const db = {
             return [];
         }
         return data.map((row) => mapVendorReviewRow(row as VendorReviewRow));
+    },
+
+    getItemListings: async (filters?: {
+        category?: string;
+        listingType?: string;
+        status?: string;
+        query?: string;
+        ownerId?: string;
+    }): Promise<ItemListing[]> => {
+        let query = supabase.from('item_listings').select('*').eq('is_active', true);
+        if (filters?.status) query = query.eq('status', filters.status);
+        if (filters?.ownerId) query = query.eq('owner_id', filters.ownerId);
+        if (filters?.listingType) query = query.eq('listing_type', filters.listingType);
+        if (filters?.category) query = query.eq('category', filters.category);
+        if (filters?.query) query = query.or(`item_name.ilike.%${filters.query}%,description.ilike.%${filters.query}%`);
+        query = query.order('created_at', { ascending: false }).limit(100);
+        const { data, error } = await query;
+        if (error) { console.error('Error fetching item listings:', formatSupabaseError(error)); return []; }
+        return (data || []).map((row) => mapItemListingRow(row as ItemListingRow));
+    },
+
+    getItemListing: async (id: string): Promise<ItemListing | undefined> => {
+        const { data, error } = await supabase.from('item_listings').select('*').eq('id', id).maybeSingle();
+        if (error || !data) return undefined;
+        return mapItemListingRow(data as ItemListingRow);
+    },
+
+    createItemListing: async (listing: Omit<ItemListing, 'id' | 'createdAt' | 'updatedAt' | 'status' | 'isActive'>): Promise<ItemListing> => {
+        const { data, error } = await supabase.from('item_listings').insert({
+            owner_id: listing.ownerId,
+            owner_name: listing.ownerName,
+            item_name: listing.itemName,
+            category: listing.category,
+            description: listing.description,
+            listing_type: listing.listingType,
+            sell_price: listing.sellPrice ?? null,
+            rent_price_per_day: listing.rentPricePerDay ?? null,
+            rent_price_per_week: listing.rentPricePerWeek ?? null,
+            deposit: listing.deposit ?? 0,
+            available_from: listing.availableFrom || null,
+            available_until: listing.availableUntil || null,
+            location_text: listing.locationText,
+            location_lat: listing.locationLat ?? null,
+            location_lng: listing.locationLng ?? null,
+            radius_miles: listing.radiusMiles ?? 25,
+            images: listing.images || [],
+            status: 'AVAILABLE',
+            is_active: true,
+        }).select().single();
+        if (error) throw error;
+        return mapItemListingRow(data as ItemListingRow);
+    },
+
+    updateItemListing: async (id: string, updates: Partial<Omit<ItemListing, 'id' | 'createdAt' | 'updatedAt' | 'ownerId' | 'ownerName'>>): Promise<ItemListing> => {
+        const payload: Record<string, unknown> = { updated_at: new Date().toISOString() };
+        if (updates.itemName !== undefined) payload.item_name = updates.itemName;
+        if (updates.category !== undefined) payload.category = updates.category;
+        if (updates.description !== undefined) payload.description = updates.description;
+        if (updates.listingType !== undefined) payload.listing_type = updates.listingType;
+        if (updates.sellPrice !== undefined) payload.sell_price = updates.sellPrice;
+        if (updates.rentPricePerDay !== undefined) payload.rent_price_per_day = updates.rentPricePerDay;
+        if (updates.rentPricePerWeek !== undefined) payload.rent_price_per_week = updates.rentPricePerWeek;
+        if (updates.deposit !== undefined) payload.deposit = updates.deposit;
+        if (updates.availableFrom !== undefined) payload.available_from = updates.availableFrom;
+        if (updates.availableUntil !== undefined) payload.available_until = updates.availableUntil;
+        if (updates.locationText !== undefined) payload.location_text = updates.locationText;
+        if (updates.locationLat !== undefined) payload.location_lat = updates.locationLat;
+        if (updates.locationLng !== undefined) payload.location_lng = updates.locationLng;
+        if (updates.radiusMiles !== undefined) payload.radius_miles = updates.radiusMiles;
+        if (updates.images !== undefined) payload.images = updates.images;
+        if (updates.status !== undefined) payload.status = updates.status;
+        if (updates.isActive !== undefined) payload.is_active = updates.isActive;
+        const { data, error } = await supabase.from('item_listings').update(payload).eq('id', id).select().single();
+        if (error) throw error;
+        return mapItemListingRow(data as ItemListingRow);
+    },
+
+    deleteItemListing: async (id: string): Promise<void> => {
+        const { error } = await supabase.from('item_listings').delete().eq('id', id);
+        if (error) throw error;
     },
 
     getProjects: async (userId: string): Promise<Project[]> => {

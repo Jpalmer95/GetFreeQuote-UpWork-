@@ -83,6 +83,12 @@ export default function Navbar() {
                             Go Local
                         </Link>
                         <Link
+                            href="/jit"
+                            className={`${styles.link} ${pathname?.startsWith('/jit') ? styles.active : ''}`}
+                        >
+                            JIT Tools
+                        </Link>
+                        <Link
                             href="/community"
                             className={`${styles.link} ${pathname?.startsWith('/community') ? styles.active : ''}`}
                         >
