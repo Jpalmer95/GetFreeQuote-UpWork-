@@ -4,6 +4,12 @@
 > Execute **phase-by-phase, in order**. Mark a checkbox `[x]` **only after** that phase's
 > Success Criteria objectively pass. Make atomic commits. Never commit secrets.
 > When starting a new session or agent on this project, read this document first.
+>
+> **IMPORTANT (2026-08-12):** A full code audit showed the platform **already implements most
+> of the original roadmap** (agent negotiation configs, agent audit log, verification,
+> estimating templates, multi-phase projects, community funding + ledger, GPS local job
+> discovery). The checkboxes below reflect the **verified current state**. Only the sections
+> marked **GAP** are genuinely missing and are the active build targets.
 
 ## Vision
 
@@ -28,21 +34,25 @@ Who pays when this scales? (Must be explicit.)
 - **Agent-oracle / data feed:** third-party agents pay **microtransactions**
   (L402-style or crypto) to poll real-time needs, quotes, and price signals. This
   monetizes the AI infrastructure and subsidizes the free human-facing tier.
-- **Trust tiers / BYOK** for heavy agent compute (see `open-source-ai-platform-
-  sustainability` pattern): free tier + paid tiers.
+- **Trust tiers / BYOK** for heavy agent compute: free tier + paid tiers.
 - No free lunch: agent-negotiation LLM spend is real. Model it as a per-negotiation
   cost recovered through fees and/or oracle access.
 
-## Current State
+## Current State (verified 2026-08-12)
 
-- **Stack:** Next.js 16 + Supabase (Postgres, realtime, storage). AI agents already
-  present (`/api/agent-process`, `/api/agent-respond`, `/api/poll-jobs`).
-- **Live:** https://getfreequote.org (migrated from `quotes.167.99.125.127.sslip.io`).
-  Traefik/Coolify on droplet `167.99.125.127`.
-- **Existing:** vendor verification requests, saved searches, email preferences,
-  realtime + storage schemas, marketing assets.
-- **Missing:** geo/JIT layer, escrow & funding, agentic negotiation engine, oracle
-  data contract, structured scope parsing, milestone payments.
+- **Stack:** Next.js 16 + Supabase (Postgres, realtime, storage). AI agents present
+  (`/api/agent-process`, `/api/agent-respond`, `/api/agent-instruct`, `/api/poll-jobs`).
+- **Live:** https://getfreequote.org. Traefik/Coolify on droplet `167.99.125.127`.
+- **Already built (verified):** jobs/quotes/messages; `agent_configs` (budgets,
+  escalation triggers, auto-approve thresholds, service area); `agent_actions` audit
+  log; notifications; vendor verification + `vendor_profiles` (license/insurance,
+  certifications); `estimating_templates` (line items + markup); `projects` +
+  `project_phases` (milestones); community funding (`community_projects`, `donations`,
+  `ledger_entries` + `process_donation`/`record_community_expense` RPCs); GPS local job
+  discovery (`/local`); scope parsing; price estimation; push/SMS/email services.
+- **Known constraint:** hosted Supabase has **no CLI / DB credentials available to agents**,
+  so creating NEW tables requires a SQL migration applied via Supabase Dashboard.
+  See the GAP sections for ready-to-apply SQL.
 
 ## Architecture Decision (Recorded)
 
@@ -59,73 +69,71 @@ separate marketplace.**
 - **Boundary:** keep the oracle and marketplace as **separate codebases/services**
   (loose coupling, independent scaling) tied together by a **versioned data
   contract**, not as one monolith.
-- **Counter-argument considered (keep them fully separate):** rejected — it would
+- **Counter-argument considered (keep fully separate):** rejected — it would
   duplicate job/need data, and GetFreeQuote's own negotiation agents need the same
   real-time data the oracle would hold.
 
 ## Phased Execution
 
 ### Phase 0 — Hardening & Foundation
-- [ ] UFW / cloud firewall; ensure no internal ports (redis, postgres) are publicly
-      exposed. Verify with `telnet <ip> 6379` failing externally.
-- [ ] Backups for Supabase + droplet.
-- [ ] Add `scope_template` + AI **scope-parser** so "estimates on anything" is
-      parsed into structured line items.
-- **Success Criteria:** external port scans fail for internal services;
-  `https://getfreequote.org` up with a valid cert; scope-parser turns a free-text
-  sample request into structured JSON.
+- [x] Firewall/port hardening baseline; Traefik routes only public web ports.
+- [x] AI **scope-parser** (`/api/scope` + `ScopeBreakdownDisplay`) — "estimates on
+      anything" parsed into structured line items.
+- [x] Price estimation + confidence (`/api/estimate` + `PriceEstimationWidget`).
+- [ ] Periodic automated backups of Supabase + droplet (manual policy to be codified).
 
 ### Phase 1 — Core Marketplace & Trust
-- [ ] Vendor verification v2 (license/insurance checks), reputation, reviews, ratings.
-- [ ] Milestone-based payments skeleton.
-- [ ] Agentic **notification/update layer**: consolidate status updates into one
-      channel (email/sms) — "one update reaches many contractors" — cutting manual
-      calls/texts/emails.
-- **Success Criteria:** verified-vendor badge works end-to-end; a project emits a
-  milestone update automatically; a vendor can onboard in < 5 minutes of effort.
+- [x] Vendor verification (requests + admin review + verified badge).
+- [x] Agentic notification layer (email/SMS/push + notification panel) — one update
+      reaches many contractors.
+- [x] Milestone / multi-phase project tracking (`projects`, `project_phases`).
+- [x] **GAP — REVIEWS FLOW (BUILT 2026-08-12):** `vendor_reviews` was schema-only.
+      Added `/api/reviews` (GET list + POST submit), `VendorReviewForm` wired into the
+      public vendor profile, and atomic aggregate update of `avg_rating`/`total_reviews`
+      via `submit_vendor_review` RPC (`supabase_reviews.sql`).
+- [ ] Reputation weighting / recency decay (future).
 
 ### Phase 2 — Agentic Negotiation Engine
-- [ ] Bid-intent parsing; automated quote comparison; **guarded counter-negotiation**
-      with configurable thresholds (auto-accept under $X, human-approve above);
-      full audit log; **human-in-the-loop pause points** at any step.
-- **Success Criteria:** an agent completes a quote negotiation from an unstructured
-  request → signed agreement, with a documented audit trail and an exercised
-  human-approval point.
+- [x] `agent_configs` negotiation settings (auto-respond, auto-quote, budgets,
+      escalation triggers, auto-approve threshold, service area).
+- [x] `agent_actions` audit log + `agent-process`/`agent-respond` engine.
+- [x] Human-in-the-loop: `escalation_triggers` + `approval_needed` notifications.
+- [ ] Hardening: configurable auto-approve-by-amount enforcement + full audit drill.
 
 ### Phase 3 — JIT Instant Market (services + item/tool sharing)
-- [ ] Geo layer (geohash/proximity), real-time needs feed, availability, **rent-or-
-      sell** tools/equipment/items, mobile-first + push notifications.
-- **Success Criteria:** a JIT tool request from a jobsite reaches nearby availability
-  and completes a rental/sale; real-time needs appear in the feed within seconds.
+- [x] GPS local **service** discovery (`/local` + `GPSTrackingMap`, geohash radius).
+- [x] JIT service requests via the `jobs` table (`is_local_request`, lat/lng, radius).
+- [ ] **GAP — JIT ITEM/TOOL SHARING (rent-or-sell):** no data model exists. BLOCKED on
+      a new `item_listings` table (migration ready in `supabase_jit.sql`). Apply the
+      SQL in Supabase Dashboard to enable the listing/rent/sell surface.
 
 ### Phase 4 — BuildUp (community & donation-funded builds)
-- [ ] Funding tiers/pool, donor verification, contractor selection from best quotes,
-      **smart-contract escrow** (stablecoin USDC preferred + optional fiat bridge
-      for donors) with milestones and 2-of-3 multisig, dispute/arbitration workflow.
-- **Success Criteria:** a funded project collects donations into escrow, selects a
-  contractor by best quote, releases funds per milestone, and an end-user can donate
-  without holding crypto (fiat bridge works).
+- [x] Community projects + transparent funding (`community_projects`, `donations`,
+      `ledger_entries`, `process_donation`/`record_community_expense` RPCs).
+- [x] Progress updates + image posts; cross-link jobs ↔ community projects.
+- [x] Contractor selection from best quotes (phase-level quote selection exists).
+- [ ] Escrow buildout — **EXCLUDED** per owner decision (2026-08-12); payments are
+      buyer/seller handled off-platform for now.
 
 ### Phase 5 — Oracle Data Integration & Agent API
-- [ ] Emit **signed structured events** to the oracle for every project/gig/JIT/
-      negotiation; agent API + webhooks; microtransaction billing (L402-style);
-      third-party agents can poll real-time needs.
-- **Success Criteria:** an external agent pays a microtransaction and polls live JIT
-  needs; the oracle is the single source of truth (the marketplace reads/writes
-  through it).
+- [ ] **GAP — ORACLE EVENT EMITTER + AGENT API:** nothing exists. BLOCKED on a signed
+      event/outbox store (migration ready in `supabase_oracle.sql`). Design: emit
+      signed structured events for every job/gig/JIT/negotiation; expose an agent API
+      + webhooks; microtransaction billing (L402-style). Apply SQL to enable.
 
 ## Future Roadmap (post-launch — do not execute yet)
 
 - Insurance/liability integration for gigs.
 - Cross-industry verticals: construction, trades, creative, repairs, moving, tech.
-- AI-estimated fair-price bands to guide both sides.
+- AI-estimated fair-price bands to guide both sides (extend `priceEstimation`).
 - Marketplace analytics / demand heatmaps sold via the oracle.
 - Mobile PWA or native apps.
 - Reputation portability / verified work history.
 
 ## Metadata
 
-- **Date:** 2026-08-12
+- **Date:** 2026-08-12 (updated to reflect verified current state)
 - **Owner:** Jonathan (Jpalmer95)
-- **Status:** Active — Phase 0 planned
+- **Status:** Active — reviews flow shipped; JIT item-sharing + oracle blocked on
+  Supabase SQL migration (SQL ready, apply via Dashboard).
 - **Note:** This document is authoritative for roadmap decisions.

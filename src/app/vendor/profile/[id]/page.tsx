@@ -5,6 +5,7 @@ import { VendorProfile, VendorReview } from '@/types';
 import { db } from '@/services/db';
 import Navbar from '@/components/Navbar';
 import TrustScoreBadge from '@/components/TrustScoreBadge';
+import VendorReviewForm from '@/components/VendorReviewForm';
 import { calculateTrustScore } from '@/services/trustScore';
 import { TrustScoreBreakdown } from '@/types';
 import styles from './page.module.css';
@@ -15,17 +16,19 @@ export default function PublicVendorProfile({ params }: { params: Promise<{ id: 
     const [reviews, setReviews] = useState<VendorReview[]>([]);
     const [loading, setLoading] = useState(true);
 
+    const loadData = async () => {
+        const p = await db.getVendorProfileById(id);
+        if (p) {
+            const r = await db.getVendorReviews(p.id);
+            setProfile(p);
+            setReviews(r);
+        }
+        setLoading(false);
+    };
+
     useEffect(() => {
-        const load = async () => {
-            const p = await db.getVendorProfileById(id);
-            if (p) {
-                const r = await db.getVendorReviews(p.id);
-                setProfile(p);
-                setReviews(r);
-            }
-            setLoading(false);
-        };
-        load();
+        loadData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [id]);
 
     if (loading) return <div className="loading-screen">Loading...</div>;
@@ -209,6 +212,7 @@ export default function PublicVendorProfile({ params }: { params: Promise<{ id: 
                             </div>
                         ))
                     )}
+                    <VendorReviewForm vendorProfileId={profile.id} onSubmitted={loadData} />
                 </div>
             </div>
         </div>
