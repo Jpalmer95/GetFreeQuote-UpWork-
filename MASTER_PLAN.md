@@ -119,9 +119,17 @@ separate marketplace.**
 - [x] **ORACLE EVENT OUTBOX — BUILT 2026-08-12:** `oracle_events` table applied
       (`supabase_oracle.sql`), `emitOracleEvent` service (HMAC-signed), wired into JIT
       create/update/delete + review creation, and `/api/oracle/poll` relay endpoint
-      (guarded by `ORACLE_POLL_SECRET`) for the future paid agent-oracle.
-- [ ] Agent API + webhooks + microtransaction billing (L402-style) — next step; relay
-      the outbox to a real oracle ingest endpoint.
+      (guarded by `ORACLE_POLL_SECRET`).
+- [x] **AGENT API FEED — BUILT 2026-08-12:** `/api/oracle/feed` returns live open jobs,
+      available JIT listings, active community projects, and emitted events to any
+      agent with an API key (Bearer `bfk_...`, issued via `/api/api-keys`). Usage is
+      counted (`request_count`/`last_used_at`) as the foundation for microtransaction
+      billing.
+- [x] **`api_keys` TABLE — APPLIED 2026-08-12:** the `/api/api-keys` and `/api/mcp`
+      features referenced a table that did not exist in the DB; created it
+      (`supabase_api_keys.sql`) with hashing + scopes + RLS.
+- [ ] Webhooks + live L402 microtransaction billing — needs the separate paid oracle
+      ingest service; usage counting is ready to bill against.
 
 ## Future Roadmap (post-launch — do not execute yet)
 
@@ -134,8 +142,9 @@ separate marketplace.**
 
 ## Metadata
 
-- **Date:** 2026-08-12 (updated: reviews, JIT item-sharing, and oracle outbox now live)
+- **Date:** 2026-08-12 (updated: reviews, JIT item-sharing, oracle outbox + agent API feed)
 - **Owner:** Jonathan (Jpalmer95)
-- **Status:** Active — reviews flow, JIT item/tool sharing, and oracle event outbox shipped
-  and verified. Remaining: oracle agent API + webhooks + billing; escrow excluded per owner.
+- **Status:** Active — reviews, JIT item/tool sharing, oracle event outbox, and oracle
+  agent API feed all shipped + verified. Escrow excluded per owner; live L402 billing
+  awaits the separate paid oracle service.
 - **Note:** This document is authoritative for roadmap decisions.
