@@ -23,7 +23,7 @@ async function authenticate(request: NextRequest): Promise<{ userId: string; key
 
     const { data, error } = await supabaseAdmin
         .from('api_keys')
-        .select('id, user_id, revoked_at')
+        .select('id, user_id, revoked_at, request_count')
         .eq('key_hash', hashKey(rawKey))
         .maybeSingle();
 
