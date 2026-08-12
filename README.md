@@ -1,4 +1,4 @@
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-quotes.167.99.125.127.sslip.io-blue?style=flat-square)](https://quotes.167.99.125.127.sslip.io)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-getfreequote.org-blue?style=flat-square)](https://getfreequote.org)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?style=flat-square&logo=next.js)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org)
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?style=flat-square&logo=supabase)](https://supabase.com)
