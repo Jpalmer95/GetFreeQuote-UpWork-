@@ -9,6 +9,7 @@ import {
     estimateHours,
 } from '@/services/serverMappers';
 import { dispatchNotification } from '@/services/notificationDispatcher';
+import { emitOracleEvent } from '@/services/oracle';
 import { matchVendorsToJob } from '@/services/vendorMatcher';
 
 async function addMessage(jobId: string, senderId: string, senderType: string, content: string): Promise<void> {
@@ -182,6 +183,22 @@ export async function POST(request: NextRequest) {
         if (job.userId !== caller.id) {
             return NextResponse.json({ error: 'Forbidden: not job owner' }, { status: 403 });
         }
+
+        // Emit job creation to the oracle outbox (best-effort, non-blocking).
+        await emitOracleEvent({
+            eventType: 'job.created',
+            entityType: 'job',
+            entityId: job.id,
+            payload: {
+                title: job.title,
+                category: job.category,
+                industryVertical: job.industryVertical,
+                location: job.location,
+                budget: job.budget,
+                urgency: job.urgency,
+                isLocalRequest: job.isLocalRequest,
+            },
+        });
 
         const { data: customerConfigRow } = await supabaseAdmin
             .from('agent_configs')
