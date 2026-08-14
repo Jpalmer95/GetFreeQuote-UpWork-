@@ -14,6 +14,7 @@
  */
 
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { dispatchOutbound } from '@/services/channelAdapters';
 import type { JobBrief, BidThread, BidMessage, RankedQuote, BidChannel } from '@/types';
 
 // ---------------------------------------------------------------------------
@@ -177,20 +178,18 @@ export async function listRankedQuotes(jobId: string): Promise<RankedQuote[]> {
 
 /**
  * Compose + dispatch a single message to every OPEN thread for a job through
- * the owning channel adapter. The actual send (email/SMS/Thumbtack/voice) is
- * handled by the channel adapter; this service records the outbound intent in
- * bid_messages and touches each thread so ranking/redistribution sees it.
- *
- * Returns per-thread send records for the agent_actions audit log.
+ * the owning channel adapter. Records the outbound intent in bid_messages,
+ * actually delivers it via the channel (email/SMS/native/thumbtack/voice), and
+ * returns per-thread send records for the agent_actions audit log.
  */
 export async function redistributeToOpenThreads(
     jobId: string,
     input: { sender: string; body: string }
-): Promise<{ threadId: string; ok: boolean; message?: BidMessage }[]> {
+): Promise<{ threadId: string; ok: boolean; channel?: string; provider?: string; error?: string; message?: BidMessage }[]> {
     const threads = await listThreadsForJob(jobId);
     const open = threads.filter(t => t.status === 'OPEN' || t.status === 'AWAITING_VENDOR');
 
-    const results: { threadId: string; ok: boolean; message?: BidMessage }[] = [];
+    const results: { threadId: string; ok: boolean; channel?: string; provider?: string; error?: string; message?: BidMessage }[] = [];
     for (const thread of open) {
         const msg = await addBidMessage(thread.id, {
             direction: 'out',
@@ -198,11 +197,16 @@ export async function redistributeToOpenThreads(
             body: input.body,
             isAgentAction: true,
         });
-        // NOTE: actual channel dispatch (email/SMS/thumbtack) plugs in here via
-        // a per-channel adapter. Phase 2/3 wires email + SMS; Thumbtack is a
-        // browser-automation adapter (human-gated). Recording the intent now
-        // keeps redistribution channel-agnostic and auditable.
-        results.push({ threadId: thread.id, ok: !!msg, message: msg || undefined });
+        // Actually deliver through the channel adapter (email/SMS/native/voice).
+        const delivery = await dispatchOutbound(thread, input.body);
+        results.push({
+            threadId: thread.id,
+            ok: !!msg && delivery.ok,
+            channel: thread.channel,
+            provider: delivery.provider,
+            error: delivery.error,
+            message: msg || undefined,
+        });
     }
     return results;
 }
