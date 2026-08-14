@@ -133,6 +133,13 @@ separate marketplace.**
 
 ## Future Roadmap (post-launch — do not execute yet)
 
+- **HERMES AGENT BID DESK (the "agentic middleman")** — owner describes a job once;
+  their Hermes Agent posts it to all channels (GetFreeQuote native, email, SMS,
+  Thumbtack via browser, community boards, cheap voice line), converses with every
+  contractor, collects + ranks quotes, redistributes changes, and surfaces a ranked
+  CSV/report for final hire. **See `docs/plans/2026-08-13-hermes-agent-bid-desk.md`**
+  for the full phase-by-phase roadmap. This is the platform's highest-value native
+  use case.
 - Insurance/liability integration for gigs.
 - Cross-industry verticals: construction, trades, creative, repairs, moving, tech.
 - AI-estimated fair-price bands to guide both sides (extend `priceEstimation`).
