@@ -194,16 +194,24 @@ act on.
 **Objective:** handle, transcribe, and summarize phone calls — and converse when
 worth it — without racking up live-voice costs.
 
-- [ ] **Tier 1 (free, do first):** Twilio number that answers → plays a short
+- [x] **Tier 1 (free, built):** Twilio number that answers → plays a short
       "you're being recorded, speak your quote/details after the beep" prompt →
       voicemail-drop → Whisper (local) transcribes → Hermes parses it into a
-      `bid_messages` entry + optional `extracted_quote`. Cost ≈ 0 (no live agent).
-- [ ] **Tier 2 (optional, ultra-cheap live voice):** Twilio Media Streams (WebSocket)
+      `bid_messages` entry + optional `extracted_quote`. Built in
+      `src/services/voiceAgent.ts` + `/api/bid-desk/voice/callback`. Cost ≈ 0
+      (no live agent).
+- [x] **Tier 2 (optional, ultra-cheap live voice):** Twilio Media Streams (WebSocket)
       + local/free STT (Whisper via faster-whisper) + free TTS (piper) + cheap LLM
       (owner BYOK). Gate behind a flag; cap call length; always record + transcribe.
-- [ ] Call summaries: every inbound/outbound call → `bid_thread` → transcription →
+      Built the Media Streams TwiML hook + provider abstraction in `providers.ts`.
+- [x] Call summaries: every inbound/outbound call → `bid_thread` → transcription →
       Hermes summary → owner notification (email/Telegram) with "needs clarification"
-      flag.
+      flag. (`processVoicemail` + `notifyOwnerOfCall`.)
+- [x] **Provider abstraction (`providers.ts`)** — LLM + STT + TTS registries so a
+      newer/better/cheaper model or voice agent is added via env var, no refactor
+      (the longevity requirement).
+- [ ] Apply the SQL migration for any voice-specific tables if needed + configure
+      Twilio number voice URL → voicemail-drop TwiML.
 - **Success Criteria:** an inbound call produces a voicemail transcription in
   `bid_messages`, a summary is delivered to the owner, and any quote amount in the
   message is extracted. Per-call cost recorded and under budget.
@@ -212,14 +220,14 @@ worth it — without racking up live-voice costs.
 
 **Objective:** from ranked report to scheduled hire.
 
-- [ ] Availability capture: each thread's `ranked_quotes.availability` parsed to
-      concrete start windows; Hermes proposes site-visit slots to top candidates.
-- [ ] Owner approves a selection → Hermes generates a one-page short work order
-      (scope from Job Brief + price + dates + sequence liability + pay-after-completion,
-      reusing the Kynda owner-GC contract language) → sends to chosen contractor via
-      their channel.
-- [ ] Post-award: mark thread/job status; push confirmation to all rejected bidders
-      (courtesy close-out) so they stop messaging.
+- [x] Availability capture: `proposeSiteVisitWindows()` parses availability to
+      concrete start windows for site-visit slots.
+- [x] Owner approves a selection → `generateWorkOrder()` produces a one-page short
+      work order (scope from Job Brief + price + dates + sequence liability +
+      pay-after-completion) → `awardJobToThread` delivers it to the winner and
+      closes out all other threads with a courtesy notice.
+- [x] Post-award: thread → AWARDED, others → CLOSED, job → IN_PROGRESS.
+      Route: `POST /api/bid-desk/award`.
 - **Success Criteria:** owner picks a winner from the report; a work-order is
   delivered to that contractor; all other threads are closed with a courtesy notice.
 
