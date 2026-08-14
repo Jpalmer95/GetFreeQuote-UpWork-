@@ -149,11 +149,15 @@ channels — Hermes converses with a (simulated or real) vendor agent on the sam
 **Objective:** Hermes converses over email (Resend + shared IMAP inbox) and SMS
 (Twilio inbound webhook), auto-opening a `bid_thread` per new contact.
 
-- [ ] Email: create `bids@getfreequote.org` mailbox; IMAP poller (cron) → new email =
-      new/updated `bid_thread` → Hermes drafts reply → sent via Resend (SMTP).
-- [ ] SMS: Twilio number + inbound webhook → `bid_thread` → Hermes replies via
-      Twilio API. Log per-message cost.
-- [ ] Both channels write into `bid_messages` so ranking/redistribution is channel-agnostic.
+- [x] **Channel adapter layer (`src/services/channelAdapters.ts`)** — `ChannelAdapter`
+      interface + `channelRegistry` for native/email/sms/thumbtack/voice. The whole
+      system talks to the registry, never a specific provider, so swapping email/SMS/
+      voice vendors is a single-file change (the longevity requirement).
+- [x] Email adapter (Resend outbound; inbound via IMAP poller → `ingestInbound()`).
+- [x] SMS adapter (Twilio outbound; inbound webhook → `ingestInbound()`).
+- [x] `redistributeToOpenThreads` now actually dispatches via the channel adapters.
+- [ ] IMAP poller cron (inbound email → thread) — needs a real `bids@` mailbox + creds.
+- [ ] Twilio SMS inbound webhook route — needs a real Twilio number.
 - **Success Criteria:** send a test email and a test SMS from a personal number;
   each opens a thread, Hermes replies, and the reply arrives back to the tester.
   Per-message cost is logged.
@@ -163,10 +167,10 @@ channels — Hermes converses with a (simulated or real) vendor agent on the sam
 **Objective:** any Job Brief change (new detail, photo, date move, budget change) is
 propagated to every open thread + every prior quote-giver in one Hermes action.
 
-- [ ] `BidDeskService.redistribute(brief_id, message)` → for each open thread,
-      compose a channel-appropriate message and send via that channel's adapter;
-      record each send in `bid_messages` + `agent_actions` audit log.
-- [ ] Owner command in Hermes: "update the job brief / add a photo / move the date"
+- [x] `BidDeskService.redistribute` → for each open thread, compose a channel-appropriate
+      message and send via that channel's adapter; record each send in `bid_messages`
+      + `agent_actions` audit log. Live route `POST /api/bid-desk/redistribute`.
+- [x] Owner command in Hermes: "update the job brief / add a photo / move the date"
       → Hermes updates `job_briefs` + triggers redistribution.
 - **Success Criteria:** 3 threads on different channels all receive the same new
   detail after one owner instruction; audit log shows each send with status.
@@ -176,14 +180,12 @@ propagated to every open thread + every prior quote-giver in one Hermes action.
 **Objective:** turn the quote inbox into an apples-to-apples comparison the owner can
 act on.
 
-- [ ] Extend `structuredQuote.compareQuotes()` into a multi-quote ranker:
-      weighted score = price, estimated_days, exclusions penalty, license/COI verified,
-      rating (from `vendor_reviews`), distance (GPS).
-- [ ] `/api/bid-desk/report/:jobId` returns ranked list + a CSV (`quotes_report.csv`)
-      with: vendor, channel, amount, days, start availability, exclusions, verified,
-      rating, rank, notes.
-- [ ] Hermes tool `bid_desk_report` produces the CSV, saves to repo `/reports/`, and
-      summarizes top 3 to the owner.
+- [x] `src/services/quoteRanker.ts` — weighted multi-quote ranker (price, days,
+      exclusions penalty, license/COI, rating, distance) with injectable weights.
+      Pure logic, unit-tested (8 passing with Vitest).
+- [x] `GET /api/bid-desk/report?jobId=&format=json|csv|summary` — ranked list, CSV
+      download, or top-3 summary for the owner's Hermes agent.
+- [x] Vitest test runner wired (`npm test`), test files excluded from Next tsc build.
 - **Success Criteria:** 4+ quotes across ≥2 channels produce a ranked list and a CSV
   with all columns populated; top-3 summary is delivered to the owner.
 
