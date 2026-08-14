@@ -1107,3 +1107,72 @@ export interface EnhancedVendorMatch {
     };
     competitiveEdge?: string[];  // 'fastest_response', 'best_rated', 'lowest_price', 'most_experience'
 }
+
+// ===========================================================================
+// Bid Desk (Hermes Agent "agentic middleman") — see docs/plans/2026-08-13-hermes-agent-bid-desk.md
+// ===========================================================================
+
+export type BidChannel = 'native' | 'email' | 'sms' | 'thumbtack' | 'voice';
+
+export type BidThreadStatus =
+    | 'OPEN'
+    | 'AWAITING_OWNER'
+    | 'AWAITING_VENDOR'
+    | 'AWARDED'
+    | 'CLOSED';
+
+export interface JobBrief {
+    id: string;
+    job_id: string;
+    scope_structured: Record<string, unknown>;
+    trades: string[];
+    budget_min?: number | null;
+    budget_max?: number | null;
+    timeline_start?: string | null;
+    timeline_end?: string | null;
+    must_haves: unknown[];
+    plans_attachments: string[];
+    notes?: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface BidThread {
+    id: string;
+    job_id: string;
+    channel: BidChannel;
+    external_thread_key?: string | null;
+    contractor_contact: Record<string, unknown>;
+    status: BidThreadStatus;
+    last_activity_at: string;
+    created_at: string;
+}
+
+export interface BidMessage {
+    id: string;
+    thread_id: string;
+    direction: 'in' | 'out';
+    sender: string;
+    recipient?: string | null;
+    body: string;
+    raw: Record<string, unknown>;
+    extracted_quote?: Record<string, unknown> | null;
+    is_agent_action: boolean;
+    created_at: string;
+}
+
+export interface RankedQuote {
+    id: string;
+    thread_id: string;
+    quote_amount: number;
+    estimated_days?: number | null;
+    start_availability?: string | null;
+    exclusions?: string | null;
+    license_verified: boolean;
+    coi_verified: boolean;
+    rating?: number | null;
+    distance_mi?: number | null;
+    rank?: number | null;
+    notes?: string | null;
+    created_at: string;
+}
