@@ -123,8 +123,10 @@ thread to a job, so Hermes can always answer from a single source of truth.
     license/coi_verified, availability, rank, notes) + RLS mirroring existing patterns.
 - [x] Add `BidDeskService` (`src/services/bidDesk.ts`) with types for JobBrief,
   BidThread, BidMessage, RankedQuote.
-- [ ] `/api/bid-desk/threads` GET/POST and `/api/bid-desk/brief` GET/PUT (service-role
-  for agent writes, RLS for owner reads).
+- [x] `/api/bid-desk/brief` GET/PUT, `/api/bid-desk/threads` GET/POST,
+      `/api/bid-desk/messages` GET/POST, `/api/bid-desk/redistribute` POST
+      (auth: job owner session OR Hermes agent `bfk_` API key via `bidDeskAuth`;
+      writes via service-role, owner reads via RLS).
 - **Success Criteria:** migration applies cleanly in Supabase Dashboard; a Hermes agent
   can create a job brief + a native bid thread and write/read a bid message via the API.
 
