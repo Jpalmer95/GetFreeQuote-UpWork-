@@ -111,7 +111,7 @@ channel.**
 **Objective:** one canonical record per job + a schema that maps any external channel
 thread to a job, so Hermes can always answer from a single source of truth.
 
-- [ ] Create SQL migration `supabase_bid_desk.sql` (ready to paste in Supabase
+- [x] Create SQL migration `supabase_bid_desk.sql` (ready to paste in Supabase
       Dashboard → SQL Editor):
   - `job_briefs` (job_id FK, scope_structured jsonb, trades text[], budget_min/max,
     timeline_start/end, must_haves jsonb, plans_attachments text[], updated_at).
@@ -121,7 +121,7 @@ thread to a job, so Hermes can always answer from a single source of truth.
     text, raw jsonb, extracted_quote jsonb nullable, created_at).
   - `ranked_quotes` (thread_id FK, quote_amount, estimated_days, exclusions,
     license/coi_verified, availability, rank, notes) + RLS mirroring existing patterns.
-- [ ] Add `BidDeskService` (`src/services/bidDesk.ts`) with types for JobBrief,
+- [x] Add `BidDeskService` (`src/services/bidDesk.ts`) with types for JobBrief,
   BidThread, BidMessage, RankedQuote.
 - [ ] `/api/bid-desk/threads` GET/POST and `/api/bid-desk/brief` GET/PUT (service-role
   for agent writes, RLS for owner reads).
