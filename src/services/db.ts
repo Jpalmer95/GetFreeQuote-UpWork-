@@ -67,7 +67,7 @@ export const db = {
         }
 
         if (filters.location) {
-            query = query.ilike('location', `%${filters.location}%`);
+            query = query.ilike('location', `%${filters.location.replace(/[%_,]/g, ' ').slice(0, 80)}%`);
         }
 
         if (filters.query) {

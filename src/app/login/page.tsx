@@ -126,7 +126,7 @@ function LoginForm() {
                 <div className={`glass-panel ${styles.card}`}>
                     <div className={styles.cardHeader}>
                         <Link href="/" className={styles.backLink}>← Back</Link>
-                        <div className={styles.logoMark}>B</div>
+                        <div className={styles.logoMark}>G</div>
                     </div>
 
                     <div className={styles.successBox}>
@@ -172,7 +172,7 @@ function LoginForm() {
                         >
                             ← Back to Log In
                         </button>
-                        <div className={styles.logoMark}>B</div>
+                        <div className={styles.logoMark}>G</div>
                     </div>
 
                     {resetSent ? (
@@ -250,7 +250,7 @@ function LoginForm() {
             <div className={`glass-panel ${styles.card}`}>
                 <div className={styles.cardHeader}>
                     <Link href="/" className={styles.backLink}>← Back</Link>
-                    <div className={styles.logoMark}>B</div>
+                    <div className={styles.logoMark}>G</div>
                 </div>
 
                 <div className={styles.tabs}>

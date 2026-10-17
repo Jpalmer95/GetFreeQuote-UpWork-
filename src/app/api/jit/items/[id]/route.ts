@@ -38,9 +38,21 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
             return NextResponse.json({ success: false, error: 'You can only update your own listings' }, { status: 403 });
         }
 
-        const body = await request.json();
+        const body = await request.json() as Record<string, unknown>;
+        const allowed = ['itemName', 'category', 'description', 'listingType', 'sellPrice', 'rentPricePerDay', 'rentPricePerWeek', 'deposit', 'availableFrom', 'availableUntil', 'locationText', 'locationLat', 'locationLng', 'radiusMiles', 'images', 'status', 'isActive'];
+        const payload: Record<string, unknown> = { updated_at: new Date().toISOString() };
+        const map: Record<string, string> = {
+            itemName: 'item_name', category: 'category', description: 'description', listingType: 'listing_type',
+            sellPrice: 'sell_price', rentPricePerDay: 'rent_price_per_day', rentPricePerWeek: 'rent_price_per_week',
+            deposit: 'deposit', availableFrom: 'available_from', availableUntil: 'available_until',
+            locationText: 'location_text', locationLat: 'location_lat', locationLng: 'location_lng',
+            radiusMiles: 'radius_miles', images: 'images', status: 'status', isActive: 'is_active',
+        };
+        for (const k of allowed) {
+            if (body[k] !== undefined) payload[map[k]] = body[k];
+        }
         const { data, error } = await supabaseAdmin
-            .from('item_listings').update({ ...body, updated_at: new Date().toISOString() }).eq('id', id).select().single();
+            .from('item_listings').update(payload).eq('id', id).select().single();
         if (error) return NextResponse.json({ success: false, error: error.message }, { status: 500 });
 
         await emitOracleEvent({ eventType: 'jit.listing_updated', entityType: 'item_listing', entityId: id, payload: { status: body.status } });

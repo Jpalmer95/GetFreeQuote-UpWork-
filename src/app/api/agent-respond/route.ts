@@ -8,6 +8,7 @@ import {
     customerAgentId, vendorAgentId,
 } from '@/services/serverMappers';
 import { dispatchNotification } from '@/services/notificationDispatcher';
+import { redistributeToOpenThreads, upsertJobBrief, getJobBrief } from '@/services/bidDesk';
 
 export async function POST(request: NextRequest) {
     try {
@@ -104,6 +105,26 @@ export async function POST(request: NextRequest) {
                     .from('quotes')
                     .select('vendor_id')
                     .eq('job_id', jobId);
+
+                const existingBrief = await getJobBrief(jobId);
+                await upsertJobBrief(jobId, {
+                    scope_structured: {
+                        ...(existingBrief?.scope_structured || {}),
+                        latestOwnerUpdate: message.slice(0, 2000),
+                    },
+                    trades: existingBrief?.trades || [],
+                    budget_min: existingBrief?.budget_min ?? null,
+                    budget_max: existingBrief?.budget_max ?? null,
+                    timeline_start: existingBrief?.timeline_start ?? null,
+                    timeline_end: existingBrief?.timeline_end ?? null,
+                    must_haves: existingBrief?.must_haves || [],
+                    plans_attachments: existingBrief?.plans_attachments || [],
+                    notes: existingBrief?.notes ?? null,
+                });
+                await redistributeToOpenThreads(jobId, {
+                    sender: 'owner-agent',
+                    body: `Scope update from the owner:\n\n${message}`,
+                });
 
                 for (const vq of (vendorQuotes || [])) {
                     const { data: vcRow } = await supabaseAdmin

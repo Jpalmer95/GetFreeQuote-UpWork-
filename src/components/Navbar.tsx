@@ -50,8 +50,8 @@ export default function Navbar() {
         <header className={styles.header}>
             <div className={styles.inner}>
                 <Link href={mounted && user ? '/dashboard' : '/'} className={styles.logo}>
-                    <span className={styles.logoIcon}>B</span>
-                    <span className="gradient-text">BidFlow</span>
+                    <span className={styles.logoIcon}>G</span>
+                    <span className="gradient-text">GetFreeQuote</span>
                 </Link>
 
                 <button
@@ -80,31 +80,19 @@ export default function Navbar() {
                             href="/local"
                             className={`${styles.link} ${styles.localLink} ${pathname === '/local' ? styles.active : ''}`}
                         >
-                            Go Local
+                            Nearby
                         </Link>
                         <Link
                             href="/jit"
                             className={`${styles.link} ${pathname?.startsWith('/jit') ? styles.active : ''}`}
                         >
-                            JIT Tools
+                            Tools
                         </Link>
                         <Link
                             href="/community"
                             className={`${styles.link} ${pathname?.startsWith('/community') ? styles.active : ''}`}
                         >
                             Community
-                        </Link>
-                        <Link
-                            href="/group-buys"
-                            className={`${styles.link} ${pathname === '/group-buys' ? styles.active : ''}`}
-                        >
-                            Materials
-                        </Link>
-                        <Link
-                            href="/pools"
-                            className={`${styles.link} ${pathname === '/pools' ? styles.active : ''}`}
-                        >
-                            Pools
                         </Link>
                         {showUser && (
                             <>
@@ -118,43 +106,19 @@ export default function Navbar() {
                                     href="/projects"
                                     className={`${styles.link} ${pathname?.startsWith('/projects') ? styles.active : ''}`}
                                 >
-                                    Projects
+                                    Builds
                                 </Link>
                                 <Link
-                                    href="/escrow"
-                                    className={`${styles.link} ${pathname === '/escrow' ? styles.active : ''}`}
+                                    href="/vendor"
+                                    className={`${styles.link} ${pathname?.startsWith('/vendor') ? styles.active : ''}`}
                                 >
-                                    Escrow
-                                </Link>
-                                <Link
-                                    href="/apprentice"
-                                    className={`${styles.link} ${pathname === '/apprentice' ? styles.active : ''}`}
-                                >
-                                    Apprentice
-                                </Link>
-                                <Link
-                                    href="/vendor/analytics"
-                                    className={`${styles.link} ${pathname === '/vendor/analytics' ? styles.active : ''}`}
-                                >
-                                    Analytics
+                                    Vendor
                                 </Link>
                                 <Link
                                     href="/agent-hub"
                                     className={`${styles.link} ${pathname?.startsWith('/agent-hub') ? styles.active : ''}`}
                                 >
-                                    Agent Hub
-                                </Link>
-                                <Link
-                                    href="/agent-settings"
-                                    className={`${styles.link} ${pathname === '/agent-settings' ? styles.active : ''}`}
-                                >
-                                    AI Agent
-                                </Link>
-                                <Link
-                                    href="/settings/api-keys"
-                                    className={`${styles.link} ${pathname?.startsWith('/settings') ? styles.active : ''}`}
-                                >
-                                    API Keys
+                                    Agent
                                 </Link>
                                 {profile?.role === 'ADMIN' && (
                                     <Link

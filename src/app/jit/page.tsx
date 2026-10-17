@@ -20,7 +20,7 @@ const card = {
 } as const;
 
 export default function JitPage() {
-    const { user } = useAuth();
+    const { user, session } = useAuth();
     const [items, setItems] = useState<ItemListing[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -34,6 +34,7 @@ export default function JitPage() {
     });
     const [submitting, setSubmitting] = useState(false);
     const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+    const [claimingId, setClaimingId] = useState<string | null>(null);
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -57,9 +58,11 @@ export default function JitPage() {
         setSubmitting(true);
         setMessage(null);
         try {
+            const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+            if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
             const res = await fetch('/api/jit/items', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 body: JSON.stringify({
                     itemName: form.itemName.trim(), category: form.category, description: form.description,
                     listingType: form.listingType,
@@ -80,6 +83,23 @@ export default function JitPage() {
             }
         } catch (e: any) { setMessage({ ok: false, text: e.message }); }
         finally { setSubmitting(false); }
+    };
+
+    const claim = async (id: string, status: 'RENTED' | 'SOLD') => {
+        if (!session) return;
+        setClaimingId(id);
+        try {
+            const res = await fetch(`/api/jit/items/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+                body: JSON.stringify({ status }),
+            });
+            const json = await res.json();
+            if (!json.success) setMessage({ ok: false, text: json.error || 'Could not update listing.' });
+            else load();
+        } finally {
+            setClaimingId(null);
+        }
     };
 
     const priceLine = (i: ItemListing) => {
@@ -163,6 +183,20 @@ export default function JitPage() {
                             {i.description && <p style={{ margin: '0.6rem 0 0', fontSize: '0.92rem', color: 'rgba(255,255,255,0.75)' }}>{i.description}</p>}
                             <div style={{ marginTop: '0.6rem', fontSize: '0.9rem', color: 'var(--primary-light, #9dbdff)' }}>{priceLine(i)}</div>
                             <div style={{ marginTop: '0.4rem', fontSize: '0.8rem', color: 'rgba(255,255,255,0.45)' }}>Listed by {i.ownerName}</div>
+                            {user && i.ownerId === user.id && i.status === 'AVAILABLE' && (
+                                <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem' }}>
+                                    <button disabled={claimingId === i.id} onClick={() => claim(i.id, 'RENTED')}
+                                        style={{ padding: '0.4rem 0.8rem', borderRadius: '8px', border: 'none', cursor: 'pointer', background: 'rgba(79,142,247,0.25)', color: '#fff' }}>
+                                        Mark rented
+                                    </button>
+                                    {i.listingType !== 'RENT' && (
+                                        <button disabled={claimingId === i.id} onClick={() => claim(i.id, 'SOLD')}
+                                            style={{ padding: '0.4rem 0.8rem', borderRadius: '8px', border: 'none', cursor: 'pointer', background: 'rgba(15,217,142,0.25)', color: '#fff' }}>
+                                            Mark sold
+                                        </button>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>

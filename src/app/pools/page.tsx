@@ -52,7 +52,7 @@ export default function PoolsPage() {
                             🏘️ Neighborhood Pools
                         </h1>
                         <p style={{ color: '#888' }}>
-                            Pool with neighbors for bulk contractor pricing. Everyone saves!
+                            Neighborhood group-buy pricing is a planned surface. These cards are design mocks — joining does not charge anyone.
                         </p>
                     </div>
                     <button style={{

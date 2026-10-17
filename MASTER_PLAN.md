@@ -38,21 +38,22 @@ Who pays when this scales? (Must be explicit.)
 - No free lunch: agent-negotiation LLM spend is real. Model it as a per-negotiation
   cost recovered through fees and/or oracle access.
 
-## Current State (verified 2026-08-12)
+## Current State (verified 2026-10-17)
 
 - **Stack:** Next.js 16 + Supabase (Postgres, realtime, storage). AI agents present
   (`/api/agent-process`, `/api/agent-respond`, `/api/agent-instruct`, `/api/poll-jobs`).
-- **Live:** https://getfreequote.org. Traefik/Coolify on droplet `167.99.125.127`.
-- **Already built (verified):** jobs/quotes/messages; `agent_configs` (budgets,
-  escalation triggers, auto-approve thresholds, service area); `agent_actions` audit
-  log; notifications; vendor verification + `vendor_profiles` (license/insurance,
-  certifications); `estimating_templates` (line items + markup); `projects` +
-  `project_phases` (milestones); community funding (`community_projects`, `donations`,
-  `ledger_entries` + `process_donation`/`record_community_expense` RPCs); GPS local job
-  discovery (`/local`); scope parsing; price estimation; push/SMS/email services.
-- **Known constraint:** hosted Supabase has **no CLI / DB credentials available to agents**,
-  so creating NEW tables requires a SQL migration applied via Supabase Dashboard.
-  See the GAP sections for ready-to-apply SQL.
+- **Intended live:** https://getfreequote.org. Traefik/Coolify on droplet `167.99.125.127`.
+- **Outage (2026-10-17, blocking production):** Traefik `getfreequotes.yaml` still points at
+  `10.0.1.12:5000` while the container is `10.0.1.11:5000` (502). Hosted Supabase project
+  `nastvwttgfzwwaoaudmw.supabase.co` is **NXDOMAIN / paused** so `/api/health` is 503 and
+  the oracle relay polls 502. Droplet checkout is 8 commits behind `origin/main`.
+  Restore: unpause/restore the Supabase project **or** cut over to a new one, fix Traefik
+  IP, rebuild/redeploy from GitHub, then re-apply `supabase_bid_desk.sql` if tables are missing.
+- **2026-10-17 product overhaul (this branch):** public `/jobs/[id]` bid page + `/api/quotes`;
+  Job Brief + bid-thread wiring on agent-process/auto-quote; owner messages redistribute to
+  every open channel; oracle feed spatial/keyword filters; JIT owner mark rented/sold;
+  formula eval no longer uses `Function()`; Navbar collapsed; mock escrow/pools/group-buys/
+  apprentice labeled as not-live; community ledger copy is honest.
 
 ## Architecture Decision (Recorded)
 

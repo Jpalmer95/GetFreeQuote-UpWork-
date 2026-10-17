@@ -54,7 +54,7 @@ export default function GroupBuysPage() {
                             🏗️ Material Group Buys
                         </h1>
                         <p style={{ color: '#888' }}>
-                            Save 15-30% on materials by pooling orders with other contractors
+                            Material pooling is designed, not live. Buttons below are previews.
                         </p>
                     </div>
                     <button style={{

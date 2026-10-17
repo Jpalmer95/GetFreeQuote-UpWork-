@@ -11,6 +11,8 @@ import {
 import { dispatchNotification } from '@/services/notificationDispatcher';
 import { emitOracleEvent } from '@/services/oracle';
 import { matchVendorsToJob } from '@/services/vendorMatcher';
+import { evaluateFormula } from '@/lib/safeEval';
+import { getOrCreateThread, setRankedQuote, upsertJobBrief, addBidMessage } from '@/services/bidDesk';
 
 async function addMessage(jobId: string, senderId: string, senderType: string, content: string): Promise<void> {
     await supabaseAdmin.from('messages').insert({
@@ -20,22 +22,6 @@ async function addMessage(jobId: string, senderId: string, senderType: string, c
         content,
         is_agent_action: true,
     });
-}
-
-function evaluateFormula(formula: string, vars: Record<string, number>, fallback: number): number {
-    try {
-        const sanitized = formula.replace(/[^0-9+\-*/().%\s a-zA-Z_]/g, '');
-        let expr = sanitized;
-        for (const [key, val] of Object.entries(vars)) {
-            expr = expr.replace(new RegExp(`\\b${key}\\b`, 'g'), val.toString());
-        }
-        if (/[a-zA-Z_]/.test(expr)) return fallback;
-        const result = Function(`"use strict"; return (${expr})`)();
-        if (typeof result !== 'number' || !isFinite(result) || result < 0) return fallback;
-        return result;
-    } catch {
-        return fallback;
-    }
 }
 
 function calculateFromTemplate(template: EstimatingTemplate, job: Job, hours: number): { amount: number; breakdown: string[] } {
@@ -183,6 +169,25 @@ export async function POST(request: NextRequest) {
         if (job.userId !== caller.id) {
             return NextResponse.json({ error: 'Forbidden: not job owner' }, { status: 403 });
         }
+
+        await upsertJobBrief(job.id, {
+            scope_structured: {
+                title: job.title,
+                description: job.description,
+                category: job.category,
+                subcategory: job.subcategory,
+                materials: job.materials,
+                squareFootage: job.squareFootage,
+            },
+            trades: [job.subcategory || job.category].filter(Boolean),
+            budget_min: null,
+            budget_max: null,
+            timeline_start: job.timelineStart || null,
+            timeline_end: job.timelineEnd || null,
+            must_haves: [],
+            plans_attachments: job.attachments || [],
+            notes: job.urgency ? `urgency:${job.urgency}` : null,
+        });
 
         // Emit job creation to the oracle outbox (best-effort, non-blocking).
         await emitOracleEvent({
@@ -342,6 +347,27 @@ export async function POST(request: NextRequest) {
                 }).select('id').single();
 
                 if (!quoteError && insertedQuote) {
+                    const thread = await getOrCreateThread(job.id, 'native', `native:${vc.userId}`);
+                    if (thread) {
+                        await supabaseAdmin.from('bid_threads').update({
+                            contractor_contact: { name: vendorDisplayName, userId: vc.userId },
+                        }).eq('id', thread.id);
+                        await addBidMessage(thread.id, {
+                            direction: 'in',
+                            sender: vendorDisplayName,
+                            body: detailsText,
+                            extractedQuote: { amount, estimatedDays },
+                            isAgentAction: true,
+                        });
+                        await setRankedQuote(thread.id, {
+                            quote_amount: amount,
+                            estimated_days: estimatedDays,
+                            license_verified: false,
+                            coi_verified: false,
+                            rank: null,
+                            notes: templateName ? `template:${templateName}` : 'auto-quote',
+                        });
+                    }
                     await addMessage(job.id, vendorAgentId(vc.userId), 'vendor_agent',
                         `Automated quote submitted: $${amount} for an estimated ${estimatedDays} day(s).${templateName ? ` (Using template: ${templateName})` : ''}`);
 

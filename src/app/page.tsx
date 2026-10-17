@@ -21,7 +21,7 @@ export default function Home() {
       <section className={styles.hero}>
         <div className={styles.eyebrow}>
           <span className={styles.liveDot} />
-          AI-Native Estimate Marketplace
+          AI-native quote, JIT, and community marketplace
         </div>
 
         <h1 className={styles.headline}>
@@ -30,7 +30,7 @@ export default function Home() {
         </h1>
 
         <p className={styles.subtitle}>
-          Post your project once and let AI agents gather bids from verified professionals automatically — no more juggling calls, texts, and emails across dozens of vendors.
+          Post a job, a popped tire, or a park build once. Agents collect bids, push every change to every contractor, and rank best value — small shops compete on work, not ads.
         </p>
 
         <div className={styles.actions}>
@@ -42,7 +42,10 @@ export default function Home() {
               Browse Marketplace
             </Link>
             <Link href="/local" className="btn-secondary">
-              Go Local
+              Nearby / JIT
+            </Link>
+            <Link href="/jit" className="btn-secondary">
+              Borrow a tool
             </Link>
             <Link href="/community" className="btn-secondary">
               Browse Community Projects
@@ -118,7 +121,7 @@ export default function Home() {
       <section className={styles.ctaSection}>
         <div className={`glass-panel ${styles.ctaCard}`}>
           <h2>Ready to simplify your quoting process?</h2>
-          <p>Whether you need a single handyman or bids for a multi-phase commercial build, BidFlow has you covered.</p>
+          <p>Whether you need a spare jack, three roof quotes, or a funded neighborhood park, describe it once. Humans stay in the loop only where it matters.</p>
           <Link href="/login?mode=signup" className="btn-primary">
             Create Free Account
           </Link>

@@ -3,8 +3,8 @@ import type { Metadata } from 'next';
 import { ClientProviders } from './providers';
 
 export const metadata: Metadata = {
-  title: 'BidFlow | AI-Powered Marketplace for Estimates & Bids',
-  description: 'Post a project, let AI agents handle the quoting. Industry-agnostic marketplace for home services, commercial construction, gig work, events, and more.',
+  title: 'GetFreeQuote | One post. Every quote. Any job.',
+  description: 'Post a need once — quotes, JIT help, community builds, and contractor bids update themselves. Built for homeowners, small shops, and agents.',
 };
 
 const hydrationErrorFilter = `

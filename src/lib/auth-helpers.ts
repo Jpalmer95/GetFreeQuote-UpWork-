@@ -5,7 +5,7 @@ export function getBaseUrl(): string {
     if (process.env.REPLIT_DEV_DOMAIN) {
         return `https://${process.env.REPLIT_DEV_DOMAIN}`;
     }
-    return 'http://localhost:3000';
+    return process.env.NEXT_PUBLIC_APP_URL || 'https://getfreequote.org';
 }
 
 export function getAuthCallbackUrl(): string {

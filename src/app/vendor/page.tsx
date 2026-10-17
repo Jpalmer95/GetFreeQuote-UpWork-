@@ -221,11 +221,12 @@ export default function VendorDashboard() {
                                             <p>{job.location}</p>
                                             {job.budget && <p className={styles.jobBudget}>{job.budget}</p>}
                                             <div className={styles.botAction}>
-                                                {agentActive ? (
-                                                    <span className={styles.success}>Agent Monitoring</span>
-                                                ) : (
-                                                    <button className={styles.quoteBtn}>Manual Quote</button>
-                                                )}
+                                                <button
+                                                    className={styles.quoteBtn}
+                                                    onClick={() => router.push(`/jobs/${job.id}`)}
+                                                >
+                                                    {agentActive ? 'Open job' : 'Quote'}
+                                                </button>
                                             </div>
                                         </div>
                                     );

@@ -119,6 +119,7 @@ export default function Marketplace() {
     }, []);
 
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [sort, setSort] = useState<'newest' | 'budget'>('newest');
 
     const [filters, setFilters] = useState({
         query: '',
@@ -163,6 +164,12 @@ export default function Marketplace() {
                     }
                 }
 
+                if (sort === 'budget') {
+                    const budgetNum = (j: Job) => parseFloat(String(j.budget || '').replace(/[^0-9.]/g, '')) || 0;
+                    results = [...results].sort((a, b) => budgetNum(b) - budgetNum(a));
+                } else {
+                    results = [...results].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+                }
                 setJobs(results);
             } catch (err) {
                 console.error('Marketplace search failed:', err);
@@ -171,7 +178,7 @@ export default function Marketplace() {
             }
         }, 300);
         return () => clearTimeout(timer);
-    }, [filters, vendorServiceAreas]);
+    }, [filters, vendorServiceAreas, sort]);
 
     const subcategories = filters.industryVertical
         ? (INDUSTRY_SUBCATEGORIES as Record<string, string[]>)[filters.industryVertical] || []
@@ -323,9 +330,13 @@ export default function Marketplace() {
 
                     <div className={styles.feedHeader}>
                         <h2>Active Opportunities ({jobs.length})</h2>
-                        <select className={styles.sortSelect}>
-                            <option>Newest First</option>
-                            <option>Highest Budget</option>
+                        <select
+                            className={styles.sortSelect}
+                            value={sort}
+                            onChange={(e) => setSort(e.target.value as 'newest' | 'budget')}
+                        >
+                            <option value="newest">Newest First</option>
+                            <option value="budget">Highest Budget</option>
                         </select>
                     </div>
 

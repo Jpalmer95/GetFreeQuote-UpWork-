@@ -66,8 +66,7 @@ export default function CommunityPage() {
                     <span className="gradient-text">Community Projects</span>
                 </h1>
                 <p className={styles.heroSub}>
-                    Fund public improvements, open-source tools, and community initiatives with
-                    transparent smart contract-backed escrow.
+                    Fund public improvements with a transparent ledger. Donations today record intent and a simulated tx hash — they are not on-chain money. When a project is funded, post the work to the marketplace so the best-value contractor can bid.
                 </p>
                 <div className={styles.heroActions}>
                     {user ? (

@@ -465,13 +465,13 @@ export default function CommunityProjectDetail() {
 
                         {project.contractAddress && (
                             <div className={styles.card}>
-                                <div className={styles.cardTitle}>Smart Contract Escrow</div>
+                                <div className={styles.cardTitle}>Ledger (intent, not live chain)</div>
                                 <div className={styles.contractInfo}>
                                     <span className={styles.contractLabel}>Contract Address:</span><br />
                                     {project.contractAddress}
                                 </div>
                                 <div className={styles.contractInfo} style={{ marginTop: '0.5rem' }}>
-                                    <span className={styles.contractLabel}>Network:</span> Testnet (Simulated)
+                                    <span className={styles.contractLabel}>Network:</span> Simulated ledger (off-platform payments)
                                 </div>
                                 <div className={styles.contractInfo} style={{ marginTop: '0.5rem' }}>
                                     <span className={styles.contractLabel}>Escrow Balance:</span>{' '}

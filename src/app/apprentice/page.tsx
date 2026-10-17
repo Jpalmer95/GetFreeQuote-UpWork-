@@ -58,7 +58,7 @@ export default function ApprenticePage() {
                     🎓 Apprentice & Mentorship
                 </h1>
                 <p style={{ color: '#888', marginBottom: '24px' }}>
-                    Connect aspiring tradespeople with experienced mentors
+                    Mentorship matching is a planned module. Profiles below are sample data.
                 </p>
 
                 {/* Tabs */}

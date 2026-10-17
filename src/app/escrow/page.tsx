@@ -42,10 +42,10 @@ export default function EscrowPage() {
             <Navbar />
             <div style={{ maxWidth: '900px', margin: '0 auto', padding: '40px 20px' }}>
                 <h1 style={{ color: '#fff', fontSize: '28px', fontWeight: 700, marginBottom: '8px' }}>
-                    🔒 Escrow Protection
+                    Escrow Protection
                 </h1>
                 <p style={{ color: '#888', marginBottom: '24px' }}>
-                    Secure milestone-based payments for your projects
+                    Milestone escrow is designed — not live money movement. Payments stay off-platform until a real processor (Stripe Connect / smart contract) is wired. This page shows the intended workflow.
                 </p>
 
                 {/* Escrow List */}
