@@ -1,0 +1,149 @@
+.page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--background);
+}
+
+.main {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 5.5rem 1.5rem 3rem;
+    width: 100%;
+}
+
+.kicker {
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.45);
+    margin-bottom: 0.75rem;
+}
+
+.main h1 {
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+    margin-bottom: 0.75rem;
+}
+
+.lead {
+    font-size: 1.05rem;
+    color: rgba(255, 255, 255, 0.6);
+    line-height: 1.65;
+    max-width: 640px;
+}
+
+.ctaRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin: 1.75rem 0 2.5rem;
+}
+
+.section {
+    margin-bottom: 2.75rem;
+}
+
+.section h2 {
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+}
+
+.grid3 {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.85rem;
+}
+
+.card {
+    padding: 1.15rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    border: 1px solid var(--border-subtle);
+    min-height: 44px;
+}
+
+.card:hover {
+    border-color: var(--border-mid);
+}
+
+.card h3 {
+    font-size: 1rem;
+}
+
+.card p {
+    font-size: 0.88rem;
+    color: rgba(255, 255, 255, 0.5);
+    line-height: 1.5;
+}
+
+.steps {
+    padding-left: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    color: rgba(255, 255, 255, 0.7);
+    line-height: 1.55;
+}
+
+.steps a {
+    color: var(--primary-light);
+}
+
+.muted {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+}
+
+.muted a, .muted code {
+    color: var(--primary-light);
+}
+
+.copyWrap {
+    margin: 1rem 0;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: var(--surface-50);
+}
+
+.copyHead {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.55rem 0.85rem;
+    border-bottom: 1px solid var(--border-subtle);
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.55);
+}
+
+.copyBtn {
+    min-height: 36px;
+    padding: 0 0.75rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-mid);
+    background: transparent;
+    color: var(--foreground);
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.8rem;
+}
+
+.pre {
+    margin: 0;
+    padding: 1rem;
+    white-space: pre-wrap;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.78);
+}
+
+@media (max-width: 768px) {
+    .grid3 {
+        grid-template-columns: 1fr;
+    }
+}

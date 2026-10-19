@@ -82,7 +82,9 @@ function LoginForm() {
                 if (needsConfirmation) {
                     setSignupSuccess(true);
                 } else {
-                    router.push('/dashboard');
+                    const redirectTo = searchParams.get('redirect');
+                    const safeRedirect = redirectTo && redirectTo.startsWith('/') && !redirectTo.startsWith('//') ? redirectTo : '/onboarding';
+                    router.push(safeRedirect);
                 }
             } else {
                 const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
@@ -265,7 +267,7 @@ function LoginForm() {
                 <p className={styles.subtitle}>
                     {mode === 'login'
                         ? 'Sign in to manage your projects and quotes.'
-                        : 'Join BidFlow and simplify getting estimates.'}
+                        : 'One account for posting jobs, bidding, or connecting an agent.'}
                 </p>
 
                 {error && (

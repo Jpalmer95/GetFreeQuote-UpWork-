@@ -142,6 +142,7 @@ export default function Navbar() {
                                 <span className={styles.welcome}>
                                     {profile?.full_name?.split(' ')[0] || 'User'}
                                 </span>
+                                <Link href="/post-job" className={styles.signupBtn}>Post</Link>
                                 <button onClick={() => signOut()} className={styles.logoutBtn}>
                                     Sign Out
                                 </button>
@@ -149,7 +150,7 @@ export default function Navbar() {
                         ) : mounted ? (
                             <div className={styles.authButtons}>
                                 <Link href="/login" className={styles.loginBtn}>Log In</Link>
-                                <Link href="/login?mode=signup" className={styles.signupBtn}>Sign Up</Link>
+                                <Link href="/login?mode=signup&redirect=/onboarding" className={styles.signupBtn}>Sign Up</Link>
                             </div>
                         ) : null}
                     </div>

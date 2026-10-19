@@ -1,4 +1,5 @@
 import { Job, AgentConfig, IndustryVertical, VendorProfile, EstimatingTemplate, EstimatingLineItem, TeamMember, VendorReview, Project, ProjectPhase, CommunityProject, Donation, CommunityProjectUpdate, LedgerEntry, ItemListing, ItemListingType, ItemListingStatus } from '@/types';
+import { workKindFromTags } from '@/lib/workKind';
 
 export interface JobRow {
     id: string;
@@ -130,6 +131,7 @@ export function mapJobRow(row: JobRow): Job {
         locationLat: row.location_lat ?? undefined,
         locationLng: row.location_lng ?? undefined,
         radiusMiles: row.radius_miles ?? undefined,
+        workKind: workKindFromTags(row.tags, row.is_local_request),
     };
 }
 

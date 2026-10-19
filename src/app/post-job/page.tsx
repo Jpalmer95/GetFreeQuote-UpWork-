@@ -1,8 +1,8 @@
 'use client';
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { jobService } from '@/services/jobService';
-import { IndustryVertical, INDUSTRY_VERTICALS, INDUSTRY_SUBCATEGORIES, ProjectUrgency } from '@/types';
+import { IndustryVertical, INDUSTRY_VERTICALS, INDUSTRY_SUBCATEGORIES, ProjectUrgency, WorkKind } from '@/types';
 import styles from './page.module.css';
 import { useAuth } from '@/context/AuthContext';
 import FileUpload from '@/components/FileUpload';
@@ -11,6 +11,8 @@ import PriceEstimationWidget from '@/components/PriceEstimationWidget';
 import ScopeBreakdownDisplay from '@/components/ScopeBreakdownDisplay';
 import { PriceEstimate, ScopeBreakdown } from '@/types';
 import { parseScope } from '@/services/scopeBreakdown';
+import Navbar from '@/components/Navbar';
+import { isWorkKind, WORK_KIND_HINT, WORK_KIND_LABEL } from '@/lib/workKind';
 
 const URGENCY_OPTIONS: { value: ProjectUrgency; label: string }[] = [
     { value: 'flexible', label: 'Flexible Timeline' },
@@ -19,20 +21,31 @@ const URGENCY_OPTIONS: { value: ProjectUrgency; label: string }[] = [
     { value: 'urgent', label: 'Urgent / ASAP' },
 ];
 
-export default function PostJob() {
+export default function PostJobPage() {
+    return (
+        <Suspense fallback={<div className="loading-screen">Loading...</div>}>
+            <PostJob />
+        </Suspense>
+    );
+}
+
+function PostJob() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { user, isLoading } = useAuth();
 
     useEffect(() => {
         if (!isLoading && !user) {
-            router.push('/login');
+            router.push('/login?redirect=/post-job');
         }
     }, [user, isLoading, router]);
 
+    const initialKind: WorkKind = isWorkKind(searchParams.get('kind')) ? searchParams.get('kind') as WorkKind : 'quote';
+
     const [formData, setFormData] = useState({
-        title: '',
-        location: '',
-        description: '',
+        title: searchParams.get('title') || '',
+        location: searchParams.get('location') || '',
+        description: searchParams.get('description') || '',
         industryVertical: 'Home Services' as IndustryVertical,
         subcategory: '',
         customIndustry: '',
@@ -49,7 +62,8 @@ export default function PostJob() {
     });
     const [attachmentUrls, setAttachmentUrls] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
-    const [isLocalRequest, setIsLocalRequest] = useState(false);
+    const [workKind, setWorkKind] = useState<WorkKind>(initialKind);
+    const [isLocalRequest, setIsLocalRequest] = useState(initialKind === 'local');
     const [localLocation, setLocalLocation] = useState<ResolvedLocation | null>(null);
     const [radiusMiles, setRadiusMiles] = useState(10);
     const [priceEstimate, setPriceEstimate] = useState<PriceEstimate | null>(null);
@@ -105,8 +119,8 @@ export default function PostJob() {
         e.preventDefault();
         if (!user) return;
 
-        if (isLocalRequest && !localLocation) {
-            setLocalLocationError('Please set your location before posting a local request.');
+        if ((workKind === 'local' || isLocalRequest) && !localLocation) {
+            setLocalLocationError('Please set your location before posting a nearby request.');
             return;
         }
         setLocalLocationError('');
@@ -137,10 +151,11 @@ export default function PostJob() {
                 timelineEnd: formData.timelineEnd || undefined,
                 tags: tagList,
                 attachments: attachmentUrls,
-                isLocalRequest,
-                locationLat: isLocalRequest && localLocation ? localLocation.lat : undefined,
-                locationLng: isLocalRequest && localLocation ? localLocation.lng : undefined,
-                radiusMiles: isLocalRequest ? radiusMiles : undefined,
+                isLocalRequest: workKind === 'local' || isLocalRequest,
+                locationLat: (workKind === 'local' || isLocalRequest) && localLocation ? localLocation.lat : undefined,
+                locationLng: (workKind === 'local' || isLocalRequest) && localLocation ? localLocation.lng : undefined,
+                radiusMiles: (workKind === 'local' || isLocalRequest) ? radiusMiles : undefined,
+                workKind,
             });
 
             router.push('/dashboard?new=true');
@@ -152,10 +167,31 @@ export default function PostJob() {
     };
 
     return (
+        <>
+        <Navbar />
         <main className={styles.container}>
             <div className={`glass-panel ${styles.formCard}`}>
                 <h1 className="gradient-text">What do you need done?</h1>
-                <p className={styles.subtext}>Select your industry and describe your project. AI agents handle the rest.</p>
+                <p className={styles.subtext}>Pick quotes, a fixed bounty, or nearby help. Industry details are optional.</p>
+
+                <div className={styles.kindPicker} role="radiogroup" aria-label="How should this be filled?">
+                    {(['quote', 'bounty', 'local'] as WorkKind[]).map((k) => (
+                        <button
+                            key={k}
+                            type="button"
+                            role="radio"
+                            aria-checked={workKind === k}
+                            className={`${styles.kindBtn} ${workKind === k ? styles.kindBtnOn : ''}`}
+                            onClick={() => {
+                                setWorkKind(k);
+                                setIsLocalRequest(k === 'local');
+                            }}
+                        >
+                            <strong>{WORK_KIND_LABEL[k]}</strong>
+                            <span>{WORK_KIND_HINT[k]}</span>
+                        </button>
+                    ))}
+                </div>
 
                 <div className={styles.divider} />
 
@@ -452,14 +488,19 @@ export default function PostJob() {
                         {loading ? (
                             <>
                                 <span className={styles.spinner} />
-                                Initializing AI Agents...
+                                Posting…
                             </>
+                        ) : workKind === 'bounty' ? (
+                            'Post bounty'
+                        ) : workKind === 'local' ? (
+                            'Post nearby request'
                         ) : (
-                            'Post Project & Find Vendors'
+                            'Post & collect quotes'
                         )}
                     </button>
                 </form>
             </div>
         </main>
+        </>
     );
 }

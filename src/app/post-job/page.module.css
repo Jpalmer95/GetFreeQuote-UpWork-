@@ -56,6 +56,49 @@
     gap: 1.25rem;
 }
 
+.kindPicker {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.65rem;
+    margin-bottom: 0.5rem;
+}
+
+.kindBtn {
+    text-align: left;
+    padding: 0.85rem 0.9rem;
+    min-height: 72px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-subtle);
+    background: var(--surface-50);
+    color: inherit;
+    cursor: pointer;
+    font-family: inherit;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.kindBtn strong {
+    font-size: 0.9rem;
+}
+
+.kindBtn span {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.5);
+    line-height: 1.35;
+}
+
+.kindBtnOn {
+    border-color: var(--primary);
+    background: rgba(79, 142, 247, 0.1);
+}
+
+@media (max-width: 640px) {
+    .kindPicker {
+        grid-template-columns: 1fr;
+    }
+}
+
 .inputGroup {
     display: flex;
     flex-direction: column;

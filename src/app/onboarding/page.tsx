@@ -1,235 +1,233 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/lib/supabase';
+import Navbar from '@/components/Navbar';
+import styles from './page.module.css';
+import type { WorkKind } from '@/types';
 
-type Step = 'welcome' | 'role' | 'profile' | 'interests' | 'complete';
+type Role = 'customer' | 'vendor' | 'both';
+type Step = 'role' | 'project';
 
-export default function OnboardingWizard() {
-    const { user } = useAuth();
+const OWNER_PROMPT = `Post this on GetFreeQuote for me using MCP POST https://getfreequote.org/api/mcp with my bfk_ key (mint at /settings/api-keys).
+
+tools/call post_job
+{
+  "title": "[short title]",
+  "description": "[what I need, materials, constraints]",
+  "location": "[city / ZIP / Remote]",
+  "urgency": "flexible",
+  "workKind": "quote",
+  "budget": "[optional]"
+}
+
+workKind is quote (compare bids), bounty (fixed price), or local (nearby same-day).`;
+
+function OnboardingInner() {
+    const { user, isLoading } = useAuth();
     const router = useRouter();
-    const [step, setStep] = useState<Step>('welcome');
-    const [role, setRole] = useState<'customer' | 'vendor' | 'both' | null>(null);
-    const [skills, setSkills] = useState<string[]>([]);
+    const [step, setStep] = useState<Step>('role');
+    const [role, setRole] = useState<Role | null>(null);
     const [location, setLocation] = useState('');
+    const [hasProject, setHasProject] = useState<boolean | null>(null);
+    const [title, setTitle] = useState('');
+    const [description, setDescription] = useState('');
+    const [workKind, setWorkKind] = useState<WorkKind>('quote');
+    const [saving, setSaving] = useState(false);
+    const [copied, setCopied] = useState(false);
 
-    const SKILLS = [
-        'Plumbing', 'Electrical', 'HVAC', 'Roofing', 'Painting',
-        'Landscaping', 'Carpentry', 'Flooring', 'General Labor',
-        'Moving', 'Cleaning', 'Handyman', 'Consulting', 'Design',
-    ];
+    useEffect(() => {
+        if (!isLoading && !user) {
+            router.push('/login?mode=signup&redirect=/onboarding');
+        }
+    }, [user, isLoading, router]);
 
-    const handleComplete = () => {
-        // Save onboarding data to user profile
-        localStorage.setItem('gfq_onboarding', JSON.stringify({ role, skills, location }));
-        router.push(role === 'vendor' ? '/vendor/profile' : '/post-job');
+    const persist = async (nextRole: Role) => {
+        localStorage.setItem('gfq_onboarding', JSON.stringify({ role: nextRole, location, done: true }));
+        if (!user) return;
+        const mapped = nextRole === 'vendor' ? 'VENDOR' : 'USER';
+        await supabase.from('profiles').update({ role: mapped }).eq('id', user.id);
     };
 
+    const finishVendor = async () => {
+        if (!role) return;
+        setSaving(true);
+        await persist(role);
+        setSaving(false);
+        router.push('/vendor/profile');
+    };
+
+    const skipToDesk = async () => {
+        if (!role) return;
+        setSaving(true);
+        await persist(role);
+        setSaving(false);
+        router.push('/dashboard');
+    };
+
+    const postNow = async () => {
+        if (!user || !title.trim() || !description.trim()) return;
+        setSaving(true);
+        await persist(role || 'customer');
+        const qs = new URLSearchParams({
+            title: title.trim(),
+            description: description.trim(),
+            kind: workKind,
+        });
+        if (location.trim()) qs.set('location', location.trim());
+        router.push(`/post-job?${qs.toString()}`);
+    };
+
+    if (isLoading || !user) {
+        return <div className="loading-screen">Loading...</div>;
+    }
+
     return (
-        <main style={{
-            minHeight: '100vh', background: '#0f0f1a',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-            <div style={{
-                width: '100%', maxWidth: '500px', padding: '40px',
-                background: '#1a1a2e', borderRadius: '20px',
-                border: '1px solid #333',
-            }}>
-                {/* Progress */}
-                <div style={{ display: 'flex', gap: '4px', marginBottom: '32px' }}>
-                    {['welcome', 'role', 'profile', 'interests', 'complete'].map((s, i) => (
-                        <div key={s} style={{
-                            flex: 1, height: '4px', borderRadius: '2px',
-                            background: ['welcome', 'role', 'profile', 'interests', 'complete'].indexOf(step) >= i
-                                ? '#3b82f6' : '#333',
-                        }} />
-                    ))}
-                </div>
-
-                {step === 'welcome' && (
-                    <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '48px', marginBottom: '16px' }}>🏗️</div>
-                        <h1 style={{ color: '#fff', fontSize: '28px', fontWeight: 700, marginBottom: '12px' }}>
-                            Welcome to GetFreeQuote
-                        </h1>
-                        <p style={{ color: '#888', fontSize: '16px', lineHeight: 1.6, marginBottom: '32px' }}>
-                            The marketplace where you get fair quotes, find quality work, and build community together.
-                        </p>
-                        <button onClick={() => setStep('role')} style={{
-                            width: '100%', padding: '14px', background: '#3b82f6',
-                            border: 'none', borderRadius: '10px', color: '#fff',
-                            fontSize: '16px', fontWeight: 600, cursor: 'pointer',
-                        }}>
-                            Get Started
-                        </button>
+        <div className={styles.page}>
+            <Navbar />
+            <main className={styles.main}>
+                <div className={`glass-panel ${styles.card}`}>
+                    <div className={styles.progress} aria-hidden>
+                        <span className={styles.dotOn} />
+                        <span className={step === 'project' ? styles.dotOn : styles.dot} />
                     </div>
-                )}
 
-                {step === 'role' && (
-                    <div>
-                        <h2 style={{ color: '#fff', fontSize: '22px', fontWeight: 600, marginBottom: '8px' }}>
-                            How will you use GetFreeQuote?
-                        </h2>
-                        <p style={{ color: '#888', fontSize: '14px', marginBottom: '24px' }}>
-                            You can always do both!
-                        </p>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                            {[
-                                { value: 'customer', icon: '🏠', label: 'I need to hire someone', desc: 'Get quotes for home projects, gigs, and more' },
-                                { value: 'vendor', icon: '🔧', label: 'I want to find work', desc: 'Bid on jobs, build your reputation, grow your business' },
-                                { value: 'both', icon: '🔄', label: 'Both!', desc: 'Hire AND find work - the best of both worlds' },
-                            ].map(opt => (
-                                <button key={opt.value} onClick={() => setRole(opt.value as any)} style={{
-                                    display: 'flex', alignItems: 'center', gap: '16px',
-                                    padding: '16px', background: role === opt.value ? '#3b82f622' : '#ffffff06',
-                                    border: `1px solid ${role === opt.value ? '#3b82f6' : '#333'}`,
-                                    borderRadius: '12px', cursor: 'pointer', textAlign: 'left',
-                                }}>
-                                    <span style={{ fontSize: '28px' }}>{opt.icon}</span>
-                                    <div>
-                                        <div style={{ color: '#fff', fontWeight: 600, fontSize: '15px' }}>{opt.label}</div>
-                                        <div style={{ color: '#888', fontSize: '12px' }}>{opt.desc}</div>
-                                    </div>
-                                </button>
-                            ))}
-                        </div>
-                        {role && (
-                            <button onClick={() => setStep('profile')} style={{
-                                width: '100%', padding: '14px', marginTop: '20px',
-                                background: '#3b82f6', border: 'none', borderRadius: '10px',
-                                color: '#fff', fontSize: '16px', fontWeight: 600, cursor: 'pointer',
-                            }}>
-                                Continue
-                            </button>
-                        )}
-                    </div>
-                )}
-
-                {step === 'profile' && (
-                    <div>
-                        <h2 style={{ color: '#fff', fontSize: '22px', fontWeight: 600, marginBottom: '8px' }}>
-                            {role === 'customer' ? 'Where are you located?' : 'What do you do?'}
-                        </h2>
-                        <p style={{ color: '#888', fontSize: '14px', marginBottom: '24px' }}>
-                            {role === 'customer'
-                                ? 'We\'ll match you with contractors in your area.'
-                                : 'Select all that apply - you can change this later.'}
-                        </p>
-
-                        {role !== 'customer' && (
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '20px' }}>
-                                {SKILLS.map(skill => (
-                                    <button key={skill} onClick={() => setSkills(
-                                        skills.includes(skill) ? skills.filter(s => s !== skill) : [...skills, skill]
-                                    )} style={{
-                                        padding: '8px 14px', borderRadius: '20px',
-                                        background: skills.includes(skill) ? '#3b82f6' : '#333',
-                                        border: 'none', color: '#fff', fontSize: '13px',
-                                        cursor: 'pointer',
-                                    }}>
-                                        {skill}
+                    {step === 'role' && (
+                        <>
+                            <p className={styles.kicker}>60-second setup</p>
+                            <h1>How will you use GetFreeQuote?</h1>
+                            <p className={styles.sub}>You can always do both later.</p>
+                            <div className={styles.choices}>
+                                {([
+                                    { value: 'customer' as Role, label: 'I need work done', desc: 'Post a job, bounty, or nearby request — you or your agent.' },
+                                    { value: 'vendor' as Role, label: 'I want to find work', desc: 'Bid on jobs, claim bounties, or take nearby gigs.' },
+                                    { value: 'both' as Role, label: 'Both', desc: 'Hire and bid from the same account.' },
+                                ]).map((opt) => (
+                                    <button
+                                        key={opt.value}
+                                        type="button"
+                                        className={`${styles.choice} ${role === opt.value ? styles.choiceOn : ''}`}
+                                        onClick={() => setRole(opt.value)}
+                                    >
+                                        <strong>{opt.label}</strong>
+                                        <span>{opt.desc}</span>
                                     </button>
                                 ))}
                             </div>
-                        )}
-
-                        <div style={{ marginBottom: '20px' }}>
-                            <label style={{ color: '#888', fontSize: '12px', display: 'block', marginBottom: '6px' }}>
-                                City or ZIP Code
+                            <label className={styles.label}>
+                                City or ZIP (optional)
+                                <input
+                                    className="field-input"
+                                    value={location}
+                                    onChange={(e) => setLocation(e.target.value)}
+                                    placeholder="Cottonwood Shores, TX"
+                                />
                             </label>
-                            <input
-                                type="text"
-                                value={location}
-                                onChange={e => setLocation(e.target.value)}
-                                placeholder="e.g. Portland, OR or 97201"
-                                style={{
-                                    width: '100%', padding: '12px', background: '#333',
-                                    border: '1px solid #444', borderRadius: '8px',
-                                    color: '#fff', fontSize: '14px',
+                            <button
+                                className="btn-primary"
+                                disabled={!role || saving}
+                                onClick={() => {
+                                    if (role === 'vendor') finishVendor();
+                                    else setStep('project');
                                 }}
-                            />
-                        </div>
+                            >
+                                Continue
+                            </button>
+                        </>
+                    )}
 
-                        <button onClick={() => setStep('interests')} style={{
-                            width: '100%', padding: '14px', background: '#3b82f6',
-                            border: 'none', borderRadius: '10px', color: '#fff',
-                            fontSize: '16px', fontWeight: 600, cursor: 'pointer',
-                        }}>
-                            Continue
-                        </button>
-                    </div>
-                )}
+                    {step === 'project' && (
+                        <>
+                            <p className={styles.kicker}>Already have something in mind?</p>
+                            <h1>Post it now, or tell your agent.</h1>
+                            <div className={styles.choices}>
+                                <button
+                                    type="button"
+                                    className={`${styles.choice} ${hasProject === true ? styles.choiceOn : ''}`}
+                                    onClick={() => setHasProject(true)}
+                                >
+                                    <strong>I have a project — post it here</strong>
+                                    <span>Title + a few sentences. Industry details can wait.</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    className={`${styles.choice} ${hasProject === false ? styles.choiceOn : ''}`}
+                                    onClick={() => setHasProject(false)}
+                                >
+                                    <strong>I&apos;ll have my agent post it</strong>
+                                    <span>Copy a prompt. Needs a bfk_ key from Settings → API Keys.</span>
+                                </button>
+                            </div>
 
-                {step === 'interests' && (
-                    <div>
-                        <h2 style={{ color: '#fff', fontSize: '22px', fontWeight: 600, marginBottom: '8px' }}>
-                            What interests you most?
-                        </h2>
-                        <p style={{ color: '#888', fontSize: '14px', marginBottom: '24px' }}>
-                            We'll personalize your experience.
-                        </p>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                            {[
-                                { icon: '💰', label: 'Saving money on projects', desc: 'AI price estimation, group buys, neighborhood pools' },
-                                { icon: '🛡️', label: 'Finding trusted contractors', desc: 'Trust scores, verified credentials, reviews' },
-                                { icon: '🏘️', label: 'Community building', desc: 'Pool builds, volunteer credits, community projects' },
-                                { icon: '🎓', label: 'Learning a trade', desc: 'Apprenticeship matching, mentorship programs' },
-                            ].map(opt => (
-                                <div key={opt.label} style={{
-                                    display: 'flex', alignItems: 'center', gap: '12px',
-                                    padding: '14px', background: '#ffffff06',
-                                    border: '1px solid #333', borderRadius: '10px',
-                                }}>
-                                    <span style={{ fontSize: '24px' }}>{opt.icon}</span>
-                                    <div>
-                                        <div style={{ color: '#fff', fontWeight: 500, fontSize: '14px' }}>{opt.label}</div>
-                                        <div style={{ color: '#888', fontSize: '11px' }}>{opt.desc}</div>
+                            {hasProject === true && (
+                                <div className={styles.form}>
+                                    <label className={styles.label}>
+                                        Title
+                                        <input className="field-input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Fence repair, popped tire, logo redraw…" />
+                                    </label>
+                                    <label className={styles.label}>
+                                        What do you need?
+                                        <textarea className="field-textarea" value={description} onChange={(e) => setDescription(e.target.value)} rows={4} />
+                                    </label>
+                                    <div className={styles.kindRow}>
+                                        {([
+                                            { id: 'quote' as WorkKind, label: 'Get quotes' },
+                                            { id: 'bounty' as WorkKind, label: 'Fixed bounty' },
+                                            { id: 'local' as WorkKind, label: 'Nearby / same-day' },
+                                        ]).map((k) => (
+                                            <button
+                                                key={k.id}
+                                                type="button"
+                                                className={`${styles.kind} ${workKind === k.id ? styles.kindOn : ''}`}
+                                                onClick={() => setWorkKind(k.id)}
+                                            >
+                                                {k.label}
+                                            </button>
+                                        ))}
                                     </div>
+                                    <button className="btn-primary" disabled={saving || !title.trim() || !description.trim()} onClick={postNow}>
+                                        Continue to post
+                                    </button>
                                 </div>
-                            ))}
-                        </div>
-                        <button onClick={() => setStep('complete')} style={{
-                            width: '100%', padding: '14px', marginTop: '20px',
-                            background: '#22c55e', border: 'none', borderRadius: '10px',
-                            color: '#fff', fontSize: '16px', fontWeight: 600, cursor: 'pointer',
-                        }}>
-                            Almost Done!
-                        </button>
-                    </div>
-                )}
+                            )}
 
-                {step === 'complete' && (
-                    <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '64px', marginBottom: '16px' }}>🎉</div>
-                        <h2 style={{ color: '#fff', fontSize: '24px', fontWeight: 700, marginBottom: '12px' }}>
-                            You're all set!
-                        </h2>
-                        <div style={{
-                            background: '#22c55e22', borderRadius: '12px', padding: '16px',
-                            marginBottom: '24px', border: '1px solid #22c55e33',
-                        }}>
-                            <div style={{ color: '#22c55e', fontWeight: 600, fontSize: '14px', marginBottom: '4px' }}>
-                                🏆 Founding Member Badge Earned!
-                            </div>
-                            <div style={{ color: '#888', fontSize: '12px' }}>
-                                You're one of our first users. This badge stays forever.
-                            </div>
-                        </div>
-                        <p style={{ color: '#aaa', fontSize: '14px', marginBottom: '24px' }}>
-                            {role === 'customer'
-                                ? 'Ready to post your first project? We\'ll make sure you get great quotes.'
-                                : 'Ready to find work? Set up your profile to start receiving job matches.'}
-                        </p>
-                        <button onClick={handleComplete} style={{
-                            width: '100%', padding: '14px', background: '#3b82f6',
-                            border: 'none', borderRadius: '10px', color: '#fff',
-                            fontSize: '16px', fontWeight: 600, cursor: 'pointer',
-                        }}>
-                            {role === 'customer' ? 'Post Your First Project' : 'Set Up Your Profile'}
-                        </button>
-                    </div>
-                )}
-            </div>
-        </main>
+                            {hasProject === false && (
+                                <div className={styles.form}>
+                                    <p className={styles.sub}>Paste this into Hermes, Claude, ChatGPT, or any agent with MCP.</p>
+                                    <pre className={styles.pre}>{OWNER_PROMPT}</pre>
+                                    <button
+                                        type="button"
+                                        className="btn-secondary"
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(OWNER_PROMPT);
+                                            setCopied(true);
+                                            setTimeout(() => setCopied(false), 1600);
+                                        }}
+                                    >
+                                        {copied ? 'Copied' : 'Copy prompt'}
+                                    </button>
+                                    <Link href="/settings/api-keys" className="btn-primary">Mint an API key</Link>
+                                    <button type="button" className="btn-secondary" onClick={skipToDesk}>Skip to dashboard</button>
+                                </div>
+                            )}
+
+                            {hasProject === null && (
+                                <button type="button" className="btn-secondary" onClick={skipToDesk}>Skip for now</button>
+                            )}
+                        </>
+                    )}
+                </div>
+            </main>
+        </div>
+    );
+}
+
+export default function OnboardingWizard() {
+    return (
+        <Suspense fallback={<div className="loading-screen">Loading...</div>}>
+            <OnboardingInner />
+        </Suspense>
     );
 }

@@ -117,6 +117,7 @@ const TOOLS = [
             { name: 'location', type: 'string', optional: true, desc: 'City / area' },
             { name: 'industry', type: 'string', optional: true, desc: 'Industry vertical' },
             { name: 'urgency', type: 'string', optional: true, desc: 'flexible | within_month | within_week | urgent' },
+            { name: 'workKind', type: 'string', optional: true, desc: 'quote (default) | bounty | local' },
         ],
     },
     {
@@ -144,6 +145,26 @@ const TOOLS = [
             { name: 'listingType', type: 'string', optional: true, desc: 'RENT | SELL | BOTH' },
             { name: 'rentPricePerDay', type: 'number', optional: true, desc: 'Daily rent' },
             { name: 'sellPrice', type: 'number', optional: true, desc: 'Sale price' },
+        ],
+    },
+    {
+        name: 'update_job',
+        scope: 'write',
+        description: 'Owner (or their agent) edits an open job they posted. Allowlisted fields only.',
+        params: [
+            { name: 'job_id', type: 'string', optional: false, desc: 'UUID of the job' },
+            { name: 'title', type: 'string', optional: true, desc: 'New title' },
+            { name: 'description', type: 'string', optional: true, desc: 'New description' },
+            { name: 'budget', type: 'string', optional: true, desc: 'Budget or bounty amount' },
+            { name: 'workKind', type: 'string', optional: true, desc: 'quote | bounty | local' },
+        ],
+    },
+    {
+        name: 'cancel_job',
+        scope: 'write',
+        description: 'Owner (or their agent) cancels an OPEN, DRAFT, or EXPIRED job. In-progress awarded work cannot be cancelled.',
+        params: [
+            { name: 'job_id', type: 'string', optional: false, desc: 'UUID of the job' },
         ],
     },
 ];

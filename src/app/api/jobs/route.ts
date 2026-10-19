@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/serverAuth';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { emitOracleEvent } from '@/services/oracle';
+import { isWorkKind, withWorkKindTags, type WorkKind } from '@/lib/workKind';
 
 export async function POST(request: NextRequest) {
     const caller = await getAuthenticatedUser(request);
@@ -15,6 +16,17 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'title and description required' }, { status: 400 });
     }
 
+    const workKind: WorkKind = isWorkKind(body.workKind)
+        ? body.workKind
+        : body.isLocalRequest
+            ? 'local'
+            : 'quote';
+    const incomingTags = Array.isArray(body.tags)
+        ? body.tags.filter((t: unknown) => typeof t === 'string')
+        : [];
+    const tags = withWorkKindTags(incomingTags, workKind);
+    const isLocal = workKind === 'local' || !!body.isLocalRequest;
+
     const { data: job, error } = await supabaseAdmin
         .from('jobs')
         .insert({
@@ -23,7 +35,7 @@ export async function POST(request: NextRequest) {
             category: body.category || 'Other',
             description,
             location,
-            tags: Array.isArray(body.tags) ? body.tags : [],
+            tags,
             is_public: body.isPublic !== false,
             requires_permit: !!body.requiresPermit,
             budget: body.budget || null,
@@ -32,7 +44,7 @@ export async function POST(request: NextRequest) {
             urgency: body.urgency || 'flexible',
             square_footage: body.squareFootage || null,
             materials: body.materials || null,
-            is_local_request: !!body.isLocalRequest,
+            is_local_request: isLocal,
             location_lat: body.lat ?? null,
             location_lng: body.lng ?? null,
             radius_miles: body.radiusMiles ?? 25,
@@ -49,7 +61,7 @@ export async function POST(request: NextRequest) {
         eventType: 'job.created',
         entityType: 'job',
         entityId: job.id,
-        payload: { title, location, industry: job.industry_vertical },
+        payload: { title, location, industry: job.industry_vertical, workKind },
     });
 
     // Fire-and-forget matching / Job Brief generation.

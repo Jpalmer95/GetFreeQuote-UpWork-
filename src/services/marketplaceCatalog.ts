@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { sanitizeIlike } from '@/lib/safeEval';
+import { workKindFromTags } from '@/lib/workKind';
 
 export interface CatalogFilters {
     q?: string;
@@ -22,6 +23,7 @@ export interface CatalogJob {
     location: string;
     urgency: string | null;
     budget: string | null;
+    workKind: 'quote' | 'bounty' | 'local';
     createdAt: string;
     url: string;
     kind: 'job';
@@ -90,7 +92,7 @@ export async function getMarketplaceCatalog(filters: CatalogFilters = {}) {
     if (include.has('jobs')) {
         let query = supabaseAdmin
             .from('jobs')
-            .select('id, title, category, industry_vertical, subcategory, location, urgency, budget, created_at, location_lat, location_lng, is_public, status')
+            .select('id, title, category, industry_vertical, subcategory, location, urgency, budget, created_at, location_lat, location_lng, is_public, status, tags, is_local_request')
             .eq('is_public', true)
             .eq('status', 'OPEN')
             .order('created_at', { ascending: false })
@@ -120,6 +122,7 @@ export async function getMarketplaceCatalog(filters: CatalogFilters = {}) {
             location: (r.location as string) || '',
             urgency: (r.urgency as string) || null,
             budget: (r.budget as string) || null,
+            workKind: workKindFromTags((r.tags as string[]) || [], r.is_local_request as boolean | null),
             createdAt: String(r.created_at || ''),
             url: `${base}/jobs/${r.id}`,
             kind: 'job' as const,
