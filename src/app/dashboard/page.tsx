@@ -71,6 +71,7 @@ export default function Dashboard() {
     const [showComparison, setShowComparison] = useState(false);
     const [vendorInfo, setVendorInfo] = useState<Record<string, { rating?: number; isVerified: boolean }>>({});
     const [reposting, setReposting] = useState(false);
+    const [completing, setCompleting] = useState(false);
 
     const handleRepost = useCallback(async (jobId: string) => {
         if (reposting) return;
@@ -94,6 +95,31 @@ export default function Dashboard() {
             setReposting(false);
         }
     }, [reposting, router]);
+
+    const handleComplete = useCallback(async (jobId: string) => {
+        if (completing) return;
+        setCompleting(true);
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+            if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+            const res = await fetch('/api/jobs/complete', {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({ jobId }),
+            });
+            if (res.ok) {
+                const myJobs = await jobService.getMyJobs(user!.id);
+                setJobs([...myJobs]);
+                const updated = myJobs.find(j => j.id === jobId) || null;
+                setSelectedJob(updated);
+            }
+        } catch (err) {
+            console.error('Complete failed:', err);
+        } finally {
+            setCompleting(false);
+        }
+    }, [completing, user]);
 
     const handleSendReply = useCallback(async () => {
         if (!selectedJob || !replyText.trim() || sendingReply) return;
@@ -379,6 +405,23 @@ export default function Dashboard() {
                                 </div>
                             )}
 
+                            {selectedJob.status === 'IN_PROGRESS' && (
+                                <div className={styles.expiredBanner} style={{ borderColor: 'rgba(74,222,128,0.3)', background: 'rgba(74,222,128,0.08)' }}>
+                                    <div className={styles.expiredBannerContent}>
+                                        <strong style={{ color: '#4ade80' }}>Job in progress</strong>
+                                        <span style={{ color: 'rgba(74,222,128,0.8)' }}>When the contractor finishes, mark this complete. Record any payment tx on /escrow.</span>
+                                    </div>
+                                    <button
+                                        className={styles.repostBtn}
+                                        onClick={() => handleComplete(selectedJob.id)}
+                                        disabled={completing}
+                                        style={{ borderColor: 'rgba(74,222,128,0.4)', background: 'rgba(74,222,128,0.2)', color: '#4ade80' }}
+                                    >
+                                        {completing ? 'Saving…' : 'Mark Complete'}
+                                    </button>
+                                </div>
+                            )}
+
                             {selectedJob.status === 'EXPIRED' && (
                                 <div className={styles.expiredBanner}>
                                     <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ flexShrink: 0 }}>
@@ -505,6 +548,11 @@ export default function Dashboard() {
                                                             className={styles.acceptBtn}
                                                             onClick={async () => {
                                                                 await jobService.acceptQuote(quote.id);
+                                                                if (selectedJob) await fetchJobDetail(selectedJob.id);
+                                                                const myJobs = await jobService.getMyJobs(user!.id);
+                                                                setJobs([...myJobs]);
+                                                                const updated = myJobs.find(j => j.id === selectedJob?.id);
+                                                                if (updated) setSelectedJob(updated);
                                                             }}
                                                         >Accept</button>
                                                         <button

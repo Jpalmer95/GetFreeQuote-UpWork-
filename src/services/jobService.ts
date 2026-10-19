@@ -64,6 +64,17 @@ export const jobService = {
             body: JSON.stringify({ quoteId, action: 'accept' }),
         });
         if (!res.ok) throw new Error('Failed to accept quote');
+        return res.json();
+    },
+
+    completeJob: async (jobId: string) => {
+        const headers = await getAuthHeaders();
+        const res = await fetch('/api/jobs/complete', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ jobId }),
+        });
+        if (!res.ok) throw new Error('Failed to complete job');
     },
 
     rejectQuote: async (quoteId: string) => {

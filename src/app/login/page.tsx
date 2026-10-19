@@ -57,20 +57,9 @@ function LoginForm() {
     const handleGoogleLogin = async () => {
         setGoogleLoading(true);
         setError(null);
-        try {
-            const { error: oauthError } = await supabase.auth.signInWithOAuth({
-                provider: 'google',
-                options: {
-                    redirectTo: getAuthCallbackUrl(),
-                },
-            });
-            if (oauthError) throw oauthError;
-        } catch (err: unknown) {
-            let message = 'An unexpected error occurred.';
-            if (err instanceof Error) message = err.message;
-            setError(message);
-            setGoogleLoading(false);
-        }
+        const redirect = searchParams.get('redirect') || '/dashboard';
+        const safe = redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : '/dashboard';
+        window.location.href = `/api/auth/google?redirect=${encodeURIComponent(safe)}`;
     };
 
     const handleAuth = async (e: React.FormEvent) => {
@@ -371,12 +360,12 @@ function LoginForm() {
                     <span className={styles.dividerLine} />
                 </div>
 
-                <p className={styles.comingSoonText}>Google login coming soon</p>
+                <p className={styles.comingSoonText}>One-click Google sign-in</p>
 
                 <button
                     type="button"
                     onClick={handleGoogleLogin}
-                    disabled={true}
+                    disabled={googleLoading}
                     className={styles.googleBtn}
                 >
                     {googleLoading ? (

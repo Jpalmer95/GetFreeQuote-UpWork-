@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "getfreequote": {
+      "url": "https://getfreequote.org/api/mcp",
+      "transport": "http",
+      "protocolVersion": "2024-11-05",
+      "auth": {
+        "type": "bearer",
+        "prefix": "bfk_",
+        "docs": "https://getfreequote.org/docs/mcp",
+        "issue": "https://getfreequote.org/settings/api-keys"
+      },
+      "discovery": {
+        "publicCatalog": "https://getfreequote.org/api/discover",
+        "llms": "https://getfreequote.org/llms.txt",
+        "agents": "https://getfreequote.org/AGENTS.md"
+      }
+    }
+  }
+}

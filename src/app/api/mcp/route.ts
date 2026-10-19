@@ -4,8 +4,8 @@ import { createHash } from 'crypto';
 import { mapJobRow, mapAgentConfigRow, JobRow, AgentConfigRow } from '@/services/serverMappers';
 
 const MCP_VERSION = '2024-11-05';
-const SERVER_NAME = 'bidflow-mcp';
-const SERVER_VERSION = '1.0.0';
+const SERVER_NAME = 'getfreequote-mcp';
+const SERVER_VERSION = '1.1.0';
 
 function hashKey(key: string): string {
     return createHash('sha256').update(key).digest('hex');
@@ -174,6 +174,86 @@ const TOOLS: McpTool[] = [
                 instruction: { type: 'string', description: 'Instruction text for the agent (max 1000 chars).', maxLength: 1000 },
             },
             required: ['instruction'],
+        },
+    },
+    {
+        name: 'discover_marketplace',
+        description: 'Public catalog of open jobs, JIT listings, and community projects. No write scope required. Use this to poll for work to bid on.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                q: { type: 'string', description: 'Keyword search across titles and descriptions.' },
+                industry: { type: 'string' },
+                urgency: { type: 'string', enum: ['flexible', 'within_month', 'within_week', 'urgent'] },
+                location: { type: 'string' },
+                lat: { type: 'number' },
+                lng: { type: 'number' },
+                radiusMiles: { type: 'number' },
+                include: { type: 'string', description: 'Comma list: jobs,listings,community' },
+                limit: { type: 'integer', minimum: 1, maximum: 50 },
+            },
+        },
+    },
+    {
+        name: 'post_job',
+        description: 'Post a new public job/need as the authenticated owner (or their agent). Triggers matching.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                title: { type: 'string' },
+                description: { type: 'string' },
+                location: { type: 'string' },
+                industry: { type: 'string' },
+                subcategory: { type: 'string' },
+                budget: { type: 'string' },
+                urgency: { type: 'string', enum: ['flexible', 'within_month', 'within_week', 'urgent'] },
+                lat: { type: 'number' },
+                lng: { type: 'number' },
+                radiusMiles: { type: 'number' },
+                isLocalRequest: { type: 'boolean' },
+            },
+            required: ['title', 'description'],
+        },
+    },
+    {
+        name: 'accept_quote',
+        description: 'Owner awards a pending quote: rejects other bids, marks the job IN_PROGRESS, writes a work order, and opens Pattern 2 verifiable escrow.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                quote_id: { type: 'string' },
+            },
+            required: ['quote_id'],
+        },
+    },
+    {
+        name: 'complete_job',
+        description: 'Owner marks an in-progress awarded job as COMPLETED.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                job_id: { type: 'string' },
+            },
+            required: ['job_id'],
+        },
+    },
+    {
+        name: 'post_jit_listing',
+        description: 'List a tool or item to rent or sell on the JIT board.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                itemName: { type: 'string' },
+                category: { type: 'string' },
+                description: { type: 'string' },
+                listingType: { type: 'string', enum: ['RENT', 'SELL', 'BOTH'] },
+                sellPrice: { type: 'number' },
+                rentPricePerDay: { type: 'number' },
+                locationText: { type: 'string' },
+                lat: { type: 'number' },
+                lng: { type: 'number' },
+            },
+            required: ['itemName'],
         },
     },
 ];
@@ -527,6 +607,98 @@ async function handleTool(
             return ok({ instruction: data, message: 'Instruction sent to agent.' });
         }
 
+        case 'discover_marketplace': {
+            const { getMarketplaceCatalog } = await import('@/services/marketplaceCatalog');
+            const includeRaw = String(args.include || 'jobs,listings,community').split(',').map(s => s.trim());
+            const catalog = await getMarketplaceCatalog({
+                q: args.q as string | undefined,
+                industry: args.industry as string | undefined,
+                urgency: args.urgency as string | undefined,
+                location: args.location as string | undefined,
+                lat: args.lat != null ? Number(args.lat) : undefined,
+                lng: args.lng != null ? Number(args.lng) : undefined,
+                radiusMiles: args.radiusMiles != null ? Number(args.radiusMiles) : undefined,
+                include: includeRaw.filter((s): s is 'jobs' | 'listings' | 'community' =>
+                    s === 'jobs' || s === 'listings' || s === 'community'
+                ),
+                limit: Number(args.limit) || 20,
+            });
+            return ok(catalog);
+        }
+
+        case 'post_job': {
+            if (!hasWrite) return toolErr('Write scope required to post jobs', 'forbidden');
+            const title = String(args.title || '').trim();
+            const description = String(args.description || '').trim();
+            if (!title || !description) return toolErr('title and description are required');
+            const { data: job, error } = await supabaseAdmin.from('jobs').insert({
+                user_id: userId,
+                title,
+                description,
+                location: String(args.location || ''),
+                category: String(args.industry || 'Home Services'),
+                industry_vertical: String(args.industry || 'Home Services'),
+                subcategory: String(args.subcategory || 'Other'),
+                budget: args.budget ? String(args.budget) : null,
+                urgency: String(args.urgency || 'flexible'),
+                is_public: true,
+                is_local_request: args.isLocalRequest === true,
+                location_lat: args.lat != null ? Number(args.lat) : null,
+                location_lng: args.lng != null ? Number(args.lng) : null,
+                radius_miles: args.radiusMiles != null ? Number(args.radiusMiles) : 25,
+                status: 'OPEN',
+                tags: [],
+            }).select().single();
+            if (error) return toolErr(error.message);
+            return ok({ job, url: `https://getfreequote.org/jobs/${job.id}`, message: 'Job posted. Matching agents will be notified.' });
+        }
+
+        case 'accept_quote': {
+            if (!hasWrite) return toolErr('Write scope required to accept quotes', 'forbidden');
+            const { awardQuoteToVendor } = await import('@/services/awardService');
+            const result = await awardQuoteToVendor({ quoteId: String(args.quote_id || ''), ownerId: userId });
+            if (!result.ok) return toolErr(result.error || 'Failed to accept', result.status === 403 ? 'forbidden' : 'error');
+            return ok({
+                quote: result.quote,
+                escrowId: result.escrowId,
+                manifestHash: result.manifestHash,
+                workOrder: result.workOrder,
+                message: 'Quote accepted. Job is in progress. Record the payment tx against the escrow when funded.',
+            });
+        }
+
+        case 'complete_job': {
+            if (!hasWrite) return toolErr('Write scope required to complete jobs', 'forbidden');
+            const { completeAwardedJob } = await import('@/services/awardService');
+            const result = await completeAwardedJob({ jobId: String(args.job_id || ''), ownerId: userId });
+            if (!result.ok) return toolErr(result.error || 'Failed to complete', result.status === 403 ? 'forbidden' : 'error');
+            return ok({ job_id: args.job_id, status: 'COMPLETED' });
+        }
+
+        case 'post_jit_listing': {
+            if (!hasWrite) return toolErr('Write scope required to post listings', 'forbidden');
+            const itemName = String(args.itemName || '').trim();
+            if (!itemName) return toolErr('itemName is required');
+            const { data: profile } = await supabaseAdmin.from('profiles').select('full_name, email').eq('id', userId).maybeSingle();
+            const { data, error } = await supabaseAdmin.from('item_listings').insert({
+                owner_id: userId,
+                owner_name: profile?.full_name || profile?.email || 'Anonymous',
+                item_name: itemName,
+                category: String(args.category || 'Tool'),
+                description: String(args.description || ''),
+                listing_type: ['RENT', 'SELL', 'BOTH'].includes(String(args.listingType)) ? args.listingType : 'RENT',
+                sell_price: args.sellPrice ?? null,
+                rent_price_per_day: args.rentPricePerDay ?? null,
+                location_text: String(args.locationText || ''),
+                location_lat: args.lat ?? null,
+                location_lng: args.lng ?? null,
+                status: 'AVAILABLE',
+                is_active: true,
+            }).select().single();
+            if (error) return toolErr(error.message);
+            return ok({ listing: data });
+        }
+
         default:
             return toolErr(`Unknown tool: ${toolName}`, 'unknown_tool');
     }
@@ -547,11 +719,14 @@ async function handleJsonRpc(body: Record<string, unknown>, auth: AuthResult) {
         return makeJsonRpcError(id, -32600, 'Invalid Request: jsonrpc must be "2.0" and method is required');
     }
 
-    if (!auth) {
-        return makeJsonRpcError(id, -32001, 'Unauthorized: valid API key required (Authorization: Bearer bfk_...)');
+    const publicMethods = method === 'initialize' || method === 'tools/list' || method === 'ping'
+        || (method === 'tools/call' && (params.name as string) === 'discover_marketplace');
+
+    if (!auth && !publicMethods) {
+        return makeJsonRpcError(id, -32001, 'Unauthorized: valid API key required (Authorization: Bearer bfk_...). Browse without a key via GET /api/discover or tools/call discover_marketplace.');
     }
 
-    if ('rateLimited' in auth) {
+    if (auth && 'rateLimited' in auth) {
         return makeJsonRpcError(id, -32029, `Rate limit exceeded: maximum ${RATE_LIMIT_PER_MINUTE} requests per minute per API key`);
     }
 
@@ -584,7 +759,12 @@ async function handleJsonRpc(body: Record<string, unknown>, auth: AuthResult) {
         }
 
         try {
-            const result = await handleTool(toolName, toolArgs, auth.userId, auth.scopes);
+            const result = await handleTool(
+                toolName,
+                toolArgs,
+                auth && !('rateLimited' in auth) ? auth.userId : 'anonymous',
+                auth && !('rateLimited' in auth) ? auth.scopes : ['read'],
+            );
             return { jsonrpc: '2.0', id, result };
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : 'Internal error';
@@ -677,11 +857,13 @@ export async function GET(request: NextRequest) {
         protocol: MCP_VERSION,
         transport: 'http+sse',
         authenticated: isAuthenticated,
-        tools: isAuthenticated ? TOOLS.map(t => ({ name: t.name, description: t.description })) : [],
+        tools: TOOLS.map(t => ({ name: t.name, description: t.description })),
         docs: '/docs/mcp',
+        publicCatalog: '/api/discover',
+        llms: '/llms.txt',
         usage: {
             endpoint: 'POST /api/mcp',
-            auth: 'Authorization: Bearer bfk_...',
+            auth: 'Authorization: Bearer bfk_... (not required for initialize, tools/list, or discover_marketplace)',
             protocol: 'JSON-RPC 2.0',
             streaming: 'Set Accept: text/event-stream for SSE responses',
         },

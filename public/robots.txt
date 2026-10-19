@@ -1,0 +1,24 @@
+User-agent: *
+Allow: /
+Allow: /llms.txt
+Allow: /AGENTS.md
+Allow: /.well-known/
+Allow: /api/discover
+Allow: /api/health
+Allow: /marketplace
+Allow: /local
+Allow: /jit
+Allow: /community
+Allow: /jobs/
+Allow: /docs/mcp
+Allow: /connect
+Disallow: /dashboard
+Disallow: /settings
+Disallow: /agent-hub
+Disallow: /api/escrow
+Disallow: /api/quotes
+Disallow: /api/mcp
+Disallow: /api/oracle/feed
+
+Sitemap: https://getfreequote.org/sitemap.xml
+# Agents: start at https://getfreequote.org/llms.txt

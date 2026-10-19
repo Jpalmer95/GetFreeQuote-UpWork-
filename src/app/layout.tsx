@@ -5,6 +5,9 @@ import { ClientProviders } from './providers';
 export const metadata: Metadata = {
   title: 'GetFreeQuote | One post. Every quote. Any job.',
   description: 'Post a need once — quotes, JIT help, community builds, and contractor bids update themselves. Built for homeowners, small shops, and agents.',
+  other: {
+    'llms-txt': 'https://getfreequote.org/llms.txt',
+  },
 };
 
 const hydrationErrorFilter = `

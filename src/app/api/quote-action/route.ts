@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { getAuthenticatedUser } from '@/lib/serverAuth';
 import { dispatchNotification } from '@/services/notificationDispatcher';
+import { awardQuoteToVendor } from '@/services/awardService';
 
 export async function POST(request: NextRequest) {
     try {
@@ -14,6 +15,19 @@ export async function POST(request: NextRequest) {
 
         if (!quoteId || !['accept', 'reject'].includes(action)) {
             return NextResponse.json({ error: 'quoteId and action (accept/reject) required' }, { status: 400 });
+        }
+
+        if (action === 'accept') {
+            const result = await awardQuoteToVendor({ quoteId, ownerId: caller.id });
+            if (!result.ok) {
+                return NextResponse.json({ error: result.error || 'Failed to accept quote' }, { status: result.status || 500 });
+            }
+            return NextResponse.json({
+                status: 'ok',
+                newStatus: 'ACCEPTED',
+                escrowId: result.escrowId,
+                manifestHash: result.manifestHash,
+            });
         }
 
         const { data: quoteCheck, error: checkError } = await supabaseAdmin
@@ -60,15 +74,9 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Forbidden: only owner can accept/reject quotes' }, { status: 403 });
         }
 
-        const newStatus = action === 'accept' ? 'ACCEPTED' : 'REJECTED';
-        const updateFields: Record<string, unknown> = { status: newStatus };
-        if (action === 'accept') {
-            updateFields.accepted_at = new Date().toISOString();
-        }
-
         const { data: quote, error: quoteError } = await supabaseAdmin
             .from('quotes')
-            .update(updateFields)
+            .update({ status: 'REJECTED' })
             .eq('id', quoteId)
             .select('*')
             .single();
@@ -81,107 +89,55 @@ export async function POST(request: NextRequest) {
         const vendorId = quote.vendor_id;
         const phaseId = quote.phase_id;
 
-        if (action === 'accept') {
-            if (jobId) {
-                await supabaseAdmin.from('jobs').update({ status: 'IN_PROGRESS' }).eq('id', jobId);
-            }
+        if (phaseId) {
+            const { data: remainingPending } = await supabaseAdmin
+                .from('quotes')
+                .select('id')
+                .eq('phase_id', phaseId)
+                .eq('status', 'PENDING');
 
-            if (phaseId) {
+            if (!remainingPending || remainingPending.length === 0) {
                 await supabaseAdmin.from('project_phases').update({
-                    status: 'QUOTED',
-                    accepted_quote_id: quoteId,
-                    actual_cost: quote.amount,
+                    status: 'WAITING_QUOTES',
+                    accepted_quote_id: null,
+                    actual_cost: null,
                 }).eq('id', phaseId);
-
-                await supabaseAdmin.from('quotes')
-                    .update({ status: 'REJECTED' })
-                    .eq('phase_id', phaseId)
-                    .neq('id', quoteId)
-                    .eq('status', 'PENDING');
-            }
-
-            if (jobId) {
-                await supabaseAdmin.from('messages').insert({
-                    job_id: jobId,
-                    sender_id: 'system-agent',
-                    sender_type: 'system',
-                    content: `Quote of $${quote.amount} from ${quote.vendor_name} has been accepted. Project is now in progress.`,
-                    is_agent_action: true,
-                });
-            }
-
-            await dispatchNotification({
-                userId: vendorId,
-                jobId: jobId || null,
-                type: 'milestone',
-                priority: 'high',
-                title: 'Quote Accepted!',
-                message: `Your quote of $${quote.amount} for "${jobTitle}" has been accepted.`,
-                actionRequired: false,
-                actionUrl: '/vendor',
-            });
-
-            if (jobId && jobUserId) {
-                await supabaseAdmin.from('agent_actions').insert({
-                    job_id: jobId,
-                    user_id: jobUserId,
-                    action_type: 'negotiation',
-                    summary: `Accepted quote of $${quote.amount} from ${quote.vendor_name}`,
-                    details: { quoteId, amount: quote.amount, vendorName: quote.vendor_name },
-                    automated: false,
-                });
-            }
-        } else {
-            if (phaseId) {
-                const { data: remainingPending } = await supabaseAdmin
-                    .from('quotes')
-                    .select('id')
-                    .eq('phase_id', phaseId)
-                    .eq('status', 'PENDING');
-
-                if (!remainingPending || remainingPending.length === 0) {
-                    await supabaseAdmin.from('project_phases').update({
-                        status: 'WAITING_QUOTES',
-                        accepted_quote_id: null,
-                        actual_cost: null,
-                    }).eq('id', phaseId);
-                }
-            }
-
-            if (jobId) {
-                await supabaseAdmin.from('messages').insert({
-                    job_id: jobId,
-                    sender_id: 'system-agent',
-                    sender_type: 'system',
-                    content: `Quote of $${quote.amount} from ${quote.vendor_name} has been declined.`,
-                    is_agent_action: true,
-                });
-            }
-
-            await dispatchNotification({
-                userId: vendorId,
-                jobId: jobId || null,
-                type: 'negotiation_update',
-                priority: 'medium',
-                title: 'Quote Declined',
-                message: `Your quote of $${quote.amount} for "${jobTitle}" was not accepted.`,
-                actionRequired: false,
-                actionUrl: '/vendor',
-            });
-
-            if (jobId && jobUserId) {
-                await supabaseAdmin.from('agent_actions').insert({
-                    job_id: jobId,
-                    user_id: jobUserId,
-                    action_type: 'negotiation',
-                    summary: `Rejected quote of $${quote.amount} from ${quote.vendor_name}`,
-                    details: { quoteId, amount: quote.amount, vendorName: quote.vendor_name },
-                    automated: false,
-                });
             }
         }
 
-        return NextResponse.json({ status: 'ok', newStatus });
+        if (jobId) {
+            await supabaseAdmin.from('messages').insert({
+                job_id: jobId,
+                sender_id: 'system-agent',
+                sender_type: 'system',
+                content: `Quote of $${quote.amount} from ${quote.vendor_name} has been declined.`,
+                is_agent_action: true,
+            });
+        }
+
+        await dispatchNotification({
+            userId: vendorId,
+            jobId: jobId || null,
+            type: 'negotiation_update',
+            priority: 'medium',
+            title: 'Quote Declined',
+            message: `Your quote of $${quote.amount} for "${jobTitle}" was not accepted.`,
+            actionRequired: false,
+            actionUrl: '/vendor',
+        });
+
+        if (jobId && jobUserId) {
+            await supabaseAdmin.from('agent_actions').insert({
+                job_id: jobId,
+                user_id: jobUserId,
+                action_type: 'negotiation',
+                summary: `Rejected quote of $${quote.amount} from ${quote.vendor_name}`,
+                details: { quoteId, amount: quote.amount, vendorName: quote.vendor_name },
+                automated: false,
+            });
+        }
+
+        return NextResponse.json({ status: 'ok', newStatus: 'REJECTED' });
     } catch (error: unknown) {
         const message = error instanceof Error ? error.message : 'Internal server error';
         console.error('Quote action error:', message);

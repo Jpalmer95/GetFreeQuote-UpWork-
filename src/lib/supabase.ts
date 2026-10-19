@@ -50,4 +50,5 @@ const customFetch: typeof fetch = async (input, init) => {
 
 export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseKey, {
     global: { fetch: customFetch },
+    auth: { storageKey: 'sb-gfq-auth-token', persistSession: true, autoRefreshToken: true },
 });

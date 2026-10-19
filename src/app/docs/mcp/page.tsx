@@ -94,6 +94,58 @@ const TOOLS = [
             { name: 'instruction', type: 'string', optional: false, desc: 'Instruction text (max 1000 chars)' },
         ],
     },
+    {
+        name: 'discover_marketplace',
+        scope: 'read',
+        description: 'Public catalog of open jobs, JIT listings, and community projects. Works without an API key.',
+        params: [
+            { name: 'q', type: 'string', optional: true, desc: 'Keyword' },
+            { name: 'industry', type: 'string', optional: true, desc: 'Industry vertical' },
+            { name: 'location', type: 'string', optional: true, desc: 'Partial location' },
+            { name: 'lat', type: 'number', optional: true, desc: 'Latitude' },
+            { name: 'lng', type: 'number', optional: true, desc: 'Longitude' },
+            { name: 'radiusMiles', type: 'number', optional: true, desc: 'Radius in miles' },
+        ],
+    },
+    {
+        name: 'post_job',
+        scope: 'write',
+        description: 'Post a new public job as the authenticated owner (or their agent).',
+        params: [
+            { name: 'title', type: 'string', optional: false, desc: 'Job title' },
+            { name: 'description', type: 'string', optional: false, desc: 'Scope / need' },
+            { name: 'location', type: 'string', optional: true, desc: 'City / area' },
+            { name: 'industry', type: 'string', optional: true, desc: 'Industry vertical' },
+            { name: 'urgency', type: 'string', optional: true, desc: 'flexible | within_month | within_week | urgent' },
+        ],
+    },
+    {
+        name: 'accept_quote',
+        scope: 'write',
+        description: 'Owner awards a pending quote, rejects others, writes a work order, opens Pattern 2 escrow.',
+        params: [
+            { name: 'quote_id', type: 'string', optional: false, desc: 'UUID of the quote' },
+        ],
+    },
+    {
+        name: 'complete_job',
+        scope: 'write',
+        description: 'Owner marks an in-progress awarded job COMPLETED.',
+        params: [
+            { name: 'job_id', type: 'string', optional: false, desc: 'UUID of the job' },
+        ],
+    },
+    {
+        name: 'post_jit_listing',
+        scope: 'write',
+        description: 'List a tool or item to rent or sell.',
+        params: [
+            { name: 'itemName', type: 'string', optional: false, desc: 'Item name' },
+            { name: 'listingType', type: 'string', optional: true, desc: 'RENT | SELL | BOTH' },
+            { name: 'rentPricePerDay', type: 'number', optional: true, desc: 'Daily rent' },
+            { name: 'sellPrice', type: 'number', optional: true, desc: 'Sale price' },
+        ],
+    },
 ];
 
 function CodeBlock({ code, lang = 'json' }: { code: string; lang?: string }) {
@@ -119,7 +171,7 @@ function CodeBlock({ code, lang = 'json' }: { code: string; lang?: string }) {
 }
 
 export default function McpDocsPage() {
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://your-app.replit.app';
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://getfreequote.org';
 
     return (
         <div className={styles.page}>
@@ -128,10 +180,10 @@ export default function McpDocsPage() {
                 <div className={styles.container}>
                     <div className={styles.hero}>
                         <div className={styles.badge}>MCP Integration</div>
-                        <h1 className={styles.title}>BidFlow MCP Server</h1>
+                        <h1 className={styles.title}>GetFreeQuote MCP Server</h1>
                         <p className={styles.subtitle}>
-                            Connect Claude Desktop, LM Studio, and any MCP-compatible agent framework directly to BidFlow.
-                            Manage bids, submit quotes, send agent instructions, and more — programmatically via JSON-RPC 2.0.
+                            Connect Claude Desktop, Hermes, LM Studio, or any MCP-compatible agent to GetFreeQuote.
+                            Discover work without a key; post, bid, award, and complete with a <code>bfk_</code> API key.
                         </p>
                         <Link href="/settings/api-keys" className={styles.ctaBtn}>
                             Get Your API Key →
@@ -159,7 +211,7 @@ export default function McpDocsPage() {
                                 <div className={styles.stepNum}>3</div>
                                 <div>
                                     <strong>Call Tools</strong>
-                                    <p>Use any of the 9 available tools to read data or take actions on BidFlow on behalf of your account.</p>
+                                    <p>Use any of the available tools. <code>discover_marketplace</code> works without a key.</p>
                                 </div>
                             </div>
                         </div>
@@ -199,13 +251,13 @@ export default function McpDocsPage() {
                         </p>
                         <CodeBlock lang="json" code={`{
   "mcpServers": {
-    "bidflow": {
+    "getfreequote": {
       "command": "npx",
       "args": [
         "mcp-remote",
         "${origin}/api/mcp",
         "--header",
-        "Authorization: Bearer bfk_your_key_here"
+        "Authorization: Bearer bfk_YOUR_KEY"
       ]
     }
   }

@@ -56,6 +56,12 @@ Who pays when this scales? (Must be explicit.)
     `agent-process`/auto-quote; owner messages redistribute to every open channel; oracle feed
     spatial/keyword filters; JIT owner mark rented/sold; `Function()` formula eval replaced
     with safe arithmetic parser; Navbar collapsed.
+- **2026-10-19 connector phase:** public agent discovery (`/llms.txt`, `/AGENTS.md`,
+  `/.well-known/mcp.json`, `/api/discover`, `/connect`); MCP tools for post/bid/award/complete
+  (`discover_marketplace`, `post_job`, `accept_quote`, `complete_job`, `post_jit_listing`);
+  homeowner Accept now awards, rejects other bids, writes a work order, and opens Pattern 2
+  escrow; Mark Complete on dashboard; native Google OAuth (`/api/auth/google`) — needs
+  `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` (see `docs/GOOGLE_OAUTH.md`).
 
 ## Architecture Decision (Recorded)
 
