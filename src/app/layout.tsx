@@ -8,6 +8,10 @@ export const metadata: Metadata = {
   other: {
     'llms-txt': 'https://getfreequote.org/llms.txt',
   },
+  icons: {
+    icon: [{ url: '/brand/getfreequote-logo-120.png', sizes: '120x120', type: 'image/png' }],
+    apple: [{ url: '/brand/getfreequote-logo-120.png', sizes: '120x120', type: 'image/png' }],
+  },
 };
 
 const hydrationErrorFilter = `

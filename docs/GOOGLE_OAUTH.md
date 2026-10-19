@@ -26,6 +26,12 @@ without your Google account. Email+password signup already works without this.
      - `https://getfreequote.org/api/auth/google/callback`
 5. Copy the **Client ID** and **Client secret**.
 
+Brand assets for the Google Cloud consent/branding page (120×120 required):
+
+- PNG 120×120: `https://getfreequote.org/brand/getfreequote-logo-120.png`
+- PNG 512×512: `https://getfreequote.org/brand/getfreequote-logo-512.png`
+- SVG: `https://getfreequote.org/brand/getfreequote-logo.svg`
+
 ## 2. Put them on the droplet (only GetFreeQuote env files)
 
 SSH as root and append to **both** `/var/www/getfreequotes/.env.local` and

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { randomBytes } from 'crypto';
 import { getPgPool, signJwt } from '@/lib/pgSupabaseEngine';
 import { googleOAuthConfigured, googleRedirectUri, verifyOAuthState } from '@/lib/oauthState';
+import { getPublicOrigin } from '@/lib/auth-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,7 +26,7 @@ function fail(origin: string, message: string) {
 }
 
 export async function GET(request: NextRequest) {
-    const origin = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin;
+    const origin = getPublicOrigin(request);
     if (!googleOAuthConfigured()) {
         return fail(origin, 'Google login is not configured.');
     }
