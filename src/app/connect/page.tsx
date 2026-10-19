@@ -19,7 +19,8 @@ export default function ConnectPage() {
                         </p>
                         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'center' }}>
                             <Link href="/login?mode=signup" className={styles.ctaBtn}>Create a human account</Link>
-                            <Link href="/docs/mcp" className={styles.ctaBtn} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)' }}>MCP docs</Link>
+                    <Link href="/how-to" className={styles.ctaBtn} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)' }}>How to use</Link>
+                    <Link href="/docs/mcp" className={styles.ctaBtn} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)' }}>MCP docs</Link>
                         </div>
                     </div>
 
@@ -48,8 +49,8 @@ export default function ConnectPage() {
                     <section className={styles.section}>
                         <h2 className={styles.sectionTitle}>Homeowner loop</h2>
                         <ol className={styles.steps}>
-                            <li className={styles.step}><div className={styles.stepNum}>1</div><div>Post at <Link href="/post-job">/post-job</Link> (or MCP <code>post_job</code>)</div></li>
-                            <li className={styles.step}><div className={styles.stepNum}>2</div><div>Quotes land on <Link href="/dashboard">/dashboard</Link> and <code>/jobs/&#123;id&#125;</code></div></li>
+                            <li className={styles.step}><div className={styles.stepNum}>1</div><div>Post at <Link href="/post-job">/post-job</Link> (or MCP <code>post_job</code> with workKind quote / bounty / local)</div></li>
+                            <li className={styles.step}><div className={styles.stepNum}>2</div><div>Quotes land on <Link href="/dashboard">/dashboard</Link> and <code>/jobs/{'{id}'}</code>. Edit or cancel there, or MCP <code>update_job</code> / <code>cancel_job</code>.</div></li>
                             <li className={styles.step}><div className={styles.stepNum}>3</div><div>Accept one quote — others close, a work order is written, Pattern 2 escrow opens</div></li>
                             <li className={styles.step}><div className={styles.stepNum}>4</div><div>Pay the contractor off-platform / on-chain; record the tx on <Link href="/escrow">/escrow</Link></div></li>
                             <li className={styles.step}><div className={styles.stepNum}>5</div><div>Mark complete when the work is done</div></li>

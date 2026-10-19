@@ -1,0 +1,136 @@
+.page {
+    min-height: 100vh;
+    background: var(--background);
+}
+
+.main {
+    min-height: calc(100vh - 62px);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 3rem 1.25rem 4rem;
+}
+
+.card {
+    width: 100%;
+    max-width: 540px;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+}
+
+.progress {
+    display: flex;
+    gap: 6px;
+}
+
+.dot, .dotOn {
+    height: 4px;
+    flex: 1;
+    border-radius: 2px;
+    background: var(--surface-300);
+}
+
+.dotOn {
+    background: var(--primary);
+}
+
+.kicker {
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.45);
+}
+
+.card h1 {
+    font-size: 1.55rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+.sub {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.95rem;
+}
+
+.choices {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+
+.choice {
+    text-align: left;
+    padding: 0.95rem 1rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-subtle);
+    background: var(--surface-50);
+    color: inherit;
+    cursor: pointer;
+    min-height: 64px;
+    font-family: inherit;
+}
+
+.choice strong {
+    display: block;
+    margin-bottom: 0.2rem;
+}
+
+.choice span {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.choiceOn {
+    border-color: var(--primary);
+    background: rgba(79, 142, 247, 0.08);
+}
+
+.label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+.kindRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.kind {
+    padding: 0.55rem 0.85rem;
+    min-height: 44px;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--border-mid);
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.85rem;
+}
+
+.kindOn {
+    border-color: var(--primary);
+    background: rgba(79, 142, 247, 0.12);
+}
+
+.pre {
+    white-space: pre-wrap;
+    font-size: 0.78rem;
+    line-height: 1.5;
+    padding: 0.9rem;
+    border-radius: var(--radius-sm);
+    background: var(--surface-100);
+    border: 1px solid var(--border-subtle);
+    color: rgba(255, 255, 255, 0.75);
+}

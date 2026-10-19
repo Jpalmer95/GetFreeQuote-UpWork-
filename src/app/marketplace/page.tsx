@@ -383,6 +383,9 @@ export default function Marketplace() {
                                     {job.communityProjectId && (
                                         <span className={styles.communityTag}>Community Funded</span>
                                     )}
+                                    {job.workKind === 'bounty' && (
+                                        <span className={styles.communityTag}>Bounty</span>
+                                    )}
                                     {relevance && relevance.reasons.length > 0 && (
                                         <span className={styles.relevanceBadge}>
                                             {relevance.reasons[0]}
@@ -443,7 +446,7 @@ export default function Marketplace() {
                                             }
                                         }}
                                     >
-                                        Bid Now
+                                        {job.workKind === 'bounty' ? 'Claim / Bid' : 'Bid Now'}
                                     </button>
                                     <button
                                         className={styles.detailsBtn}

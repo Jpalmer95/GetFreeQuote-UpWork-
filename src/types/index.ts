@@ -61,6 +61,8 @@ export type JobCategory = string;
 
 export type ProjectUrgency = 'flexible' | 'within_month' | 'within_week' | 'urgent';
 
+export type WorkKind = 'quote' | 'bounty' | 'local';
+
 export interface Job {
     id: string;
     userId: string;
@@ -87,6 +89,7 @@ export interface Job {
     locationLat?: number;
     locationLng?: number;
     radiusMiles?: number;
+    workKind?: WorkKind;
 }
 
 export interface Quote {

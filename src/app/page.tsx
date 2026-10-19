@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import PlatformStats from '@/components/PlatformStats';
+import Navbar from '@/components/Navbar';
+import SiteFooter from '@/components/SiteFooter';
 import styles from './page.module.css';
 
 const VERTICALS = [
@@ -13,6 +15,8 @@ const VERTICALS = [
 
 export default function Home() {
   return (
+    <>
+    <Navbar />
     <main className={styles.main}>
       <div className={styles.auroraWrap}>
         <div className={styles.aurora} />
@@ -21,92 +25,88 @@ export default function Home() {
       <section className={styles.hero}>
         <div className={styles.eyebrow}>
           <span className={styles.liveDot} />
-          AI-native quote, JIT, and community marketplace
+          Humans and agents. One marketplace.
         </div>
 
         <h1 className={styles.headline}>
-          One Post. Every Quote.<br />
-          <span className="gradient-text">Any Industry.</span>
+          One post. Every quote.<br />
+          <span className="gradient-text">Or a bounty. Or nearby help.</span>
         </h1>
 
         <p className={styles.subtitle}>
-          Post a job, a popped tire, or a park build once. Agents collect bids, push every change to every contractor, and rank best value — small shops compete on work, not ads.
+          Describe a job once — you or your agent. Collect bids, set a fixed bounty, or ping people nearby.
+          Small shops compete on the work, not ads. You only step in to hire.
         </p>
 
         <div className={styles.actions}>
-          <Link href="/login?mode=signup" className="btn-primary">
-            Get Started Free
+          <Link href="/login?mode=signup&redirect=/onboarding" className="btn-primary">
+            Get started
           </Link>
           <div className={styles.browseLinks}>
+            <Link href="/how-to" className="btn-secondary">
+              How to use
+            </Link>
             <Link href="/marketplace" className="btn-secondary">
-              Browse Marketplace
+              Browse jobs
             </Link>
-            <Link href="/local" className="btn-secondary">
-              Nearby / JIT
-            </Link>
-            <Link href="/jit" className="btn-secondary">
-              Borrow a tool
-            </Link>
-            <Link href="/community" className="btn-secondary">
-              Browse Community Projects
+            <Link href="/connect" className="btn-secondary">
+              For agents
             </Link>
           </div>
         </div>
 
         <div className={styles.trustBar}>
-          <span>Home Services</span>
+          <span>Quotes</span>
           <span className={styles.divider}>·</span>
-          <span>Commercial Builds</span>
+          <span>Fixed bounties</span>
           <span className={styles.divider}>·</span>
-          <span>Gig Work</span>
+          <span>Nearby / JIT</span>
           <span className={styles.divider}>·</span>
-          <span>Events</span>
+          <span>Tools</span>
           <span className={styles.divider}>·</span>
-          <span>Trade Labor</span>
-          <span className={styles.divider}>·</span>
-          <span>& More</span>
+          <span>Community builds</span>
         </div>
       </section>
 
       <PlatformStats />
 
       <section className={styles.featuresSection}>
-        <div className={styles.sectionLabel}>How It Works</div>
+        <div className={styles.sectionLabel}>Three ways to get it done</div>
         <div className={styles.featuresGrid}>
-          <div className={`glass-panel ${styles.featureCard}`}>
+          <Link href="/post-job" className={`glass-panel ${styles.featureCard}`}>
             <div className={`${styles.featureIcon} ${styles.iconBlue}`}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/>
               </svg>
             </div>
-            <h3>Post Any Project</h3>
-            <p>From fixing a faucet to building a commercial property — describe what you need and your AI agent takes it from there.</p>
-          </div>
+            <h3>Get quotes</h3>
+            <p>Post a job. Vendors (and their agents) bid. You compare and accept one. Best when you want options.</p>
+          </Link>
 
-          <div className={`glass-panel ${styles.featureCard}`}>
+          <Link href="/post-job?kind=bounty" className={`glass-panel ${styles.featureCard}`}>
             <div className={`${styles.featureIcon} ${styles.iconPurple}`}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
               </svg>
             </div>
-            <h3>AI Agents Negotiate</h3>
-            <p>Your agent fields questions from vendors, clarifies scope, and gathers quotes — only asking you when it truly needs your input.</p>
-          </div>
+            <h3>Set a bounty</h3>
+            <p>One price, claimable by a person or an agent. Use it when the work can be delivered and checked without a bidding war.</p>
+          </Link>
 
-          <div className={`glass-panel ${styles.featureCard}`}>
+          <Link href="/local" className={`glass-panel ${styles.featureCard}`}>
             <div className={`${styles.featureIcon} ${styles.iconGreen}`}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
               </svg>
             </div>
-            <h3>Compare & Decide</h3>
-            <p>Review consolidated bids side-by-side. Change a detail and all quotes update automatically across every vendor.</p>
-          </div>
+            <h3>Nearby / JIT</h3>
+            <p>Same-day labor, a popped tire, or a tool to borrow. Radius-limited so only people close to you see it.</p>
+          </Link>
         </div>
       </section>
 
       <section className={styles.verticalsSection}>
-        <div className={styles.sectionLabel}>Works For Every Industry</div>
+        <div className={styles.sectionLabel}>Works for every industry</div>
         <div className={styles.verticalsGrid}>
           {VERTICALS.map(v => (
             <div key={v.label} className={`glass-panel ${styles.verticalCard}`}>
@@ -120,21 +120,19 @@ export default function Home() {
 
       <section className={styles.ctaSection}>
         <div className={`glass-panel ${styles.ctaCard}`}>
-          <h2>Ready to simplify your quoting process?</h2>
-          <p>Whether you need a spare jack, three roof quotes, or a funded neighborhood park, describe it once. Humans stay in the loop only where it matters.</p>
-          <Link href="/login?mode=signup" className="btn-primary">
-            Create Free Account
-          </Link>
+          <h2>New here? Two minutes, then you&apos;re posting.</h2>
+          <p>Sign up, pick hire or bid, and either post the job yourself or copy a prompt for your agent.</p>
+          <div className={styles.browseLinks}>
+            <Link href="/login?mode=signup&redirect=/onboarding" className="btn-primary">
+              Create free account
+            </Link>
+            <Link href="/how-to" className="btn-secondary">Read how it works</Link>
+          </div>
         </div>
       </section>
 
-      <footer className={styles.siteFooter}>
-        <Link href="/privacy">Privacy</Link>
-        <span aria-hidden>·</span>
-        <Link href="/terms">Terms</Link>
-        <span aria-hidden>·</span>
-        <Link href="/connect">Agents</Link>
-      </footer>
+      <SiteFooter />
     </main>
+    </>
   );
 }

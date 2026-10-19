@@ -211,6 +211,7 @@ const TOOLS: McpTool[] = [
                 lng: { type: 'number' },
                 radiusMiles: { type: 'number' },
                 isLocalRequest: { type: 'boolean' },
+                workKind: { type: 'string', enum: ['quote', 'bounty', 'local'], description: 'quote = competitive bids (default); bounty = fixed price claim; local = nearby/same-day.' },
             },
             required: ['title', 'description'],
         },
@@ -254,6 +255,40 @@ const TOOLS: McpTool[] = [
                 lng: { type: 'number' },
             },
             required: ['itemName'],
+        },
+    },
+    {
+        name: 'update_job',
+        description: 'Owner (or their agent) edits an open job they posted. Allowlisted fields only. Use this to change title, description, budget, location, urgency, or workKind (quote | bounty | local).',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                job_id: { type: 'string', description: 'UUID of the job to update.' },
+                title: { type: 'string' },
+                description: { type: 'string' },
+                location: { type: 'string' },
+                budget: { type: 'string' },
+                urgency: { type: 'string', enum: ['flexible', 'within_month', 'within_week', 'urgent'] },
+                industry: { type: 'string' },
+                subcategory: { type: 'string' },
+                workKind: { type: 'string', enum: ['quote', 'bounty', 'local'], description: 'quote = competitive bids; bounty = fixed price claim; local = nearby/same-day.' },
+                isPublic: { type: 'boolean' },
+                lat: { type: 'number' },
+                lng: { type: 'number' },
+                radiusMiles: { type: 'number' },
+            },
+            required: ['job_id'],
+        },
+    },
+    {
+        name: 'cancel_job',
+        description: 'Owner (or their agent) cancels an OPEN, DRAFT, or EXPIRED job they posted. In-progress awarded work cannot be cancelled — complete it instead.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                job_id: { type: 'string', description: 'UUID of the job to cancel.' },
+            },
+            required: ['job_id'],
         },
     },
 ];
@@ -631,6 +666,12 @@ async function handleTool(
             const title = String(args.title || '').trim();
             const description = String(args.description || '').trim();
             if (!title || !description) return toolErr('title and description are required');
+            const { isWorkKind, withWorkKindTags } = await import('@/lib/workKind');
+            const workKind = isWorkKind(args.workKind)
+                ? args.workKind
+                : args.isLocalRequest === true
+                    ? 'local'
+                    : 'quote';
             const { data: job, error } = await supabaseAdmin.from('jobs').insert({
                 user_id: userId,
                 title,
@@ -642,12 +683,12 @@ async function handleTool(
                 budget: args.budget ? String(args.budget) : null,
                 urgency: String(args.urgency || 'flexible'),
                 is_public: true,
-                is_local_request: args.isLocalRequest === true,
+                is_local_request: workKind === 'local' || args.isLocalRequest === true,
                 location_lat: args.lat != null ? Number(args.lat) : null,
                 location_lng: args.lng != null ? Number(args.lng) : null,
                 radius_miles: args.radiusMiles != null ? Number(args.radiusMiles) : 25,
                 status: 'OPEN',
-                tags: [],
+                tags: withWorkKindTags([], workKind),
             }).select().single();
             if (error) return toolErr(error.message);
             return ok({ job, url: `https://getfreequote.org/jobs/${job.id}`, message: 'Job posted. Matching agents will be notified.' });
@@ -697,6 +738,76 @@ async function handleTool(
             }).select().single();
             if (error) return toolErr(error.message);
             return ok({ listing: data });
+        }
+
+        case 'update_job': {
+            if (!hasWrite) return toolErr('Write scope required to update jobs', 'forbidden');
+            const jobId = String(args.job_id || '').trim();
+            if (!jobId) return toolErr('job_id is required');
+            const { data: existing, error: loadErr } = await supabaseAdmin
+                .from('jobs')
+                .select('*')
+                .eq('id', jobId)
+                .maybeSingle();
+            if (loadErr) return toolErr(loadErr.message);
+            if (!existing) return toolErr('Job not found', 'not_found');
+            if (existing.user_id !== userId) return toolErr('You can only edit jobs you posted', 'forbidden');
+            if (existing.status === 'COMPLETED' || existing.status === 'CANCELLED') {
+                return toolErr('Closed jobs cannot be edited', 'conflict');
+            }
+            const { jobPatchFromBody } = await import('@/lib/jobUpdates');
+            const patch = jobPatchFromBody({
+                title: args.title,
+                description: args.description,
+                location: args.location,
+                budget: args.budget,
+                urgency: args.urgency,
+                industryVertical: args.industry,
+                subcategory: args.subcategory,
+                workKind: args.workKind,
+                isPublic: args.isPublic,
+                lat: args.lat,
+                lng: args.lng,
+                radiusMiles: args.radiusMiles,
+                tags: existing.tags || [],
+            });
+            if (Object.keys(patch).length === 0) return toolErr('No allowed fields to update');
+            const { data: job, error } = await supabaseAdmin
+                .from('jobs')
+                .update(patch)
+                .eq('id', jobId)
+                .eq('user_id', userId)
+                .select()
+                .single();
+            if (error) return toolErr(error.message);
+            return ok({ job, url: `https://getfreequote.org/jobs/${jobId}`, message: 'Job updated.' });
+        }
+
+        case 'cancel_job': {
+            if (!hasWrite) return toolErr('Write scope required to cancel jobs', 'forbidden');
+            const jobId = String(args.job_id || '').trim();
+            if (!jobId) return toolErr('job_id is required');
+            const { data: existing, error: loadErr } = await supabaseAdmin
+                .from('jobs')
+                .select('id, user_id, status, title')
+                .eq('id', jobId)
+                .maybeSingle();
+            if (loadErr) return toolErr(loadErr.message);
+            if (!existing) return toolErr('Job not found', 'not_found');
+            if (existing.user_id !== userId) return toolErr('You can only cancel jobs you posted', 'forbidden');
+            const { canCancelJobStatus } = await import('@/lib/jobUpdates');
+            if (!canCancelJobStatus(existing.status)) {
+                return toolErr('In-progress or completed jobs cannot be cancelled. Mark complete instead.', 'conflict');
+            }
+            const { data: job, error } = await supabaseAdmin
+                .from('jobs')
+                .update({ status: 'CANCELLED', is_public: false })
+                .eq('id', jobId)
+                .eq('user_id', userId)
+                .select()
+                .single();
+            if (error) return toolErr(error.message);
+            return ok({ job, message: 'Job cancelled and removed from the public marketplace.' });
         }
 
         default:

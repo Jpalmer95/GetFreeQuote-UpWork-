@@ -1,6 +1,7 @@
 import { db } from './db';
 import { Job } from '@/types';
 import { supabase } from '@/lib/supabase';
+import { withWorkKindTags } from '@/lib/workKind';
 
 async function getAuthHeaders(): Promise<Record<string, string>> {
     const { data: { session } } = await supabase.auth.getSession();
@@ -33,7 +34,13 @@ export const jobService = {
     },
 
     createJob: async (jobData: Omit<Job, 'id' | 'createdAt' | 'status'>) => {
-        const newJob = await db.createJob(jobData);
+        const kind = jobData.workKind || (jobData.isLocalRequest ? 'local' : 'quote');
+        const newJob = await db.createJob({
+            ...jobData,
+            workKind: kind,
+            tags: withWorkKindTags(jobData.tags, kind),
+            isLocalRequest: kind === 'local' || !!jobData.isLocalRequest,
+        });
 
         getAuthHeaders().then(headers => {
             fetch('/api/agent-process', {
@@ -85,5 +92,25 @@ export const jobService = {
             body: JSON.stringify({ quoteId, action: 'reject' }),
         });
         if (!res.ok) throw new Error('Failed to reject quote');
+    },
+
+    updateJob: async (jobId: string, patch: Record<string, unknown>) => {
+        const headers = await getAuthHeaders();
+        const res = await fetch(`/api/jobs/${jobId}`, {
+            method: 'PATCH',
+            headers,
+            body: JSON.stringify(patch),
+        });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(json.error || 'Failed to update job');
+        return json.job;
+    },
+
+    cancelJob: async (jobId: string) => {
+        const headers = await getAuthHeaders();
+        const res = await fetch(`/api/jobs/${jobId}`, { method: 'DELETE', headers });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(json.error || 'Failed to cancel job');
+        return json.job;
     },
 };

@@ -72,6 +72,14 @@ export default function Dashboard() {
     const [vendorInfo, setVendorInfo] = useState<Record<string, { rating?: number; isVerified: boolean }>>({});
     const [reposting, setReposting] = useState(false);
     const [completing, setCompleting] = useState(false);
+    const [editing, setEditing] = useState(false);
+    const [editTitle, setEditTitle] = useState('');
+    const [editDescription, setEditDescription] = useState('');
+    const [editBudget, setEditBudget] = useState('');
+    const [editLocation, setEditLocation] = useState('');
+    const [savingEdit, setSavingEdit] = useState(false);
+    const [cancelling, setCancelling] = useState(false);
+    const [manageError, setManageError] = useState<string | null>(null);
 
     const handleRepost = useCallback(async (jobId: string) => {
         if (reposting) return;
@@ -120,6 +128,54 @@ export default function Dashboard() {
             setCompleting(false);
         }
     }, [completing, user]);
+
+    const startEdit = useCallback((job: Job) => {
+        setEditTitle(job.title);
+        setEditDescription(job.description);
+        setEditBudget(job.budget || '');
+        setEditLocation(job.location);
+        setEditing(true);
+        setManageError(null);
+    }, []);
+
+    const saveEdit = useCallback(async () => {
+        if (!selectedJob || savingEdit) return;
+        setSavingEdit(true);
+        setManageError(null);
+        try {
+            await jobService.updateJob(selectedJob.id, {
+                title: editTitle.trim(),
+                description: editDescription.trim(),
+                budget: editBudget.trim() || null,
+                location: editLocation.trim(),
+            });
+            const myJobs = await jobService.getMyJobs(user!.id);
+            setJobs([...myJobs]);
+            setSelectedJob(myJobs.find(j => j.id === selectedJob.id) || null);
+            setEditing(false);
+        } catch (err) {
+            setManageError(err instanceof Error ? err.message : 'Could not save');
+        } finally {
+            setSavingEdit(false);
+        }
+    }, [selectedJob, savingEdit, editTitle, editDescription, editBudget, editLocation, user]);
+
+    const handleCancelJob = useCallback(async (jobId: string) => {
+        if (cancelling) return;
+        if (!window.confirm('Cancel this listing? It will leave the public marketplace. In-progress awarded work cannot be cancelled.')) return;
+        setCancelling(true);
+        setManageError(null);
+        try {
+            await jobService.cancelJob(jobId);
+            const myJobs = await jobService.getMyJobs(user!.id);
+            setJobs([...myJobs]);
+            setSelectedJob(myJobs.find(j => j.id === jobId) || null);
+        } catch (err) {
+            setManageError(err instanceof Error ? err.message : 'Could not cancel');
+        } finally {
+            setCancelling(false);
+        }
+    }, [cancelling, user]);
 
     const handleSendReply = useCallback(async () => {
         if (!selectedJob || !replyText.trim() || sendingReply) return;
@@ -262,10 +318,11 @@ export default function Dashboard() {
             <Navbar />
 
             <header className={styles.pageHeader}>
-                <h2 className="gradient-text">My Projects</h2>
+                <h2 className="gradient-text">My jobs</h2>
                 <div className={styles.headerActions}>
-                    <Link href="/agent-settings" className={styles.agentBtn}>AI Agent Settings</Link>
-                    <Link href="/post-job" className={styles.newBtn}>+ New Project</Link>
+                    <Link href="/how-to" className={styles.agentBtn}>How to</Link>
+                    <Link href="/agent-settings" className={styles.agentBtn}>Agent settings</Link>
+                    <Link href="/post-job" className={styles.newBtn}>+ Post</Link>
                 </div>
             </header>
 
@@ -321,8 +378,11 @@ export default function Dashboard() {
                                     </span>
                                     {job.isLocalRequest && (
                                         <span className="badge badge-blue" title={`Local request · ${job.radiusMiles ?? 25} mi radius`}>
-                                            📍 Local
+                                            Nearby
                                         </span>
+                                    )}
+                                    {job.workKind === 'bounty' && (
+                                        <span className="badge badge-amber">Bounty</span>
                                     )}
                                     <span className={styles.date}>
                                         {new Date(job.createdAt).toLocaleDateString()}
@@ -356,6 +416,31 @@ export default function Dashboard() {
                                     </svg>
                                     {selectedJob.location}
                                 </p>
+                                {manageError && <p className={styles.emptyMsg} style={{ color: '#f87171' }}>{manageError}</p>}
+                                {(selectedJob.status === 'OPEN' || selectedJob.status === 'DRAFT' || selectedJob.status === 'EXPIRED') && (
+                                    <div className={styles.quoteActions} style={{ marginTop: '0.85rem' }}>
+                                        {!editing ? (
+                                            <>
+                                                <button className={styles.acceptBtn} type="button" onClick={() => startEdit(selectedJob)}>Edit</button>
+                                                <button className={styles.rejectBtn} type="button" disabled={cancelling} onClick={() => handleCancelJob(selectedJob.id)}>
+                                                    {cancelling ? 'Cancelling…' : 'Cancel listing'}
+                                                </button>
+                                                <Link href={`/jobs/${selectedJob.id}`} className={styles.agentBtn}>Public page</Link>
+                                            </>
+                                        ) : (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', width: '100%' }}>
+                                                <input className="field-input" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
+                                                <input className="field-input" value={editLocation} onChange={(e) => setEditLocation(e.target.value)} placeholder="Location" />
+                                                <input className="field-input" value={editBudget} onChange={(e) => setEditBudget(e.target.value)} placeholder="Budget / bounty" />
+                                                <textarea className="field-textarea" rows={4} value={editDescription} onChange={(e) => setEditDescription(e.target.value)} />
+                                                <div className={styles.quoteActions}>
+                                                    <button className={styles.acceptBtn} type="button" disabled={savingEdit} onClick={saveEdit}>{savingEdit ? 'Saving…' : 'Save'}</button>
+                                                    <button className={styles.rejectBtn} type="button" onClick={() => setEditing(false)}>Discard</button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                                 {(selectedJob.squareFootage || selectedJob.materials || selectedJob.budget) && (
                                     <div className={styles.tags}>
                                         {selectedJob.budget && <span className={styles.tag}>{selectedJob.budget}</span>}

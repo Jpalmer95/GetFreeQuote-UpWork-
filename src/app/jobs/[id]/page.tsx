@@ -124,7 +124,8 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                     <div className={styles.chips}>
                         <span className="badge badge-blue">{job.industryVertical}</span>
                         <span className="badge">{job.subcategory || job.category}</span>
-                        {job.isLocalRequest && <span className="badge badge-green">Local / JIT</span>}
+                        {job.workKind === 'bounty' && <span className="badge badge-amber">Bounty</span>}
+                        {job.isLocalRequest && <span className="badge badge-green">Nearby / JIT</span>}
                         {job.urgency && job.urgency !== 'flexible' && (
                             <span className={`badge ${job.urgency === 'urgent' ? 'badge-amber' : ''}`}>
                                 {URGENCY[job.urgency]}
@@ -158,9 +159,11 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
 
                 {isOwner && (
                     <section className={`glass-panel ${styles.card}`}>
-                        <h2>Your job</h2>
-                        <p className={styles.muted}>{quotes.length} quote{quotes.length === 1 ? '' : 's'} so far.</p>
-                        <Link href="/dashboard" className="btn-primary">Open in dashboard</Link>
+                        <h2>Your listing</h2>
+                        <p className={styles.muted}>{quotes.length} quote{quotes.length === 1 ? '' : 's'} so far. Edit, cancel, or award from your desk.</p>
+                        <div className={styles.row}>
+                            <Link href="/dashboard" className="btn-primary">Manage on dashboard</Link>
+                        </div>
                     </section>
                 )}
 
