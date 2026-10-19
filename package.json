@@ -11,8 +11,10 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.87.3",
+    "@types/pg": "^8.23.1",
     "@types/web-push": "^3.6.4",
     "next": "16.0.10",
+    "pg": "^8.23.1",
     "react": "19.2.1",
     "react-dom": "19.2.1",
     "resend": "^6.9.4",

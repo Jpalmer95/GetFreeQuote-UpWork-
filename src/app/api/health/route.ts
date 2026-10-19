@@ -1,21 +1,33 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { isPgConfigured } from '@/lib/pgSupabaseEngine';
 
-const REQUIRED_TABLES = ['profiles', 'jobs', 'quotes', 'messages', 'agent_configs', 'agent_actions', 'notifications', 'vendor_profiles', 'projects', 'project_phases', 'community_projects'];
+const REQUIRED_TABLES = [
+    'profiles',
+    'jobs',
+    'quotes',
+    'messages',
+    'agent_configs',
+    'agent_actions',
+    'notifications',
+    'vendor_profiles',
+    'projects',
+    'project_phases',
+    'community_projects',
+    'escrow_accounts',
+    'job_briefs',
+    'bid_threads',
+];
 
 export async function GET() {
     const checks: Record<string, string> = {};
     let healthy = true;
 
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const pgActive = isPgConfigured();
+    checks.backend = pgActive ? 'postgresql-16' : 'supabase';
 
-    checks.supabase_url = url ? 'ok' : 'missing';
-    checks.service_role_key = serviceKey ? 'ok' : 'missing';
-
-    if (!url || !serviceKey) {
-        healthy = false;
-        return NextResponse.json({ healthy, checks }, { status: 503 });
+    if (!pgActive && (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY)) {
+        return NextResponse.json({ healthy: false, checks }, { status: 503 });
     }
 
     try {
@@ -33,8 +45,5 @@ export async function GET() {
         healthy = false;
     }
 
-    if (process.env.NODE_ENV === 'production') {
-        return NextResponse.json({ healthy }, { status: healthy ? 200 : 503 });
-    }
-    return NextResponse.json({ healthy, checks }, { status: healthy ? 200 : 503 });
+    return NextResponse.json({ healthy, backend: checks.backend, checks }, { status: healthy ? 200 : 503 });
 }

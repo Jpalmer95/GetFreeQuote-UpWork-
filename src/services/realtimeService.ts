@@ -1,89 +1,26 @@
-import { supabase } from '@/lib/supabase';
-import type { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
-
 type SubscriptionCallback<T> = (payload: {
     eventType: 'INSERT' | 'UPDATE' | 'DELETE';
     new: T;
     old: Partial<T>;
 }) => void;
 
-interface ChannelEntry {
-    channel: RealtimeChannel;
-    status: 'connecting' | 'connected' | 'disconnected';
-    retryCount: number;
-}
-
-const channels = new Map<string, ChannelEntry>();
-const MAX_RETRIES = 3;
-
-function handlePayload<T>(
-    payload: RealtimePostgresChangesPayload<{ [key: string]: unknown }>,
-    callback: SubscriptionCallback<T>,
-) {
-    const eventType = payload.eventType as 'INSERT' | 'UPDATE' | 'DELETE';
-    callback({
-        eventType,
-        new: (payload.new ?? {}) as T,
-        old: (payload.old ?? {}) as Partial<T>,
-    });
-}
-
+/**
+ * Self-hosted PostgreSQL 16 mode: signals `onStatusChange(false)` on subscribe
+ * so Dashboard and NotificationPanel immediately use their built-in HTTP polling
+ * against `/api/supabase/rest/v1/*` without opening dead WebSockets.
+ */
 export const realtimeService = {
     subscribe<T>(
-        key: string,
-        table: string,
-        filter: string,
-        callback: SubscriptionCallback<T>,
+        _key: string,
+        _table: string,
+        _filter: string,
+        _callback: SubscriptionCallback<T>,
         onStatusChange?: (connected: boolean) => void,
     ): () => void {
-        const existing = channels.get(key);
-        if (existing) {
-            supabase.removeChannel(existing.channel);
-            channels.delete(key);
+        if (onStatusChange) {
+            setTimeout(() => onStatusChange(false), 0);
         }
-
-        const channel = supabase
-            .channel(key)
-            .on(
-                'postgres_changes',
-                { event: '*', schema: 'public', table, filter },
-                (payload) => handlePayload(payload, callback),
-            )
-            .subscribe((status) => {
-                const entry = channels.get(key);
-                if (!entry) return;
-
-                if (status === 'SUBSCRIBED') {
-                    entry.status = 'connected';
-                    entry.retryCount = 0;
-                    onStatusChange?.(true);
-                } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-                    entry.status = 'disconnected';
-                    onStatusChange?.(false);
-
-                    if (entry.retryCount < MAX_RETRIES) {
-                        entry.retryCount++;
-                        setTimeout(() => {
-                            const current = channels.get(key);
-                            if (current && current.status === 'disconnected') {
-                                supabase.removeChannel(current.channel);
-                                channels.delete(key);
-                                this.subscribe(key, table, filter, callback, onStatusChange);
-                            }
-                        }, 2000 * entry.retryCount);
-                    }
-                }
-            });
-
-        channels.set(key, { channel, status: 'connecting', retryCount: 0 });
-
-        return () => {
-            const entry = channels.get(key);
-            if (entry) {
-                supabase.removeChannel(entry.channel);
-                channels.delete(key);
-            }
-        };
+        return () => {};
     },
 
     subscribeToNotifications(
@@ -128,10 +65,5 @@ export const realtimeService = {
         );
     },
 
-    unsubscribeAll(): void {
-        for (const [key, entry] of channels) {
-            supabase.removeChannel(entry.channel);
-            channels.delete(key);
-        }
-    },
+    unsubscribeAll(): void {},
 };

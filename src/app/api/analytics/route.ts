@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
-import { supabase } from '@/lib/supabase';
+import { getAuthenticatedUser } from '@/lib/serverAuth';
 
 async function getAuthUser(req: NextRequest) {
-    const auth = req.headers.get('authorization')?.replace('Bearer ', '');
-    if (!auth) return null;
-    const { data: { user } } = await supabase.auth.getUser(auth);
-    return user;
+    return getAuthenticatedUser(req);
 }
 
 interface QuoteRow {

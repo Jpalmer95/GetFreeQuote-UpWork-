@@ -40,20 +40,22 @@ Who pays when this scales? (Must be explicit.)
 
 ## Current State (verified 2026-10-17)
 
-- **Stack:** Next.js 16 + Supabase (Postgres, realtime, storage). AI agents present
-  (`/api/agent-process`, `/api/agent-respond`, `/api/agent-instruct`, `/api/poll-jobs`).
-- **Intended live:** https://getfreequote.org. Traefik/Coolify on droplet `167.99.125.127`.
-- **Outage (2026-10-17, blocking production):** Traefik `getfreequotes.yaml` still points at
-  `10.0.1.12:5000` while the container is `10.0.1.11:5000` (502). Hosted Supabase project
-  `nastvwttgfzwwaoaudmw.supabase.co` is **NXDOMAIN / paused** so `/api/health` is 503 and
-  the oracle relay polls 502. Droplet checkout is 8 commits behind `origin/main`.
-  Restore: unpause/restore the Supabase project **or** cut over to a new one, fix Traefik
-  IP, rebuild/redeploy from GitHub, then re-apply `supabase_bid_desk.sql` if tables are missing.
-- **2026-10-17 product overhaul (this branch):** public `/jobs/[id]` bid page + `/api/quotes`;
-  Job Brief + bid-thread wiring on agent-process/auto-quote; owner messages redistribute to
-  every open channel; oracle feed spatial/keyword filters; JIT owner mark rented/sold;
-  formula eval no longer uses `Function()`; Navbar collapsed; mock escrow/pools/group-buys/
-  apprentice labeled as not-live; community ledger copy is honest.
+- **Stack:** Next.js 16 + dedicated self-hosted **PostgreSQL 16** (`getfreequotes` DB on
+  droplet `167.99.125.127`, bridged via `src/lib/pgSupabaseEngine.ts` + `/api/supabase/[...path]`).
+  Eliminates the Supabase Free Tier 7-day auto-pause failure mode (`nastvwttgfzwwaoaudmw.supabase.co`
+  NXDOMAIN) and lets agents apply schema migrations directly via `psql` (`supabase_migrations/PG16_FULL_BOOTSTRAP.sql`).
+- **Live:** https://getfreequote.org. Traefik/Coolify on droplet `167.99.125.127`.
+- **2026-10-17 full-stack overhaul:**
+  - Dedicated `getfreequotes` PostgreSQL 16 database + `gfquser` role provisioned on droplet.
+  - **Pattern 2 Non-Custodial Verifiable Milestone Escrow & Hash-Chained Audit Ledger**
+    (`src/services/verifiableEscrow.ts`, `/api/escrow`, `/escrow`, `/community/[id]`):
+    deterministic SHA-256 manifest hashes, Base/USDC non-custodial escrow specs, milestone
+    proof SHA-256 digests, hash-chained `verifiable_receipts` + `ledger_entries` (`prev_hash` →
+    `receipt_hash`), and automatic **Best-Value Contractor Ranking** for community builds.
+  - Public `/jobs/[id]` bid page + `/api/quotes`; Job Brief + bid-thread wiring on
+    `agent-process`/auto-quote; owner messages redistribute to every open channel; oracle feed
+    spatial/keyword filters; JIT owner mark rented/sold; `Function()` formula eval replaced
+    with safe arithmetic parser; Navbar collapsed.
 
 ## Architecture Decision (Recorded)
 

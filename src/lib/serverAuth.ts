@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { verifyJwt } from '@/lib/pgSupabaseEngine';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 export async function getAuthenticatedUser(request: NextRequest): Promise<{ id: string } | null> {
     const authHeader = request.headers.get('authorization');
@@ -8,7 +9,7 @@ export async function getAuthenticatedUser(request: NextRequest): Promise<{ id: 
     let accessToken: string | null = null;
 
     if (authHeader?.startsWith('Bearer ')) {
-        accessToken = authHeader.slice(7);
+        accessToken = authHeader.slice(7).trim();
     }
 
     if (!accessToken && cookieHeader) {
@@ -23,14 +24,12 @@ export async function getAuthenticatedUser(request: NextRequest): Promise<{ id: 
 
     if (!accessToken) return null;
 
-    const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
-        { auth: { persistSession: false } }
-    );
+    const jwtPayload = verifyJwt(accessToken);
+    if (jwtPayload?.sub) {
+        return { id: jwtPayload.sub };
+    }
 
-    const { data: { user }, error } = await supabase.auth.getUser(accessToken);
-
+    const { data: { user }, error } = await supabaseAdmin.auth.getUser(accessToken);
     if (error || !user) return null;
 
     return { id: user.id };
