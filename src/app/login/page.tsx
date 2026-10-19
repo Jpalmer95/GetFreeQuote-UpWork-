@@ -380,6 +380,13 @@ function LoginForm() {
                     )}
                     Continue with Google
                 </button>
+
+                <p className={styles.legalNote}>
+                    By continuing you agree to the{' '}
+                    <Link href="/terms">Terms of Service</Link>
+                    {' '}and{' '}
+                    <Link href="/privacy">Privacy Policy</Link>.
+                </p>
             </div>
         </div>
     );

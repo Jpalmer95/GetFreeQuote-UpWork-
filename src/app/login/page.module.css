@@ -213,6 +213,20 @@
     cursor: not-allowed;
 }
 
+.legalNote {
+    margin-top: 1rem;
+    font-size: 0.78rem;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.45);
+    text-align: center;
+}
+
+.legalNote a {
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
 /* ─── Divider ─── */
 .divider {
     display: flex;

@@ -342,3 +342,23 @@
     grid-template-columns: 1fr 1fr;
   }
 }
+
+.siteFooter {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 0.65rem;
+  align-items: center;
+  justify-content: center;
+  margin-top: 3rem;
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.siteFooter a {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.siteFooter a:hover {
+  color: var(--foreground);
+}

@@ -127,6 +127,14 @@ export default function Home() {
           </Link>
         </div>
       </section>
+
+      <footer className={styles.siteFooter}>
+        <Link href="/privacy">Privacy</Link>
+        <span aria-hidden>·</span>
+        <Link href="/terms">Terms</Link>
+        <span aria-hidden>·</span>
+        <Link href="/connect">Agents</Link>
+      </footer>
     </main>
   );
 }

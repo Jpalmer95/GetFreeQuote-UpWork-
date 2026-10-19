@@ -12,6 +12,9 @@ without your Google account. Email+password signup already works without this.
    - App name: `GetFreeQuote`
    - User support email: yours
    - Developer contact: yours
+   - Application home page: `https://getfreequote.org`
+   - **Privacy policy:** `https://getfreequote.org/privacy`
+   - **Terms of service:** `https://getfreequote.org/terms`
    - Scopes: `openid`, `email`, `profile` (the defaults)
    - Test users: add yourself while the app is in Testing
 4. **Credentials → Create credentials → OAuth client ID**

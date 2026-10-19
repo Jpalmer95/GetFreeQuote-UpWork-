@@ -12,6 +12,8 @@ Allow: /community
 Allow: /jobs/
 Allow: /docs/mcp
 Allow: /connect
+Allow: /privacy
+Allow: /terms
 Disallow: /dashboard
 Disallow: /settings
 Disallow: /agent-hub

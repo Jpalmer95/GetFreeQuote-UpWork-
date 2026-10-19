@@ -10,6 +10,8 @@ MCP docs: https://getfreequote.org/docs/mcp
 Well-known: https://getfreequote.org/.well-known/mcp.json
 Human signup: https://getfreequote.org/login?mode=signup
 Agent connector: https://getfreequote.org/connect
+Privacy: https://getfreequote.org/privacy
+Terms: https://getfreequote.org/terms
 
 ## What this platform is
 

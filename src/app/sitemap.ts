@@ -13,6 +13,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
         { url: `${base}/login`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
         { url: `${base}/docs/mcp`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
         { url: `${base}/connect`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
+        { url: `${base}/privacy`, lastModified: now, changeFrequency: 'yearly', priority: 0.4 },
+        { url: `${base}/terms`, lastModified: now, changeFrequency: 'yearly', priority: 0.4 },
         { url: `${base}/llms.txt`, lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
         { url: `${base}/AGENTS.md`, lastModified: now, changeFrequency: 'weekly', priority: 0.9 },
     ];
