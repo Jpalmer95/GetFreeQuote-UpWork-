@@ -162,6 +162,38 @@ separate marketplace.**
 - Mobile PWA or native apps.
 - Reputation portability / verified work history.
 
+## 2026-10-27 — UX revamp: the job brief is the product
+
+Dogfood audit (`~/dogfood-output/getfreequote-2026-10-27/report.md`) found that the loop the
+APIs implemented (brief → quotes → award → milestone) had **no page**: `/jobs/[id]` showed a
+title and a "manage on dashboard" link, and the dashboard pane read "Select a project".
+
+- [x] **Job Brief page** (`/jobs/[id]`) — media gallery (photo/video/doc), structured brief,
+      ranked quotes with Lowest/Fastest, award with confirm, share. Verified in prod:
+      posted a fence job → vendor bid $8,900 → owner awarded → quote ACCEPTED + work order.
+- [x] **`job_updates`** (`supabase_migrations/JOB_UPDATES.sql`, `/api/jobs/[id]/updates`):
+      append-only clarification log. Posting an update renders it on the brief, fans it to
+      open bid threads, and notifies everyone who already quoted. Public read; owner/agent write.
+- [x] **Dashboard** rebuilt as a desk (`/api/dashboard` single round trip): KPIs, job cards,
+      status filter, activity feed, real empty state.
+- [x] **post-job**: visible inline errors (no more silent catch), `noValidate` so our messages
+      are the ones users see, required trade with an empty default (a fence job used to be
+      filed as *Plumbing*), video upload up to 25 MB, lands on the job page.
+- [x] **Landing**: live jobs from the DB (ISR 120s), one primary CTA, three-step explanation,
+      agent band. Browse surfaces share `BrowseTabs` + `JobCard` + `EmptyState`.
+- [x] **A11y**: `h1` on every page, `:focus-visible` ring, skip link, labelled controls,
+      named icon buttons, custom branded 404.
+- [x] Taxonomies: Fencing, Concrete & Flatwork, Decks & Patios, Windows & Doors, Garage Doors,
+      Tree Service, Junk Removal, Drywall & Insulation, Framing.
+- [ ] Recalibrate `priceEstimation` (fence: $18.8k–$94k for 180 ft). Copy now says
+      "rough budget guide / heuristic, not a bid".
+- [ ] Server-side validation of the signup `role`; marketplace sort + dashboard filters still
+      need `<label for>`.
+- [ ] The four "community labs" previews still hold synthetic progress numbers.
+
+Deploy note: `getfreequotes.yaml` points at the container **DNS name**, so a restart that
+changes the Coolify-network IP needs no re-pin — verify `/api/health` only.
+
 ## Metadata
 
 - **Date:** 2026-08-12 (updated: reviews, JIT item-sharing, oracle outbox + agent API feed)
