@@ -63,7 +63,13 @@ export default function RootLayout({
       </head>
       <body suppressHydrationWarning>
         <ClientProviders>
-          {children}
+          {/* Keyboard users should never have to tab through the nav on every page. */}
+          <a href="#gfq-main" className="gfq-skip">
+            Skip to content
+          </a>
+          <div id="gfq-main" tabIndex={-1}>
+            {children}
+          </div>
         </ClientProviders>
       </body>
     </html>
