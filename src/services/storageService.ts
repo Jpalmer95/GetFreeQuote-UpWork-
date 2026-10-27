@@ -3,8 +3,16 @@ import { supabase } from '@/lib/supabase';
 export type StorageBucket = 'job-attachments' | 'vendor-assets' | 'community-images';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const MAX_VIDEO_SIZE = 25 * 1024 * 1024;
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
 const ALLOWED_TYPES = [...IMAGE_TYPES, 'application/pdf'];
+const JOB_TYPES = [...ALLOWED_TYPES, ...VIDEO_TYPES];
+
+export interface UploadOptions {
+    acceptPdf?: boolean;
+    acceptVideo?: boolean;
+}
 
 export interface UploadResult {
     url: string;
@@ -56,11 +64,18 @@ async function compressImage(file: File, maxWidth = 1920, quality = 0.85): Promi
 }
 
 export const storageService = {
-    validateFile(file: File, bucket: StorageBucket, options?: { acceptPdf?: boolean }): string | null {
-        if (file.size > MAX_FILE_SIZE) {
-            return `File "${file.name}" exceeds 10MB limit`;
+    validateFile(file: File, bucket: StorageBucket, options?: UploadOptions): string | null {
+        const allowVideo = !!options?.acceptVideo;
+        const isVideo = VIDEO_TYPES.includes(file.type);
+        const maxSize = isVideo ? MAX_VIDEO_SIZE : MAX_FILE_SIZE;
+        if (file.size > maxSize) {
+            return `File "${file.name}" exceeds ${Math.round(maxSize / (1024 * 1024))}MB limit`;
         }
-        const allowed = (bucket === 'job-attachments' || options?.acceptPdf) ? ALLOWED_TYPES : IMAGE_TYPES;
+        const allowed = allowVideo
+            ? JOB_TYPES
+            : (bucket === 'job-attachments' || options?.acceptPdf)
+                ? ALLOWED_TYPES
+                : IMAGE_TYPES;
         if (!allowed.includes(file.type)) {
             const types = allowed.map(t => t.split('/')[1]).join(', ');
             return `File "${file.name}" type not allowed. Accepted: ${types}`;
@@ -68,7 +83,7 @@ export const storageService = {
         return null;
     },
 
-    async uploadFile(file: File, bucket: StorageBucket, userId: string, options?: { acceptPdf?: boolean }): Promise<UploadResult> {
+    async uploadFile(file: File, bucket: StorageBucket, userId: string, options?: UploadOptions): Promise<UploadResult> {
         const error = this.validateFile(file, bucket, options);
         if (error) throw new Error(error);
 
@@ -98,7 +113,7 @@ export const storageService = {
         };
     },
 
-    async uploadFiles(files: File[], bucket: StorageBucket, userId: string, options?: { acceptPdf?: boolean }): Promise<UploadResult[]> {
+    async uploadFiles(files: File[], bucket: StorageBucket, userId: string, options?: UploadOptions): Promise<UploadResult[]> {
         const results: UploadResult[] = [];
         const errors: string[] = [];
         for (const file of files) {

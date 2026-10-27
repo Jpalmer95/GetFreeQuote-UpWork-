@@ -361,3 +361,58 @@
     border-color: rgba(99,102,241,0.6);
     color: #a5b4fc !important;
 }
+
+/* Primary action: always visible, never buried in the user menu. */
+.postCta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1.05rem;
+    min-height: 38px;
+    margin-left: 0.5rem;
+    border-radius: var(--radius-full);
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: 650;
+    white-space: nowrap;
+    box-shadow: 0 0 18px -6px var(--primary-glow);
+    transition: transform var(--dur-base) var(--ease-spring), box-shadow var(--dur-base) ease;
+}
+
+.postCta:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 0 26px -6px var(--primary-glow-strong);
+}
+
+@media (max-width: 768px) {
+    .postCta {
+        margin-left: auto;
+        margin-right: 0.5rem;
+        padding: 0.45rem 0.85rem;
+        min-height: 40px;
+        font-size: 0.8rem;
+    }
+    .hamburger { margin-left: 0; }
+}
+
+/* Mobile keeps the primary action in the bar itself; the drawer only holds navigation. */
+.postCtaMobile {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+    margin-right: 0.6rem;
+    padding: 0.45rem 0.95rem;
+    min-height: 40px;
+    border-radius: var(--radius-full);
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    color: #fff;
+    font-size: 0.82rem;
+    font-weight: 650;
+}
+
+@media (max-width: 768px) {
+    .postCtaMobile { display: inline-flex; }
+    .postCta { display: none; }
+}

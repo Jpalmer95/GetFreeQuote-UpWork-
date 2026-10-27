@@ -69,13 +69,17 @@ function PostJob() {
     const [priceEstimate, setPriceEstimate] = useState<PriceEstimate | null>(null);
     const [scopeBreakdown, setScopeBreakdown] = useState<ScopeBreakdown | null>(null);
     const [localLocationError, setLocalLocationError] = useState('');
+    const [submitError, setSubmitError] = useState<string | null>(null);
+    const [fieldError, setFieldError] = useState<{ field: string; text: string } | null>(null);
 
     const subcategories = (INDUSTRY_SUBCATEGORIES as Record<string, string[]>)[formData.industryVertical] || ['Other'];
     const isCustomIndustry = formData.industryVertical === 'Other';
     const isCustomSubcategory = formData.subcategory === 'Other';
 
     useEffect(() => {
-        setFormData(prev => ({ ...prev, subcategory: subcategories[0], customSubcategory: '' }));
+        // Deliberately reset to an empty choice: defaulting to the first trade silently
+        // filed every job under whatever happened to be first in the list.
+        setFormData(prev => ({ ...prev, subcategory: '', customSubcategory: '' }));
     }, [formData.industryVertical]);
 
     // Price estimation effect
@@ -118,6 +122,34 @@ function PostJob() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!user) return;
+        setSubmitError(null);
+        setFieldError(null);
+
+        const resolvedSub = (isCustomIndustry || isCustomSubcategory)
+            ? formData.customSubcategory.trim()
+            : formData.subcategory.trim();
+        if (!resolvedSub) {
+            setFieldError({
+                field: 'subcategory',
+                text: 'Pick the trade this job is for — it decides which contractors and agents see it.',
+            });
+            return;
+        }
+        if (formData.title.trim().length < 5) {
+            setFieldError({ field: 'title', text: 'Give the job a title a contractor would recognise.' });
+            return;
+        }
+        if (!formData.location.trim()) {
+            setFieldError({ field: 'location', text: 'Add a city or ZIP so nearby contractors can find it.' });
+            return;
+        }
+        if (formData.description.trim().length < 30) {
+            setFieldError({
+                field: 'description',
+                text: 'Describe the work in a sentence or two so your first quotes are in the right range.',
+            });
+            return;
+        }
 
         if ((workKind === 'local' || isLocalRequest) && !localLocation) {
             setLocalLocationError('Please set your location before posting a nearby request.');
@@ -133,7 +165,7 @@ function PostJob() {
         ];
 
         try {
-            await jobService.createJob({
+            const created = await jobService.createJob({
                 userId: user.id,
                 title: formData.title,
                 location: formData.location,
@@ -158,9 +190,15 @@ function PostJob() {
                 workKind,
             });
 
-            router.push('/dashboard?new=true');
+            router.push(`/jobs/${created.id}?posted=1`);
         } catch (error) {
             console.error('Error creating job:', error);
+            const detail = error instanceof Error ? error.message : String(error);
+            setSubmitError(
+                /row-level security|permission denied/i.test(detail)
+                    ? 'The platform refused the write. Your session may have expired — sign in again and retry.'
+                    : `We could not post this job. Nothing was saved. (${detail.slice(0, 160)})`,
+            );
         } finally {
             setLoading(false);
         }
@@ -172,7 +210,10 @@ function PostJob() {
         <main className={styles.container}>
             <div className={`glass-panel ${styles.formCard}`}>
                 <h1 className="gradient-text">What do you need done?</h1>
-                <p className={styles.subtext}>Pick quotes, a fixed bounty, or nearby help. Industry details are optional.</p>
+                <p className={styles.subtext}>
+                    Post it once. Contractors and their agents quote against this brief, and anything you
+                    clarify later is added to the job — not re-sent to everyone by hand.
+                </p>
 
                 <div className={styles.kindPicker} role="radiogroup" aria-label="How should this be filled?">
                     {(['quote', 'bounty', 'local'] as WorkKind[]).map((k) => (
@@ -198,8 +239,9 @@ function PostJob() {
                 <form onSubmit={handleSubmit} className={styles.form}>
                     <div className={styles.inputRow}>
                         <div className={styles.inputGroup}>
-                            <label>Industry</label>
+                            <label htmlFor="job-industry">Industry</label>
                             <select
+                                id="job-industry"
                                 value={formData.industryVertical}
                                 onChange={(e) => setFormData({ ...formData, industryVertical: e.target.value as IndustryVertical })}
                                 className="field-select"
@@ -222,14 +264,21 @@ function PostJob() {
                             </div>
                         ) : (
                             <div className={styles.inputGroup}>
-                                <label>Subcategory</label>
+                                <label htmlFor="job-subcategory">Trade / subcategory</label>
                                 <select
+                                    id="job-subcategory"
                                     value={formData.subcategory}
-                                    onChange={(e) => setFormData({ ...formData, subcategory: e.target.value })}
+                                    onChange={(e) => { setFormData({ ...formData, subcategory: e.target.value }); setFieldError(null); }}
                                     className="field-select"
+                                    aria-describedby={fieldError?.field === 'subcategory' ? 'subcategory-error' : undefined}
+                                    aria-invalid={fieldError?.field === 'subcategory'}
                                 >
+                                    <option value="">Choose a trade…</option>
                                     {subcategories.map(s => <option key={s} value={s}>{s}</option>)}
                                 </select>
+                                {fieldError?.field === 'subcategory' && (
+                                    <p id="subcategory-error" className={styles.fieldError} role="alert">{fieldError.text}</p>
+                                )}
                             </div>
                         )}
                     </div>
@@ -263,8 +312,9 @@ function PostJob() {
                     )}
 
                     <div className={styles.inputGroup}>
-                        <label>Project Title</label>
+                        <label htmlFor="job-title">Job title</label>
                         <input
+                            id="job-title"
                             type="text"
                             placeholder="e.g. Kitchen renovation, Website redesign, Corporate event catering"
                             value={formData.title}
@@ -276,8 +326,9 @@ function PostJob() {
 
                     <div className={styles.inputRow}>
                         <div className={styles.inputGroup}>
-                            <label>Location</label>
+                            <label htmlFor="job-location">Location</label>
                             <input
+                                id="job-location"
                                 type="text"
                                 placeholder="City, ZIP code, or 'Remote'"
                                 value={formData.location}
@@ -300,8 +351,9 @@ function PostJob() {
                     </div>
 
                     <div className={styles.inputGroup}>
-                        <label>Description</label>
+                        <label htmlFor="job-description">The brief</label>
                         <textarea
+                            id="job-description"
                             placeholder="Describe the project scope, requirements, timeline, or any special details vendors should know..."
                             value={formData.description}
                             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -405,8 +457,9 @@ function PostJob() {
                         bucket="job-attachments"
                         userId={user.id}
                         maxFiles={10}
-                        label="Photos & Documents"
-                        hint="Upload photos of the job site, blueprints, or reference documents"
+                        label="Photos, video & documents"
+                        hint="Show the site: photos or a short video (up to 25MB each), plus plans or permits. Bidders price better when they can see it."
+                        acceptVideo
                         onUpload={setAttachmentUrls}
                     />}
 
@@ -481,6 +534,17 @@ function PostJob() {
                                     <span>1 mi</span><span>25 mi</span>
                                 </div>
                             </div>
+                        </div>
+                    )}
+
+                    {submitError && (
+                        <div className="gfq-alert gfq-alert-error" role="alert" style={{ marginTop: '1rem' }}>
+                            {submitError}
+                        </div>
+                    )}
+                    {fieldError && !submitError && (
+                        <div className="gfq-alert gfq-alert-error" role="alert" style={{ marginTop: '1rem' }}>
+                            {fieldError.text}
                         </div>
                     )}
 

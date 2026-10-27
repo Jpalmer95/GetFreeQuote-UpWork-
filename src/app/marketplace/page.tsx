@@ -1,16 +1,17 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { jobService } from '@/services/jobService';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
-import { Job, IndustryVertical, KnownIndustryVertical, INDUSTRY_VERTICALS, INDUSTRY_SUBCATEGORIES } from '@/types';
+import { Job, IndustryVertical, INDUSTRY_VERTICALS, INDUSTRY_SUBCATEGORIES } from '@/types';
 import styles from './page.module.css';
 import Navbar from '@/components/Navbar';
-import LeadQualityBadge from '@/components/LeadQualityBadge';
-import { calculateLeadQuality } from '@/services/leadQuality';
 import SearchAutocomplete from '@/components/SearchAutocomplete';
 import SavedSearches from '@/components/SavedSearches';
+import BrowseTabs from '@/components/BrowseTabs';
+import JobCard from '@/components/JobCard';
+import EmptyState from '@/components/EmptyState';
 
 function haversineMarketplace(lat1: number, lng1: number, lat2: number, lng2: number): number {
     const R = 3958.8;
@@ -21,13 +22,6 @@ function haversineMarketplace(lat1: number, lng1: number, lat2: number, lng2: nu
         Math.sin(dLng / 2) ** 2;
     return R * 2 * Math.asin(Math.sqrt(a));
 }
-
-const URGENCY_LABELS: Record<string, string> = {
-    flexible: 'Flexible',
-    within_month: 'This Month',
-    within_week: 'This Week',
-    urgent: 'Urgent',
-};
 
 function estimateDistance(jobLocation: string, searchLocation: string): { miles: number; label: string; tier: 'exact' | 'nearby' | 'region' | 'far' } {
     const jobLoc = jobLocation.toLowerCase().trim();
@@ -64,31 +58,8 @@ function estimateDistance(jobLocation: string, searchLocation: string): { miles:
     return { miles: 100, label: '100+ mi', tier: 'far' };
 }
 
-function getRelevanceScore(job: Job, query: string, location: string): { score: number; reasons: string[]; distance: { miles: number; label: string; tier: string } | null } {
-    const reasons: string[] = [];
-    let score = 0;
-    let distance: { miles: number; label: string; tier: string } | null = null;
-
-    if (query) {
-        const q = query.toLowerCase();
-        if (job.title.toLowerCase().includes(q)) { score += 3; reasons.push('Title match'); }
-        if (job.tags.some(t => t.toLowerCase().includes(q))) { score += 2; reasons.push('Tag match'); }
-        if (job.description.toLowerCase().includes(q)) { score += 1; }
-    }
-
-    if (location) {
-        distance = estimateDistance(job.location, location);
-        if (distance.tier === 'exact') { score += 3; }
-        else if (distance.tier === 'nearby') { score += 2; }
-        else if (distance.tier === 'region') { score += 1; }
-    }
-
-    return { score, reasons, distance };
-}
-
 export default function Marketplace() {
     const { user } = useAuth();
-    const router = useRouter();
     const [jobs, setJobs] = useState<Job[]>([]);
     const [error, setError] = useState<string | null>(null);
     const [vendorServiceAreas, setVendorServiceAreas] = useState<string[]>([]);
@@ -187,6 +158,23 @@ export default function Marketplace() {
     return (
         <div className={styles.container}>
             <Navbar />
+
+            <div className="gfq-page" style={{ paddingBottom: 0 }}>
+                <div className="gfq-head">
+                    <div>
+                        <span className="gfq-eyebrow">Browse · jobs</span>
+                        <h1 className="gfq-title">Open work, one shared brief each</h1>
+                        <p className="gfq-sub">
+                            Every job below carries its own scope, media, and clarification log. Bid on the same
+                            document everyone else is pricing.
+                        </p>
+                    </div>
+                    <Link href="/post-job" className="btn-primary">
+                        Post a job
+                    </Link>
+                </div>
+                <BrowseTabs />
+            </div>
 
             <div className={styles.layout}>
                 <button
@@ -352,122 +340,29 @@ export default function Marketplace() {
                     <div className={styles.grid}>
                         {jobs.map(job => {
                             const locationForDistance = filters.location || (vendorServiceAreas.length > 0 ? vendorServiceAreas[0] : '');
-                            const hasActiveSearch = !!(filters.query || locationForDistance);
-                            const relevance = hasActiveSearch
-                                ? getRelevanceScore(job, filters.query, locationForDistance)
-                                : null;
-                            return (
-                            <div
-                                key={job.id}
-                                className={`glass-panel ${styles.jobCard}`}
-                            >
-                                <div className={styles.cardAccent} />
-
-                                <div className={styles.cardHeader}>
-                                    {job.isLocalRequest && (() => {
-                                        let distLabel = 'Local';
-                                        if (viewerCoords && job.locationLat != null && job.locationLng != null) {
-                                            const dist = haversineMarketplace(viewerCoords.lat, viewerCoords.lng, job.locationLat, job.locationLng);
-                                            distLabel = `Local · ${dist < 1 ? '<1' : dist.toFixed(1)} mi`;
-                                        }
-                                        return (
-                                            <span className={styles.localBadge}>
-                                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
-                                                </svg>
-                                                {distLabel}
-                                            </span>
-                                        );
-                                    })()}
-                                    <span className={styles.industryTag}>{job.industryVertical}</span>
-                                    {job.communityProjectId && (
-                                        <span className={styles.communityTag}>Community Funded</span>
-                                    )}
-                                    {job.workKind === 'bounty' && (
-                                        <span className={styles.communityTag}>Bounty</span>
-                                    )}
-                                    {relevance && relevance.reasons.length > 0 && (
-                                        <span className={styles.relevanceBadge}>
-                                            {relevance.reasons[0]}
-                                        </span>
-                                    )}
-                                    <span className={styles.timeAgo}>
-                                        {job.urgency && job.urgency !== 'flexible'
-                                            ? URGENCY_LABELS[job.urgency]
-                                            : 'Today'}
-                                    </span>
-                                </div>
-
-                                <h3>{job.title}</h3>
-
-                                <div className={styles.tagRow}>
-                                    <span className={styles.categoryTag}>{job.subcategory || job.category}</span>
-                                    {job.tags.filter(t => t !== job.industryVertical && t !== job.subcategory && t !== job.category).map(t => (
-                                        <span key={t} className={styles.categoryTag}>{t}</span>
-                                    ))}
-                                </div>
-
-                                <p className={styles.description}>{job.description}</p>
-
-                                <div className={styles.metaRow}>
-                                    <span className={`${styles.metaChip} ${relevance?.distance?.tier === 'exact' ? styles.metaChipMatch : relevance?.distance?.tier === 'nearby' ? styles.metaChipNear : ''}`}>
-                                        {job.location}
-                                    </span>
-                                    {relevance?.distance && (
-                                        <span className={`${styles.metaChip} ${relevance.distance.tier === 'exact' ? styles.metaChipMatch : relevance.distance.tier === 'nearby' ? styles.metaChipNear : ''}`}>
-                                            {relevance.distance.label}
-                                        </span>
-                                    )}
-                                    {job.budget && (
-                                        <span className={styles.metaChip}>
-                                            {job.budget}
-                                        </span>
-                                    )}
-                                    {job.requiresPermit && (
-                                        <span className={`${styles.metaChip} ${styles.metaChipWarn}`}>
-                                            Permit Req.
-                                        </span>
-                                    )}
-                                    {job.squareFootage && (
-                                        <span className={styles.metaChip}>
-                                            {job.squareFootage}
-                                        </span>
-                                    )}
-                                </div>
-
-                                <div className={styles.cardActions}>
-                                    <button
-                                        className={styles.bidBtn}
-                                        onClick={() => {
-                                            if (!user) {
-                                                router.push(`/login?redirect=${encodeURIComponent(`/jobs/${job.id}`)}`);
-                                            } else {
-                                                router.push(`/jobs/${job.id}`);
-                                            }
-                                        }}
-                                    >
-                                        {job.workKind === 'bounty' ? 'Claim / Bid' : 'Bid Now'}
-                                    </button>
-                                    <button
-                                        className={styles.detailsBtn}
-                                        onClick={() => router.push(`/jobs/${job.id}`)}
-                                    >
-                                        View Details
-                                    </button>
-                                </div>
-                            </div>
-                            );
+                            let distanceLabel: string | undefined;
+                            if (viewerCoords && job.locationLat != null && job.locationLng != null) {
+                                const dist = haversineMarketplace(viewerCoords.lat, viewerCoords.lng, job.locationLat, job.locationLng);
+                                distanceLabel = dist < 1 ? '<1 mi' : `${dist.toFixed(1)} mi`;
+                            } else if (locationForDistance) {
+                                const est = estimateDistance(job.location, locationForDistance);
+                                if (est.tier === 'exact' || est.tier === 'nearby') distanceLabel = est.label;
+                            }
+                            return <JobCard key={job.id} job={job} distanceLabel={distanceLabel} />;
                         })}
-
-                        {jobs.length === 0 && (
-                            <div className={styles.emptyState}>
-                                <svg className={styles.emptyIcon} width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                                    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-                                </svg>
-                                <p>No projects found matching your filters.</p>
-                            </div>
-                        )}
                     </div>
+
+                    {jobs.length === 0 && (
+                        <EmptyState
+                            icon="🔍"
+                            title="Nothing matches those filters"
+                            body="No open jobs match this combination of trade, location and requirements. Clear the filters, or post what you need and let contractors come to you."
+                            actionLabel="Clear filters"
+                            actionHref="/marketplace"
+                            secondaryLabel="Post a job"
+                            secondaryHref="/post-job"
+                        />
+                    )}
                 </main>
             </div>
         </div>

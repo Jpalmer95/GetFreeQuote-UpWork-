@@ -1,0 +1,129 @@
+.wrap {
+    margin-top: 1.25rem;
+}
+
+.head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.6rem;
+}
+
+.title {
+    font-size: 0.95rem;
+    font-weight: 650;
+}
+
+.count {
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.45);
+}
+
+.strip {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(180px, 220px);
+    gap: 0.6rem;
+    overflow-x: auto;
+    padding-bottom: 0.35rem;
+    scroll-snap-type: x proximity;
+}
+
+.thumb {
+    padding: 0;
+    border: 1px solid var(--border-mid);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    background: #0d0d14;
+    cursor: zoom-in;
+    aspect-ratio: 4 / 3;
+    scroll-snap-align: start;
+}
+
+.thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform var(--dur-base) ease;
+}
+
+.thumb:hover img { transform: scale(1.03); }
+
+.videoThumb {
+    border: 1px solid var(--border-mid);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    background: #000;
+    aspect-ratio: 4 / 3;
+    scroll-snap-align: start;
+}
+
+.videoThumb video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+}
+
+.docs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.7rem;
+}
+
+.doc {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 0.75rem;
+    min-height: 36px;
+    border: 1px solid var(--border-mid);
+    border-radius: var(--radius-full);
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.8);
+    background: var(--surface-100);
+}
+
+.doc:hover { border-color: var(--primary); color: #fff; }
+
+.docName {
+    max-width: 22ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 900;
+    background: rgba(2, 2, 6, 0.92);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    cursor: zoom-out;
+}
+
+.lightbox img {
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: var(--radius-sm);
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.7);
+}
+
+.close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    padding: 0.5rem 0.9rem;
+    min-height: 40px;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--border-highlight);
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    cursor: pointer;
+}

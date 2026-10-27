@@ -278,3 +278,174 @@ select option {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--surface-300); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--surface-400); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Page shell + shared layout primitives
+   Every top-level page uses .gfq-page > .gfq-head + sections, so headings,
+   gutters and max-widths stop drifting between routes.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.gfq-page {
+  max-width: 1260px;
+  margin: 0 auto;
+  padding: 2.25rem 1.5rem 5rem;
+  min-height: 60vh;
+}
+
+.gfq-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.gfq-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+  margin-bottom: 0.5rem;
+}
+
+.gfq-title {
+  font-size: clamp(1.65rem, 1.15rem + 1.8vw, 2.35rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.gfq-sub {
+  margin-top: 0.5rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.95rem;
+  max-width: 62ch;
+}
+
+.gfq-section { margin-top: 2.5rem; }
+.gfq-section-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  margin-bottom: 0.85rem;
+}
+
+.gfq-card {
+  background: var(--glass-bg);
+  border: var(--glass-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--glass-shadow);
+}
+
+.gfq-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+}
+
+/* Tab bar used by the browse surfaces (Jobs / Nearby / Tools / Builds) */
+.gfq-tabs {
+  display: flex;
+  gap: 0.25rem;
+  overflow-x: auto;
+  padding: 0.3rem;
+  border-radius: var(--radius-full);
+  background: var(--surface-100);
+  border: 1px solid var(--border-subtle);
+  scrollbar-width: none;
+  margin-bottom: 1.5rem;
+  width: fit-content;
+  max-width: 100%;
+}
+.gfq-tabs::-webkit-scrollbar { display: none; }
+.gfq-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1.1rem;
+  min-height: 40px;
+  border-radius: var(--radius-full);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.62);
+  white-space: nowrap;
+  transition: background var(--dur-base) ease, color var(--dur-base) ease;
+}
+.gfq-tab:hover { color: #fff; background: var(--surface-200); }
+.gfq-tab[aria-current='page'] {
+  color: #fff;
+  background: linear-gradient(135deg, rgba(79,142,247,0.35), rgba(155,109,255,0.3));
+  border: 1px solid rgba(79,142,247,0.45);
+}
+
+/* Inline notice used for errors and confirmations */
+.gfq-alert {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  padding: 0.8rem 1rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  border: 1px solid;
+}
+.gfq-alert-error   { background: rgba(240,92,92,0.1);  border-color: rgba(240,92,92,0.4);  color: #ffb3b3; }
+.gfq-alert-success { background: rgba(15,217,142,0.1); border-color: rgba(15,217,142,0.35); color: #9bf0cd; }
+.gfq-alert-info    { background: rgba(79,142,247,0.1); border-color: rgba(79,142,247,0.3); color: #b9d4ff; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Accessibility: visible keyboard focus + skip link
+   The UA default ring is a 1px hairline that disappears on a near-black page.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:focus-visible {
+  outline: 2px solid var(--primary-light);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+a:focus-visible,
+button:focus-visible,
+[role='button']:focus-visible,
+summary:focus-visible {
+  outline: 2px solid var(--primary-light);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 4px rgba(79, 142, 247, 0.25);
+}
+
+.gfq-skip {
+  position: absolute;
+  left: 0.75rem;
+  top: -4rem;
+  z-index: 1000;
+  padding: 0.6rem 1rem;
+  border-radius: var(--radius-sm);
+  background: var(--primary);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: top 150ms ease;
+}
+.gfq-skip:focus { top: 0.75rem; }
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Tap targets: keep secondary links reachable on a phone */
+@media (max-width: 768px) {
+  .gfq-page { padding: 1.5rem 1rem 4rem; }
+  a.gfq-tap { display: inline-flex; align-items: center; min-height: 44px; }
+}

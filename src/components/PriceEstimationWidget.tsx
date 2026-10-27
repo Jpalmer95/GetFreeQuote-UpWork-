@@ -43,13 +43,13 @@ export default function PriceEstimationWidget({
                 background: '#3b82f622', borderRadius: '8px', padding: '2px 8px',
                 fontSize: '10px', color: '#60a5fa', fontWeight: 600,
             }}>
-                🤖 AI ESTIMATE
+                ROUGH BUDGET GUIDE
             </div>
 
             {/* Main Price Range */}
             <div style={{ marginBottom: '16px' }}>
                 <div style={{ color: '#888', fontSize: '12px', marginBottom: '4px' }}>
-                    Estimated Market Range
+                    Typical range for this kind of work
                 </div>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
                     <span style={{ fontSize: '32px', fontWeight: 700, color: '#22c55e' }}>
@@ -61,7 +61,7 @@ export default function PriceEstimationWidget({
                     </span>
                 </div>
                 <div style={{ color: '#60a5fa', fontSize: '13px', marginTop: '4px' }}>
-                    Most common: ${estimate.medianEstimate.toLocaleString()}
+                    Middle of the range: ${estimate.medianEstimate.toLocaleString()}
                 </div>
             </div>
 
@@ -77,7 +77,7 @@ export default function PriceEstimationWidget({
                 }} />
                 <span style={{ fontSize: '12px', color: '#ccc' }}>{confidence.label}</span>
                 <span style={{ fontSize: '11px', color: '#666', marginLeft: 'auto' }}>
-                    Based on {estimate.dataPoints} data points
+                    Heuristic, not a bid — {estimate.dataPoints} comparable inputs
                 </span>
             </div>
 

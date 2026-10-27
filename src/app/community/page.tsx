@@ -7,6 +7,7 @@ import { CommunityProject, CommunityProjectCategory, COMMUNITY_CATEGORIES } from
 import { useAuth } from '@/context/AuthContext';
 import { COMMUNITY_TEMPLATES } from '@/data/communityTemplates';
 import Navbar from '@/components/Navbar';
+import BrowseTabs from '@/components/BrowseTabs';
 import styles from './page.module.css';
 
 const CATEGORY_ICONS: Record<string, string> = {
@@ -68,6 +69,7 @@ export default function CommunityPage() {
                 <p className={styles.heroSub}>
                     Fund public improvements with a transparent ledger. Donations today record intent and a simulated tx hash — they are not on-chain money. When a project is funded, post the work to the marketplace so the best-value contractor can bid.
                 </p>
+                <BrowseTabs />
                 <div className={styles.heroActions}>
                     {user ? (
                         <Link href="/community/new" className={styles.btnPrimary}>
@@ -80,6 +82,29 @@ export default function CommunityPage() {
                     )}
                 </div>
             </div>
+
+            <section aria-labelledby="labs-heading" style={{ margin: '1rem 0 2.5rem' }}>
+                <h2 id="labs-heading" className="gfq-section-title">
+                    Community labs — designed, not live yet
+                </h2>
+                <p className="gfq-sub" style={{ marginBottom: '0.85rem' }}>
+                    Three modules are specified and mocked so you can see where this is going. Nothing on these
+                    pages moves money or books work today.
+                </p>
+                <div className="gfq-grid">
+                    {[
+                        { href: '/pools', title: 'Neighbourhood pools', body: 'Neighbours buy the same job together and split the group price.' },
+                        { href: '/group-buys', title: 'Material group buys', body: 'Pool sheet goods, lumber and fixtures into a single supplier order.' },
+                        { href: '/apprentice', title: 'Apprentice & mentorship', body: 'Match helpers to trades that will train them on real jobs.' },
+                        { href: '/escrow', title: 'Milestone records', body: 'A hash-chained record of scope, proof and settlement both sides can audit.' },
+                    ].map(l => (
+                        <Link key={l.href} href={l.href} className="gfq-card" style={{ padding: '1rem 1.1rem', display: 'block' }}>
+                            <strong style={{ display: 'block', fontSize: '0.92rem' }}>{l.title}</strong>
+                            <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>{l.body}</span>
+                        </Link>
+                    ))}
+                </div>
+            </section>
 
             <div className={styles.templateSection}>
                 <h2 className={styles.templateHeading}>Start from a Template</h2>

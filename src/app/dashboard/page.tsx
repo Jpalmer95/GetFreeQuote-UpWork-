@@ -1,839 +1,340 @@
 'use client';
-import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { jobService } from '@/services/jobService';
-import { Job, Quote, Message, AgentAction, IndustryVertical, INDUSTRY_VERTICALS } from '@/types';
-import { db } from '@/services/db';
-import { isAgentSender, getAgentLabel } from '@/services/aiAgent';
-import { supabase } from '@/lib/supabase';
-import { realtimeService } from '@/services/realtimeService';
-import styles from './page.module.css';
-import Navbar from '@/components/Navbar';
-import CommunityCreditsWallet from '@/components/CommunityCreditsWallet';
-import { CommunityCredits } from '@/types';
-import QuoteComparison, { CompareQuotesButton } from '@/components/QuoteComparison';
-import ClientAnalytics from '@/components/ClientAnalytics';
-import RecommendedVendors from '@/components/RecommendedVendors';
-import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
+import Navbar from '@/components/Navbar';
+import SiteFooter from '@/components/SiteFooter';
+import JobCard from '@/components/JobCard';
+import EmptyState from '@/components/EmptyState';
+import { useAuth } from '@/context/AuthContext';
+import type { Job, IndustryVertical } from '@/types';
+import styles from './page.module.css';
 
-const STATUS_CLASS: Record<string, string> = {
-    OPEN:        'badge badge-blue',
-    IN_PROGRESS: 'badge badge-amber',
-    COMPLETED:   'badge badge-green',
-    CANCELLED:   'badge badge-muted',
-    EXPIRED:     'badge badge-muted',
-    DRAFT:       'badge badge-muted',
-};
+interface QuoteRow {
+    id: string;
+    job_id: string;
+    vendor_name: string;
+    amount: number;
+    estimated_days: number;
+    status: string;
+    created_at: string;
+}
 
-const URGENCY_LABELS: Record<string, string> = {
-    flexible: 'Flexible',
-    within_month: 'This Month',
-    within_week: 'This Week',
-    urgent: 'Urgent',
-};
+interface Notice {
+    id: string;
+    title: string;
+    message: string;
+    type: string;
+    job_id?: string;
+    read?: boolean;
+    created_at: string;
+    source: 'notification' | 'agent';
+}
 
-const ACTION_ICONS: Record<string, string> = {
-    job_broadcast: '📡',
-    vendor_match: '🤝',
-    auto_quote: '💰',
-    clarification_sent: '❓',
-    clarification_received: '💬',
-    scope_analysis: '🔍',
-    quote_comparison: '📊',
-    escalation: '⚠️',
-    negotiation: '🔄',
-    auto_approve: '✅',
-    auto_reject: '❌',
-    job_expired: '⏰',
-    job_reminder: '🔔',
-    vendor_rematch: '🔁',
-};
+const STATUS_FILTERS = [
+    { value: 'all', label: 'All' },
+    { value: 'OPEN', label: 'Open' },
+    { value: 'IN_PROGRESS', label: 'In progress' },
+    { value: 'COMPLETED', label: 'Completed' },
+] as const;
 
-type DetailTab = 'timeline' | 'quotes' | 'agent-log' | 'digest';
+function relative(iso: string): string {
+    const ms = Date.now() - new Date(iso).getTime();
+    const mins = Math.max(0, Math.floor(ms / 60000));
+    if (mins < 1) return 'just now';
+    if (mins < 60) return `${mins}m ago`;
+    const h = Math.floor(mins / 60);
+    if (h < 24) return `${h}h ago`;
+    return `${Math.floor(h / 24)}d ago`;
+}
 
-export default function Dashboard() {
-    const { user, isLoading } = useAuth();
+function mapJob(row: Record<string, unknown>): Job {
+    return {
+        id: String(row.id),
+        userId: String(row.user_id),
+        title: String(row.title || 'Untitled job'),
+        category: String(row.category || 'Other'),
+        description: String(row.description || ''),
+        location: String(row.location || ''),
+        status: String(row.status || 'OPEN') as Job['status'],
+        createdAt: String(row.created_at || new Date().toISOString()),
+        tags: Array.isArray(row.tags) ? (row.tags as string[]) : [],
+        isPublic: !!row.is_public,
+        requiresPermit: !!row.requires_permit,
+        budget: row.budget ? String(row.budget) : undefined,
+        industryVertical: String(row.industry_vertical || 'Other') as IndustryVertical,
+        subcategory: String(row.subcategory || ''),
+        urgency: (row.urgency as Job['urgency']) || 'flexible',
+        squareFootage: row.square_footage ? String(row.square_footage) : undefined,
+        materials: row.materials ? String(row.materials) : undefined,
+        attachments: Array.isArray(row.attachments) ? (row.attachments as string[]) : [],
+        timelineStart: row.timeline_start ? String(row.timeline_start) : undefined,
+        timelineEnd: row.timeline_end ? String(row.timeline_end) : undefined,
+        isLocalRequest: !!row.is_local_request,
+        locationLat: row.location_lat ? Number(row.location_lat) : undefined,
+        locationLng: row.location_lng ? Number(row.location_lng) : undefined,
+        radiusMiles: row.radius_miles ? Number(row.radius_miles) : undefined,
+        workKind: (row.work_kind as Job['workKind']) || 'quote',
+    };
+}
+
+export default function DashboardPage() {
+    const { user, session, isLoading } = useAuth();
     const router = useRouter();
 
     const [jobs, setJobs] = useState<Job[]>([]);
-    const [selectedJob, setSelectedJob] = useState<Job | null>(null);
-    const [quotes, setQuotes] = useState<Quote[]>([]);
-    const [messages, setMessages] = useState<Message[]>([]);
-    const [agentActions, setAgentActions] = useState<AgentAction[]>([]);
-    const [activeTab, setActiveTab] = useState<DetailTab>('timeline');
-
-    const [industryFilter, setIndustryFilter] = useState<IndustryVertical | ''>('');
-    const [statusFilter, setStatusFilter] = useState<string>('');
-    const [searchQuery, setSearchQuery] = useState('');
-    const [replyText, setReplyText] = useState('');
-    const [sendingReply, setSendingReply] = useState(false);
-    const [showComparison, setShowComparison] = useState(false);
-    const [vendorInfo, setVendorInfo] = useState<Record<string, { rating?: number; isVerified: boolean }>>({});
-    const [reposting, setReposting] = useState(false);
-    const [completing, setCompleting] = useState(false);
-    const [editing, setEditing] = useState(false);
-    const [editTitle, setEditTitle] = useState('');
-    const [editDescription, setEditDescription] = useState('');
-    const [editBudget, setEditBudget] = useState('');
-    const [editLocation, setEditLocation] = useState('');
-    const [savingEdit, setSavingEdit] = useState(false);
-    const [cancelling, setCancelling] = useState(false);
-    const [manageError, setManageError] = useState<string | null>(null);
-
-    const handleRepost = useCallback(async (jobId: string) => {
-        if (reposting) return;
-        setReposting(true);
-        try {
-            const { data: { session } } = await supabase.auth.getSession();
-            const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-            if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
-            const res = await fetch('/api/repost-job', {
-                method: 'POST',
-                headers,
-                body: JSON.stringify({ jobId }),
-            });
-            const data = await res.json();
-            if (res.ok && data.jobId) {
-                router.push(`/jobs/${data.jobId}`);
-            }
-        } catch (err) {
-            console.error('Repost failed:', err);
-        } finally {
-            setReposting(false);
-        }
-    }, [reposting, router]);
-
-    const handleComplete = useCallback(async (jobId: string) => {
-        if (completing) return;
-        setCompleting(true);
-        try {
-            const { data: { session } } = await supabase.auth.getSession();
-            const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-            if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
-            const res = await fetch('/api/jobs/complete', {
-                method: 'POST',
-                headers,
-                body: JSON.stringify({ jobId }),
-            });
-            if (res.ok) {
-                const myJobs = await jobService.getMyJobs(user!.id);
-                setJobs([...myJobs]);
-                const updated = myJobs.find(j => j.id === jobId) || null;
-                setSelectedJob(updated);
-            }
-        } catch (err) {
-            console.error('Complete failed:', err);
-        } finally {
-            setCompleting(false);
-        }
-    }, [completing, user]);
-
-    const startEdit = useCallback((job: Job) => {
-        setEditTitle(job.title);
-        setEditDescription(job.description);
-        setEditBudget(job.budget || '');
-        setEditLocation(job.location);
-        setEditing(true);
-        setManageError(null);
-    }, []);
-
-    const saveEdit = useCallback(async () => {
-        if (!selectedJob || savingEdit) return;
-        setSavingEdit(true);
-        setManageError(null);
-        try {
-            await jobService.updateJob(selectedJob.id, {
-                title: editTitle.trim(),
-                description: editDescription.trim(),
-                budget: editBudget.trim() || null,
-                location: editLocation.trim(),
-            });
-            const myJobs = await jobService.getMyJobs(user!.id);
-            setJobs([...myJobs]);
-            setSelectedJob(myJobs.find(j => j.id === selectedJob.id) || null);
-            setEditing(false);
-        } catch (err) {
-            setManageError(err instanceof Error ? err.message : 'Could not save');
-        } finally {
-            setSavingEdit(false);
-        }
-    }, [selectedJob, savingEdit, editTitle, editDescription, editBudget, editLocation, user]);
-
-    const handleCancelJob = useCallback(async (jobId: string) => {
-        if (cancelling) return;
-        if (!window.confirm('Cancel this listing? It will leave the public marketplace. In-progress awarded work cannot be cancelled.')) return;
-        setCancelling(true);
-        setManageError(null);
-        try {
-            await jobService.cancelJob(jobId);
-            const myJobs = await jobService.getMyJobs(user!.id);
-            setJobs([...myJobs]);
-            setSelectedJob(myJobs.find(j => j.id === jobId) || null);
-        } catch (err) {
-            setManageError(err instanceof Error ? err.message : 'Could not cancel');
-        } finally {
-            setCancelling(false);
-        }
-    }, [cancelling, user]);
-
-    const handleSendReply = useCallback(async () => {
-        if (!selectedJob || !replyText.trim() || sendingReply) return;
-        setSendingReply(true);
-        try {
-            const { data: { session } } = await supabase.auth.getSession();
-            const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-            if (session?.access_token) {
-                headers['Authorization'] = `Bearer ${session.access_token}`;
-            }
-            await fetch('/api/agent-respond', {
-                method: 'POST',
-                headers,
-                body: JSON.stringify({ jobId: selectedJob.id, message: replyText.trim() }),
-            });
-            setReplyText('');
-        } catch (err) {
-            console.error('Failed to send reply:', err);
-        } finally {
-            setSendingReply(false);
-        }
-    }, [selectedJob, replyText, sendingReply]);
+    const [quotes, setQuotes] = useState<QuoteRow[]>([]);
+    const [notices, setNotices] = useState<Notice[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [status, setStatus] = useState<(typeof STATUS_FILTERS)[number]['value']>('all');
 
     useEffect(() => {
-        if (!isLoading && !user) {
-            router.push('/login');
+        if (!isLoading && !user) router.push('/login?redirect=/dashboard');
+    }, [isLoading, user, router]);
+
+    const load = useCallback(async () => {
+        if (!session) return;
+        setLoading(true);
+        setError(null);
+        try {
+            const res = await fetch('/api/dashboard', {
+                headers: { Authorization: `Bearer ${session.access_token}` },
+            });
+            let json: { error?: string; data?: Record<string, unknown> } = {};
+            try {
+                json = await res.json();
+            } catch {
+                /* empty body */
+            }
+            if (!res.ok || !json.data) {
+                setError(json.error || `Could not load your desk (HTTP ${res.status}).`);
+                return;
+            }
+            const data = json.data as {
+                jobs: Record<string, unknown>[];
+                quotes: QuoteRow[];
+                notifications: Record<string, unknown>[];
+                agentActions: Record<string, unknown>[];
+            };
+            setJobs((data.jobs || []).map(mapJob));
+            setQuotes(data.quotes || []);
+            const merged: Notice[] = [
+                ...(data.notifications || []).map(n => ({
+                    id: String(n.id),
+                    title: String(n.title || 'Update'),
+                    message: String(n.message || ''),
+                    type: String(n.type || 'notification'),
+                    job_id: n.job_id ? String(n.job_id) : undefined,
+                    read: !!n.read,
+                    created_at: String(n.created_at),
+                    source: 'notification' as const,
+                })),
+                ...(data.agentActions || []).map(a => ({
+                    id: String(a.id),
+                    title: String(a.action_type || 'agent').replace(/_/g, ' '),
+                    message: String(a.summary || ''),
+                    type: 'agent',
+                    job_id: a.job_id ? String(a.job_id) : undefined,
+                    created_at: String(a.created_at),
+                    source: 'agent' as const,
+                })),
+            ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+            setNotices(merged.slice(0, 12));
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Could not load your desk.');
+        } finally {
+            setLoading(false);
         }
-    }, [user, isLoading, router]);
-
-    const channelHealthRef = useRef<Record<string, boolean>>({});
-    const fallbackPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-    const fetchJobDetail = useCallback(async (jobId: string) => {
-        const [updatedQuotes, updatedMessages, updatedActions] = await Promise.all([
-            jobService.getJobQuotes(jobId),
-            jobService.getJobMessages(jobId),
-            db.getAgentActions(jobId),
-        ]);
-        setQuotes([...updatedQuotes]);
-        setMessages([...updatedMessages]);
-        setAgentActions([...updatedActions]);
-
-        const vendorIds = [...new Set(updatedQuotes.map(q => q.vendorId))];
-        if (vendorIds.length > 0) {
-            const info = await db.getVendorInfoByUserIds(vendorIds);
-            setVendorInfo(info);
-        }
-    }, []);
+    }, [session]);
 
     useEffect(() => {
-        if (!user) return;
+        void load();
+    }, [load]);
 
-        const fetchJobs = async () => {
-            const myJobs = await jobService.getMyJobs(user.id);
-            setJobs([...myJobs]);
-        };
-
-        fetchJobs();
-        const jobsInterval = setInterval(fetchJobs, 30000);
-        return () => clearInterval(jobsInterval);
-    }, [user]);
-
-    useEffect(() => {
-        if (!user || !selectedJob) return;
-
-        fetchJobDetail(selectedJob.id);
-
-        channelHealthRef.current = {};
-
-        const updateFallbackPolling = () => {
-            const allConnected = Object.values(channelHealthRef.current).every(Boolean);
-            if (allConnected && Object.keys(channelHealthRef.current).length === 2) {
-                if (fallbackPollRef.current) {
-                    clearInterval(fallbackPollRef.current);
-                    fallbackPollRef.current = null;
-                }
-            } else {
-                if (!fallbackPollRef.current) {
-                    fallbackPollRef.current = setInterval(
-                        () => fetchJobDetail(selectedJob.id),
-                        15000,
-                    );
-                }
-            }
-        };
-
-        const unsubQuotes = realtimeService.subscribeToQuotes(
-            selectedJob.id,
-            () => {
-                fetchJobDetail(selectedJob.id);
-            },
-            (connected) => {
-                channelHealthRef.current.quotes = connected;
-                updateFallbackPolling();
-            },
-        );
-
-        const unsubMessages = realtimeService.subscribeToMessages(
-            selectedJob.id,
-            () => {
-                fetchJobDetail(selectedJob.id);
-            },
-            (connected) => {
-                channelHealthRef.current.messages = connected;
-                updateFallbackPolling();
-            },
-        );
-
-        return () => {
-            unsubQuotes();
-            unsubMessages();
-            if (fallbackPollRef.current) {
-                clearInterval(fallbackPollRef.current);
-                fallbackPollRef.current = null;
-            }
-        };
-    }, [selectedJob, user, fetchJobDetail]);
-
-    const filteredJobs = useMemo(() => {
-        let result = jobs;
-        if (industryFilter) result = result.filter(j => j.industryVertical === industryFilter);
-        if (statusFilter) result = result.filter(j => j.status === statusFilter);
-        if (searchQuery) {
-            const q = searchQuery.toLowerCase();
-            result = result.filter(j =>
-                j.title.toLowerCase().includes(q) ||
-                j.subcategory.toLowerCase().includes(q) ||
-                j.tags.some(t => t.toLowerCase().includes(q))
-            );
+    const quotesByJob = useMemo(() => {
+        const map = new Map<string, QuoteRow[]>();
+        for (const q of quotes) {
+            const list = map.get(q.job_id) || [];
+            list.push(q);
+            map.set(q.job_id, list);
         }
-        return result;
-    }, [jobs, industryFilter, statusFilter, searchQuery]);
+        return map;
+    }, [quotes]);
 
-    if (isLoading || !user) {
-        return <div className="loading-screen">Loading...</div>;
+    const totals = useMemo(() => {
+        const open = jobs.filter(j => j.status === 'OPEN').length;
+        const inProgress = jobs.filter(j => j.status === 'IN_PROGRESS').length;
+        const completed = jobs.filter(j => j.status === 'COMPLETED').length;
+        const quotesReceived = quotes.length;
+        const awardedValue = quotes
+            .filter(q => q.status === 'ACCEPTED')
+            .reduce((sum, q) => sum + Number(q.amount || 0), 0);
+        return { open, inProgress, completed, quotesReceived, awardedValue };
+    }, [jobs, quotes]);
+
+    const visible = useMemo(
+        () => (status === 'all' ? jobs : jobs.filter(j => j.status === status)),
+        [jobs, status],
+    );
+
+    if (isLoading || (loading && !error && jobs.length === 0)) {
+        return <div className="loading-screen">Loading your desk…</div>;
     }
 
+    const firstName = user?.email?.split('@')[0] || 'there';
+
     return (
-        <div className={styles.container}>
+        <div>
             <Navbar />
-
-            <header className={styles.pageHeader}>
-                <h2 className="gradient-text">My jobs</h2>
-                <div className={styles.headerActions}>
-                    <Link href="/how-to" className={styles.agentBtn}>How to</Link>
-                    <Link href="/agent-settings" className={styles.agentBtn}>Agent settings</Link>
-                    <Link href="/post-job" className={styles.newBtn}>+ Post</Link>
+            <main className="gfq-page">
+                <div className="gfq-head">
+                    <div>
+                        <span className="gfq-eyebrow">Your desk</span>
+                        <h1 className="gfq-title">Jobs you own</h1>
+                        <p className="gfq-sub">
+                            Every request you have posted, the quotes that came back, and what your agent has done
+                            on your behalf.
+                        </p>
+                    </div>
+                    <div className={styles.headActions}>
+                        <Link href="/post-job" className="btn-primary">
+                            Post a job
+                        </Link>
+                        <Link href="/vendor" className="btn-secondary">
+                            Find work
+                        </Link>
+                    </div>
                 </div>
-            </header>
 
-            <ClientAnalytics />
-
-            <div className={styles.layout}>
-                <aside className={styles.jobList}>
-                    <div className={styles.filterBar}>
-                        <input
-                            type="text"
-                            placeholder="Search projects..."
-                            className={styles.sidebarSearch}
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                        <select
-                            className={styles.sidebarFilter}
-                            value={industryFilter}
-                            onChange={(e) => setIndustryFilter(e.target.value as IndustryVertical | '')}
-                        >
-                            <option value="">All Industries</option>
-                            {INDUSTRY_VERTICALS.map(v => (
-                                <option key={v} value={v}>{v}</option>
-                            ))}
-                        </select>
-                        <select
-                            className={styles.sidebarFilter}
-                            value={statusFilter}
-                            onChange={(e) => setStatusFilter(e.target.value)}
-                        >
-                            <option value="">All Statuses</option>
-                            <option value="OPEN">Open</option>
-                            <option value="IN_PROGRESS">In Progress</option>
-                            <option value="COMPLETED">Completed</option>
-                            <option value="CANCELLED">Cancelled</option>
-                            <option value="EXPIRED">Expired</option>
-                            <option value="DRAFT">Draft</option>
-                        </select>
+                {error && (
+                    <div className="gfq-alert gfq-alert-error" role="alert">
+                        {error}
+                        <button type="button" className={styles.retry} onClick={() => void load()}>
+                            Retry
+                        </button>
                     </div>
+                )}
 
-                    <div className={styles.jobListItems}>
-                        {filteredJobs.map(job => (
-                            <div
-                                key={job.id}
-                                className={`${styles.jobCard} ${selectedJob?.id === job.id ? styles.activeJob : ''}`}
-                                onClick={() => { setSelectedJob(job); setActiveTab('timeline'); }}
-                            >
-                                <div className={styles.jobCardTitle}>{job.title}</div>
-                                <div className={styles.jobCardIndustry}>{job.industryVertical}</div>
-                                <div className={styles.jobCardMeta}>
-                                    <span className={STATUS_CLASS[job.status] || 'badge badge-muted'}>
-                                        {job.status}
-                                    </span>
-                                    {job.isLocalRequest && (
-                                        <span className="badge badge-blue" title={`Local request · ${job.radiusMiles ?? 25} mi radius`}>
-                                            Nearby
-                                        </span>
-                                    )}
-                                    {job.workKind === 'bounty' && (
-                                        <span className="badge badge-amber">Bounty</span>
-                                    )}
-                                    <span className={styles.date}>
-                                        {new Date(job.createdAt).toLocaleDateString()}
-                                    </span>
-                                </div>
-                            </div>
-                        ))}
-                        {filteredJobs.length === 0 && (
-                            <p className={styles.emptyState}>
-                                {jobs.length === 0 ? 'No projects yet. Post one!' : 'No projects match your filters.'}
-                            </p>
-                        )}
+                <section className={styles.metrics} aria-label="Summary">
+                    <div className={styles.metric}>
+                        <span className={styles.metricValue}>{totals.open}</span>
+                        <span className={styles.metricLabel}>Open for quotes</span>
                     </div>
-                </aside>
+                    <div className={styles.metric}>
+                        <span className={styles.metricValue}>{totals.quotesReceived}</span>
+                        <span className={styles.metricLabel}>Quotes received</span>
+                    </div>
+                    <div className={styles.metric}>
+                        <span className={styles.metricValue}>{totals.inProgress}</span>
+                        <span className={styles.metricLabel}>In progress</span>
+                    </div>
+                    <div className={styles.metric}>
+                        <span className={styles.metricValue}>
+                            {totals.awardedValue > 0 ? `$${Math.round(totals.awardedValue).toLocaleString()}` : '—'}
+                        </span>
+                        <span className={styles.metricLabel}>Awarded value</span>
+                    </div>
+                </section>
 
-                <main className={styles.detailView}>
-                    {selectedJob ? (
-                        <>
-                            <div className={`glass-panel ${styles.detailHeaders}`}>
-                                <h2>{selectedJob.title}</h2>
-                                <div className={styles.detailMeta}>
-                                    <span className={styles.industryBadge}>{selectedJob.industryVertical}</span>
-                                    <span className={styles.subcategoryBadge}>{selectedJob.subcategory || selectedJob.category}</span>
-                                    {selectedJob.urgency && selectedJob.urgency !== 'flexible' && (
-                                        <span className={styles.urgencyBadge}>{URGENCY_LABELS[selectedJob.urgency]}</span>
-                                    )}
-                                </div>
-                                <p className={styles.location}>
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
-                                    </svg>
-                                    {selectedJob.location}
-                                </p>
-                                {manageError && <p className={styles.emptyMsg} style={{ color: '#f87171' }}>{manageError}</p>}
-                                {(selectedJob.status === 'OPEN' || selectedJob.status === 'DRAFT' || selectedJob.status === 'EXPIRED') && (
-                                    <div className={styles.quoteActions} style={{ marginTop: '0.85rem' }}>
-                                        {!editing ? (
-                                            <>
-                                                <button className={styles.acceptBtn} type="button" onClick={() => startEdit(selectedJob)}>Edit</button>
-                                                <button className={styles.rejectBtn} type="button" disabled={cancelling} onClick={() => handleCancelJob(selectedJob.id)}>
-                                                    {cancelling ? 'Cancelling…' : 'Cancel listing'}
-                                                </button>
-                                                <Link href={`/jobs/${selectedJob.id}`} className={styles.agentBtn}>Public page</Link>
-                                            </>
-                                        ) : (
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', width: '100%' }}>
-                                                <input className="field-input" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
-                                                <input className="field-input" value={editLocation} onChange={(e) => setEditLocation(e.target.value)} placeholder="Location" />
-                                                <input className="field-input" value={editBudget} onChange={(e) => setEditBudget(e.target.value)} placeholder="Budget / bounty" />
-                                                <textarea className="field-textarea" rows={4} value={editDescription} onChange={(e) => setEditDescription(e.target.value)} />
-                                                <div className={styles.quoteActions}>
-                                                    <button className={styles.acceptBtn} type="button" disabled={savingEdit} onClick={saveEdit}>{savingEdit ? 'Saving…' : 'Save'}</button>
-                                                    <button className={styles.rejectBtn} type="button" onClick={() => setEditing(false)}>Discard</button>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                                {(selectedJob.squareFootage || selectedJob.materials || selectedJob.budget) && (
-                                    <div className={styles.tags}>
-                                        {selectedJob.budget && <span className={styles.tag}>{selectedJob.budget}</span>}
-                                        {selectedJob.squareFootage && <span className={styles.tag}>{selectedJob.squareFootage}</span>}
-                                        {selectedJob.materials && <span className={styles.tag}>{selectedJob.materials}</span>}
-                                    </div>
-                                )}
-                                {selectedJob.tags.length > 0 && (
-                                    <div className={styles.tags}>
-                                        {selectedJob.tags
-                                            .filter(t => t !== selectedJob.industryVertical && t !== selectedJob.subcategory)
-                                            .map(t => (
-                                                <span key={t} className={styles.tag}>{t}</span>
-                                            ))}
-                                    </div>
-                                )}
-                                {selectedJob.attachments && selectedJob.attachments.length > 0 && (
-                                    <div className={styles.attachmentGallery}>
-                                        {selectedJob.attachments.map((url, i) => (
-                                            /\.(jpg|jpeg|png|webp|gif)(\?|$)/i.test(url) ? (
-                                                <a key={i} href={url} target="_blank" rel="noopener noreferrer" className={styles.attachmentThumb}>
-                                                    <img src={url} alt={`Attachment ${i + 1}`} />
-                                                </a>
-                                            ) : (
-                                                <a key={i} href={url} target="_blank" rel="noopener noreferrer" className={styles.attachmentFile}>
-                                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
-                                                    <span>{url.split('/').pop()}</span>
-                                                </a>
-                                            )
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-
-                            {selectedJob.status === 'DRAFT' && selectedJob.communityProjectId && (
-                                <div className={styles.expiredBanner} style={{ borderColor: 'rgba(168,85,247,0.3)', background: 'rgba(168,85,247,0.08)' }}>
-                                    <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ color: '#c4b5fd', flexShrink: 0 }}>
-                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
-                                    </svg>
-                                    <div className={styles.expiredBannerContent}>
-                                        <strong style={{ color: '#c4b5fd' }}>Community Job Stub</strong>
-                                        <span style={{ color: 'rgba(196,181,253,0.7)' }}>This job was auto-generated from your community project. Review it and activate it to open bidding.</span>
-                                    </div>
-                                    <Link href="/post-job" className={styles.repostBtn} style={{ borderColor: 'rgba(168,85,247,0.4)', background: 'rgba(168,85,247,0.2)', color: '#c4b5fd' }}>
-                                        Activate Job
-                                    </Link>
-                                </div>
-                            )}
-
-                            {selectedJob.status === 'IN_PROGRESS' && (
-                                <div className={styles.expiredBanner} style={{ borderColor: 'rgba(74,222,128,0.3)', background: 'rgba(74,222,128,0.08)' }}>
-                                    <div className={styles.expiredBannerContent}>
-                                        <strong style={{ color: '#4ade80' }}>Job in progress</strong>
-                                        <span style={{ color: 'rgba(74,222,128,0.8)' }}>When the contractor finishes, mark this complete. Record any payment tx on /escrow.</span>
-                                    </div>
+                <div className={styles.columns}>
+                    <section aria-labelledby="jobs-heading">
+                        <div className={styles.listHead}>
+                            <h2 id="jobs-heading" className={styles.listTitle}>
+                                {status === 'all' ? 'All jobs' : `${status.replace('_', ' ').toLowerCase()} jobs`}
+                                <span className={styles.count}>{visible.length}</span>
+                            </h2>
+                            <div className="gfq-tabs" role="tablist" aria-label="Filter by status">
+                                {STATUS_FILTERS.map(f => (
                                     <button
-                                        className={styles.repostBtn}
-                                        onClick={() => handleComplete(selectedJob.id)}
-                                        disabled={completing}
-                                        style={{ borderColor: 'rgba(74,222,128,0.4)', background: 'rgba(74,222,128,0.2)', color: '#4ade80' }}
+                                        key={f.value}
+                                        type="button"
+                                        role="tab"
+                                        aria-selected={status === f.value}
+                                        className="gfq-tab"
+                                        onClick={() => setStatus(f.value)}
                                     >
-                                        {completing ? 'Saving…' : 'Mark Complete'}
+                                        {f.label}
                                     </button>
-                                </div>
-                            )}
-
-                            {selectedJob.status === 'EXPIRED' && (
-                                <div className={styles.expiredBanner}>
-                                    <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" style={{ flexShrink: 0 }}>
-                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd"/>
-                                    </svg>
-                                    <div className={styles.expiredBannerContent}>
-                                        <strong>This listing has expired</strong>
-                                        <span>No bids were received in 45 days. Repost this job to attract new vendors.</span>
-                                    </div>
-                                    <button
-                                        className={styles.repostBtn}
-                                        onClick={() => handleRepost(selectedJob.id)}
-                                        disabled={reposting}
-                                    >
-                                        {reposting ? 'Reposting...' : 'Repost Job'}
-                                    </button>
-                                </div>
-                            )}
-
-                            {selectedJob.status === 'OPEN' && (
-                                <RecommendedVendors jobId={selectedJob.id} />
-                            )}
-
-                            <div className={styles.tabBar}>
-                                <button
-                                    className={`${styles.tabBtn} ${activeTab === 'timeline' ? styles.tabActive : ''}`}
-                                    onClick={() => setActiveTab('timeline')}
-                                >
-                                    Timeline ({messages.length})
-                                </button>
-                                <button
-                                    className={`${styles.tabBtn} ${activeTab === 'quotes' ? styles.tabActive : ''}`}
-                                    onClick={() => setActiveTab('quotes')}
-                                >
-                                    Quotes ({quotes.length})
-                                </button>
-                                <button
-                                    className={`${styles.tabBtn} ${activeTab === 'agent-log' ? styles.tabActive : ''}`}
-                                    onClick={() => setActiveTab('agent-log')}
-                                >
-                                    Agent Log ({agentActions.length})
-                                </button>
-                                <button
-                                    className={`${styles.tabBtn} ${activeTab === 'digest' ? styles.tabActive : ''}`}
-                                    onClick={() => setActiveTab('digest')}
-                                >
-                                    Digest
-                                </button>
+                                ))}
                             </div>
-
-                            {activeTab === 'timeline' && (
-                                <section className={`glass-panel ${styles.section}`}>
-                                    <div className={styles.timelineList}>
-                                        {messages.map(msg => {
-                                            const isAgent = isAgentSender(msg.senderId);
-                                            const label = getAgentLabel(msg.senderId);
-                                            return (
-                                                <div
-                                                    key={msg.id}
-                                                    className={`${styles.timelineItem} ${isAgent ? styles.timelineAgent : styles.timelineUser}`}
-                                                >
-                                                    <div className={styles.timelineHeader}>
-                                                        <span className={`${styles.senderLabel} ${isAgent ? styles.senderAgent : styles.senderHuman}`}>
-                                                            {label}
-                                                        </span>
-                                                        {isAgent && (
-                                                            <span className={styles.automatedBadge}>Automated</span>
-                                                        )}
-                                                        <span className={styles.timelineTime}>
-                                                            {new Date(msg.timestamp).toLocaleString()}
-                                                        </span>
-                                                    </div>
-                                                    <div className={styles.timelineContent}>{msg.content}</div>
-                                                </div>
-                                            );
-                                        })}
-                                        {messages.length === 0 && (
-                                            <p className={styles.emptyMsg}>No activity yet. Your AI agent will begin working once the project is posted.</p>
-                                        )}
-                                    </div>
-                                    <div className={styles.replyBar}>
-                                        <input
-                                            type="text"
-                                            className={styles.replyInput}
-                                            placeholder="Type a message to intervene or add details..."
-                                            value={replyText}
-                                            onChange={(e) => setReplyText(e.target.value)}
-                                            onKeyDown={(e) => { if (e.key === 'Enter') handleSendReply(); }}
-                                            disabled={sendingReply}
-                                        />
-                                        <button
-                                            className={styles.replyBtn}
-                                            onClick={handleSendReply}
-                                            disabled={sendingReply || !replyText.trim()}
-                                        >
-                                            {sendingReply ? 'Sending...' : 'Send'}
-                                        </button>
-                                    </div>
-                                </section>
-                            )}
-
-                            {activeTab === 'quotes' && (
-                                <section className={`glass-panel ${styles.section}`}>
-                                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.75rem' }}>
-                                        <CompareQuotesButton quotes={quotes} onClick={() => setShowComparison(true)} />
-                                    </div>
-                                    <div className={styles.quoteList}>
-                                        {quotes.map(quote => (
-                                            <div key={quote.id} className={styles.quoteCard}>
-                                                <div className={styles.quoteHeader}>
-                                                    <span className={styles.vendorName}>
-                                                        {quote.vendorName}
-                                                        {vendorInfo[quote.vendorId]?.isVerified && (
-                                                            <span className="badge badge-green" style={{ marginLeft: '0.5rem', fontSize: '0.65rem', padding: '0.15rem 0.4rem' }}>✓ Verified</span>
-                                                        )}
-                                                    </span>
-                                                    <span className={styles.price}>${quote.amount}</span>
-                                                </div>
-                                                <p className={styles.timeline}>{quote.estimatedDays} day estimate</p>
-                                                <p className={styles.details}>{quote.details}</p>
-                                                {quote.status === 'PENDING' && (
-                                                    <div className={styles.quoteActions}>
-                                                        <button
-                                                            className={styles.acceptBtn}
-                                                            onClick={async () => {
-                                                                await jobService.acceptQuote(quote.id);
-                                                                if (selectedJob) await fetchJobDetail(selectedJob.id);
-                                                                const myJobs = await jobService.getMyJobs(user!.id);
-                                                                setJobs([...myJobs]);
-                                                                const updated = myJobs.find(j => j.id === selectedJob?.id);
-                                                                if (updated) setSelectedJob(updated);
-                                                            }}
-                                                        >Accept</button>
-                                                        <button
-                                                            className={styles.rejectBtn}
-                                                            onClick={async () => {
-                                                                await jobService.rejectQuote(quote.id);
-                                                            }}
-                                                        >Reject</button>
-                                                    </div>
-                                                )}
-                                                {quote.status !== 'PENDING' && (
-                                                    <div className={styles.quoteStatus}>
-                                                        <span className={`badge ${quote.status === 'ACCEPTED' ? 'badge-green' : 'badge-muted'}`}>
-                                                            {quote.status}
-                                                        </span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ))}
-                                        {quotes.length === 0 && (
-                                            <p className={styles.emptyMsg}>Waiting for vendor agents to submit quotes...</p>
-                                        )}
-                                    </div>
-                                    {showComparison && quotes.length >= 2 && (
-                                        <QuoteComparison
-                                            quotes={quotes}
-                                            vendorInfo={vendorInfo}
-                                            onAccept={async (quoteId) => {
-                                                await jobService.acceptQuote(quoteId);
-                                                setShowComparison(false);
-                                            }}
-                                            onReject={async (quoteId) => {
-                                                await jobService.rejectQuote(quoteId);
-                                                setShowComparison(false);
-                                            }}
-                                            onClose={() => setShowComparison(false)}
-                                        />
-                                    )}
-                                </section>
-                            )}
-
-                            {activeTab === 'agent-log' && (
-                                <section className={`glass-panel ${styles.section}`}>
-                                    <div className={styles.agentLogList}>
-                                        {agentActions.map(action => (
-                                            <div key={action.id} className={styles.agentLogItem}>
-                                                <span className={styles.agentLogIcon}>
-                                                    {ACTION_ICONS[action.actionType] || '🔵'}
-                                                </span>
-                                                <div className={styles.agentLogContent}>
-                                                    <div className={styles.agentLogSummary}>{action.summary}</div>
-                                                    <div className={styles.agentLogMeta}>
-                                                        <span className={action.automated ? styles.automatedBadge : styles.manualBadge}>
-                                                            {action.automated ? 'Automated' : 'Manual'}
-                                                        </span>
-                                                        <span className={styles.agentLogTime}>
-                                                            {new Date(action.createdAt).toLocaleString()}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                        {agentActions.length === 0 && (
-                                            <p className={styles.emptyMsg}>No agent actions recorded yet.</p>
-                                        )}
-                                    </div>
-                                </section>
-                            )}
-
-                            {activeTab === 'digest' && (
-                                <section className={`glass-panel ${styles.section}`}>
-                                    <div className={styles.digestSection}>
-                                        <div className={styles.digestCard}>
-                                            <div className={styles.digestTitle}>Agent Activity Summary</div>
-                                            <div className={styles.digestStats}>
-                                                <span className={styles.digestStat}>
-                                                    <span className={styles.digestStatValue}>{messages.filter(m => isAgentSender(m.senderId)).length}</span>
-                                                    agent messages
-                                                </span>
-                                                <span className={styles.digestStat}>
-                                                    <span className={styles.digestStatValue}>{messages.filter(m => !isAgentSender(m.senderId)).length}</span>
-                                                    human messages
-                                                </span>
-                                                <span className={styles.digestStat}>
-                                                    <span className={styles.digestStatValue}>{agentActions.filter(a => a.automated).length}</span>
-                                                    automated actions
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        <div className={styles.digestCard}>
-                                            <div className={styles.digestTitle}>Quotes Overview</div>
-                                            <div className={styles.digestStats}>
-                                                <span className={styles.digestStat}>
-                                                    <span className={styles.digestStatValue}>{quotes.length}</span>
-                                                    total quotes
-                                                </span>
-                                                <span className={styles.digestStat}>
-                                                    <span className={styles.digestStatValue}>{quotes.filter(q => q.status === 'PENDING').length}</span>
-                                                    pending review
-                                                </span>
-                                                <span className={styles.digestStat}>
-                                                    <span className={styles.digestStatValue}>{quotes.filter(q => q.status === 'ACCEPTED').length}</span>
-                                                    accepted
-                                                </span>
-                                                {quotes.length > 0 && (
-                                                    <span className={styles.digestStat}>
-                                                        <span className={styles.digestStatValue}>
-                                                            ${Math.min(...quotes.map(q => q.amount))} - ${Math.max(...quotes.map(q => q.amount))}
-                                                        </span>
-                                                        price range
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        <div className={styles.digestCard}>
-                                            <div className={styles.digestTitle}>Vendor Matching</div>
-                                            <div className={styles.digestStats}>
-                                                <span className={styles.digestStat}>
-                                                    <span className={styles.digestStatValue}>{agentActions.filter(a => a.actionType === 'vendor_match').length}</span>
-                                                    vendors matched
-                                                </span>
-                                                <span className={styles.digestStat}>
-                                                    <span className={styles.digestStatValue}>{agentActions.filter(a => a.actionType === 'auto_quote').length}</span>
-                                                    auto-quotes generated
-                                                </span>
-                                                <span className={styles.digestStat}>
-                                                    <span className={styles.digestStatValue}>{agentActions.filter(a => a.actionType === 'escalation').length}</span>
-                                                    escalations
-                                                </span>
-                                                <span className={styles.digestStat}>
-                                                    <span className={styles.digestStatValue}>{agentActions.filter(a => a.actionType === 'auto_reject').length}</span>
-                                                    auto-rejected
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        {agentActions.filter(a => a.actionType === 'escalation').length > 0 && (
-                                            <div className={styles.digestCard}>
-                                                <div className={styles.digestTitle}>Requires Your Attention</div>
-                                                {agentActions.filter(a => a.actionType === 'escalation').map(a => (
-                                                    <div key={a.id} className={styles.agentLogItem} style={{ marginBottom: '0.4rem' }}>
-                                                        <span className={styles.agentLogIcon}>⚠️</span>
-                                                        <div className={styles.agentLogContent}>
-                                                            <div className={styles.agentLogSummary}>{a.summary}</div>
-                                                            <div className={styles.agentLogTime}>{new Date(a.createdAt).toLocaleString()}</div>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-
-                                        {quotes.filter(q => q.status === 'PENDING').length > 0 && (
-                                            <div className={styles.digestCard}>
-                                                <div className={styles.digestTitle}>Pending Quote Decisions</div>
-                                                {quotes.filter(q => q.status === 'PENDING').map(q => (
-                                                    <div key={q.id} className={styles.quoteCard} style={{ marginBottom: '0.4rem' }}>
-                                                        <div className={styles.quoteHeader}>
-                                                            <span className={styles.vendorName}>
-                                                                {q.vendorName}
-                                                                {vendorInfo[q.vendorId]?.isVerified && (
-                                                                    <span className="badge badge-green" style={{ marginLeft: '0.5rem', fontSize: '0.65rem', padding: '0.15rem 0.4rem' }}>✓ Verified</span>
-                                                                )}
-                                                            </span>
-                                                            <span className={styles.price}>${q.amount}</span>
-                                                        </div>
-                                                        <p className={styles.timeline}>{q.estimatedDays} day estimate</p>
-                                                        <div className={styles.quoteActions}>
-                                                            <button
-                                                                className={styles.acceptBtn}
-                                                                onClick={async () => { await jobService.acceptQuote(q.id); }}
-                                                            >Accept</button>
-                                                            <button
-                                                                className={styles.rejectBtn}
-                                                                onClick={async () => { await jobService.rejectQuote(q.id); }}
-                                                            >Reject</button>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                </section>
-                            )}
-                        </>
-                    ) : (
-                        <div className={styles.placeholder}>
-                            <svg className={styles.placeholderIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                                <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                            </svg>
-                            <p>Select a project to view details, quotes &amp; agent activity</p>
                         </div>
-                    )}
-                </main>
-            </div>
+
+                        {jobs.length === 0 ? (
+                            <EmptyState
+                                icon="✚"
+                                title="No jobs yet"
+                                body="Describe the work once — a photo, a video, or a few sentences. Contractors and their agents quote against the brief, and you only step in to award it."
+                                actionLabel="Post your first job"
+                                actionHref="/post-job"
+                                secondaryLabel="See how it works"
+                                secondaryHref="/how-to"
+                            />
+                        ) : visible.length === 0 ? (
+                            <EmptyState
+                                icon="◇"
+                                title="Nothing in this state"
+                                body="No jobs match that status filter."
+                                actionLabel="Show all jobs"
+                                actionHref="/dashboard"
+                            />
+                        ) : (
+                            <div className={styles.jobGrid}>
+                                {visible.map(job => {
+                                    const jq = quotesByJob.get(job.id) || [];
+                                    return (
+                                        <JobCard key={job.id} job={job} quoteCount={jq.length} owned />
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </section>
+
+                    <aside className={styles.side} aria-labelledby="activity-heading">
+                        <div className={styles.card}>
+                            <h2 id="activity-heading" className={styles.listTitle}>
+                                Activity
+                            </h2>
+                            {notices.length === 0 ? (
+                                <p className={styles.muted}>
+                                    Nothing yet. When a quote lands or your agent does something, it shows up here.
+                                </p>
+                            ) : (
+                                <ul className={styles.feed}>
+                                    {notices.map(n => (
+                                        <li key={`${n.source}-${n.id}`} className={styles.feedItem}>
+                                            <div className={styles.feedTop}>
+                                                <span className={styles.feedType}>{n.title}</span>
+                                                <span className={styles.feedTime}>{relative(n.created_at)}</span>
+                                            </div>
+                                            <p className={styles.feedMsg}>{n.message}</p>
+                                            {n.job_id && (
+                                                <Link href={`/jobs/${n.job_id}`} className={styles.feedLink}>
+                                                    Open job →
+                                                </Link>
+                                            )}
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
+
+                        <div className={styles.card}>
+                            <h2 className={styles.listTitle}>Working with an agent?</h2>
+                            <p className={styles.muted}>
+                                Give your agent an API key and it can post, bid, and answer questions for you —
+                                you still approve the final award.
+                            </p>
+                            <Link href="/settings/api-keys" className="btn-secondary">
+                                Agent API keys
+                            </Link>
+                        </div>
+                    </aside>
+                </div>
+
+                <p className={styles.hello}>Signed in as {firstName}.</p>
+            </main>
+            <SiteFooter />
         </div>
     );
 }
