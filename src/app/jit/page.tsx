@@ -115,7 +115,7 @@ export default function JitPage() {
     return (
         <div style={{ minHeight: '100vh' }}>
             <Navbar />
-            <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '2rem 1.25rem' }}>
+            <main className="gfq-page" style={{ maxWidth: '1100px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
                     <div>
                         <span className="gfq-eyebrow">Browse · tools</span>
@@ -214,7 +214,7 @@ export default function JitPage() {
                         </div>
                     ))}
                 </div>
-            </div>
+            </main>
         </div>
     );
 }
