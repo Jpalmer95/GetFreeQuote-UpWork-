@@ -58,7 +58,9 @@ export default function VendorProfileEdit() {
                     contactPhone: profile.contactPhone,
                     website: profile.website || '',
                     logoUrl: profile.logoUrl || '',
-                    serviceAreas: profile.serviceAreas.join(', '),
+                    // Join with a pipe: "Horseshoe Bay, TX, Marble Falls, TX" cannot round-trip
+                    // through a comma split without shredding each city/state pair.
+                    serviceAreas: profile.serviceAreas.join(' | '),
                     industries: profile.industries,
                     specialties: profile.specialties.join(', '),
                     certifications: profile.certifications.length > 0 ? profile.certifications : [''],
@@ -120,7 +122,10 @@ export default function VendorProfileEdit() {
                 contactPhone: form.contactPhone,
                 website: form.website || undefined,
                 logoUrl: form.logoUrl || undefined,
-                serviceAreas: form.serviceAreas.split(',').map(s => s.trim()).filter(Boolean),
+                serviceAreas: form.serviceAreas
+                    .split(/[|;\n]/)
+                    .map(s => s.trim())
+                    .filter(Boolean),
                 industries: form.industries as IndustryVertical[],
                 specialties: form.specialties.split(',').map(s => s.trim()).filter(Boolean),
                 certifications: form.certifications.filter(c => c.trim()),
@@ -151,7 +156,7 @@ export default function VendorProfileEdit() {
             <Navbar />
             <header className={styles.pageHeader}>
                 <div>
-                    <h2 className="gradient-text">Company Profile</h2>
+                    <h1 className="gfq-title gradient-text">Company profile</h1>
                     {userRole !== 'owner' && (
                         <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)' }}>
                             Viewing as {getRoleLabel(userRole)}{!canEdit && ' (read-only)'}
@@ -236,10 +241,14 @@ export default function VendorProfileEdit() {
                                 placeholder="https://yourcompany.com" disabled={!canEdit} />
                         </div>
                         <div className={styles.formGroup}>
-                            <label className={styles.label}>Service Areas</label>
+                            <label className={styles.label}>Service areas</label>
                             <input className={styles.input} value={form.serviceAreas}
                                 onChange={e => setForm(p => ({ ...p, serviceAreas: e.target.value }))}
-                                placeholder="New York, Brooklyn, Queens" disabled={!canEdit} />
+                                placeholder="Horseshoe Bay, TX | Marble Falls, TX"
+                                aria-describedby="service-areas-hint" disabled={!canEdit} />
+                            <span id="service-areas-hint" style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.45)' }}>
+                                Separate each area with a pipe (|) so &quot;City, ST&quot; stays in one piece.
+                            </span>
                         </div>
                         <div className={styles.formGroupFull}>
                             <label className={styles.label}>

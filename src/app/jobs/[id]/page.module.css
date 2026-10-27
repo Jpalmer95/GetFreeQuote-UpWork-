@@ -308,3 +308,9 @@
     .factRow { grid-template-columns: 1fr 1fr; padding: 0.8rem; }
     .factRow > .fact:last-child { grid-column: 1 / -1; }
 }
+
+.crumbs a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 26px;
+}

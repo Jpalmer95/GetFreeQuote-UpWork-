@@ -4,11 +4,16 @@ import Navbar from '@/components/Navbar';
 import MaterialGroupBuyCard from '@/components/MaterialGroupBuyCard';
 import { MaterialGroupBuy } from '@/types';
 
+/* Preview data only: deadlines are relative so the sample cards never read as expired. */
+const daysFromNow = (n: number) => new Date(Date.now() + n * 86400000).toISOString();
+const daysAgo = (n: number) => new Date(Date.now() - n * 86400000).toISOString();
+
+
 const MOCK_BUYS: MaterialGroupBuy[] = [
     {
         id: 'gb1', organizerId: 'v1', materialCategory: 'Drywall', materialDescription: '1/2" Standard Drywall 4x8 sheets',
         retailPricePerUnit: 14.50, groupPricePerUnit: 10.50, minimumQuantity: 50, currentQuantity: 73,
-        targetQuantity: 100, savingsPercent: 28, status: 'gathering', deadline: '2026-05-01T00:00:00Z',
+        targetQuantity: 100, savingsPercent: 28, status: 'gathering', deadline: daysFromNow(12),
         deliveryLocation: 'Portland, OR Depot', createdAt: '2026-04-10T00:00:00Z',
         participants: [
             { vendorId: 'v1', vendorName: 'BuildRight Construction', quantity: 30, totalPrice: 315, joinedAt: '2026-04-10T00:00:00Z', paid: true },
@@ -19,7 +24,7 @@ const MOCK_BUYS: MaterialGroupBuy[] = [
     {
         id: 'gb2', organizerId: 'v2', materialCategory: 'Lumber 2x4', materialDescription: 'Premium 2x4x8 Studs - Kiln Dried',
         retailPricePerUnit: 5.25, groupPricePerUnit: 3.90, minimumQuantity: 100, currentQuantity: 150,
-        targetQuantity: 200, savingsPercent: 26, status: 'confirmed', deadline: '2026-04-25T00:00:00Z',
+        targetQuantity: 200, savingsPercent: 26, status: 'confirmed', deadline: daysFromNow(6),
         deliveryLocation: 'Seattle Lumber Yard', createdAt: '2026-04-05T00:00:00Z',
         participants: [
             { vendorId: 'v4', vendorName: 'Northwest Framing', quantity: 80, totalPrice: 312, joinedAt: '2026-04-06T00:00:00Z', paid: true },
@@ -29,7 +34,7 @@ const MOCK_BUYS: MaterialGroupBuy[] = [
     {
         id: 'gb3', organizerId: 'v3', materialCategory: 'Roofing Shingles', materialDescription: 'GAF Timberline HD Architectural Shingles',
         retailPricePerUnit: 38.00, groupPricePerUnit: 28.50, minimumQuantity: 30, currentQuantity: 45,
-        targetQuantity: 60, savingsPercent: 25, status: 'gathering', deadline: '2026-05-15T00:00:00Z',
+        targetQuantity: 60, savingsPercent: 25, status: 'gathering', deadline: daysFromNow(26),
         createdAt: '2026-04-15T00:00:00Z',
         participants: [
             { vendorId: 'v6', vendorName: 'Summit Roofing', quantity: 25, totalPrice: 712.50, joinedAt: '2026-04-16T00:00:00Z', paid: true },

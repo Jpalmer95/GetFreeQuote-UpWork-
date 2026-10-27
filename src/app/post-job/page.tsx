@@ -236,7 +236,9 @@ function PostJob() {
 
                 <div className={styles.divider} />
 
-                <form onSubmit={handleSubmit} className={styles.form}>
+                {/* noValidate: our own inline errors are visible and specific; the browser bubble
+                    on a required field is invisible to assistive tech and to automated tests. */}
+                <form onSubmit={handleSubmit} className={styles.form} noValidate>
                     <div className={styles.inputRow}>
                         <div className={styles.inputGroup}>
                             <label htmlFor="job-industry">Industry</label>
