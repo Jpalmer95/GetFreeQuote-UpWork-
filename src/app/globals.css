@@ -384,12 +384,13 @@ select option {
   border-radius: var(--radius-full);
   font-size: 0.9rem;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.62);
+  color: rgba(255, 255, 255, 0.72);
   white-space: nowrap;
   transition: background var(--dur-base) ease, color var(--dur-base) ease;
 }
 .gfq-tab:hover { color: #fff; background: var(--surface-200); }
-.gfq-tab[aria-current='page'] {
+.gfq-tab[aria-current='page'],
+.gfq-tab[aria-selected='true'] {
   color: #fff;
   background: linear-gradient(135deg, rgba(79,142,247,0.35), rgba(155,109,255,0.3));
   border: 1px solid rgba(79,142,247,0.45);
