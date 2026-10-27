@@ -34,11 +34,11 @@ export const INDUSTRY_VERTICALS: KnownIndustryVertical[] = [
 ];
 
 export const INDUSTRY_SUBCATEGORIES: Record<KnownIndustryVertical, string[]> = {
-    'Home Services': ['Plumbing', 'Electrical', 'HVAC', 'Roofing', 'Painting', 'Landscaping', 'Cleaning', 'Pest Control', 'Handyman', 'Other'],
-    'Commercial Construction': ['General Contracting', 'Concrete & Foundation', 'Steel & Framing', 'Electrical Systems', 'Mechanical / HVAC', 'Plumbing Systems', 'Interior Finish', 'Demolition', 'Site Work', 'Other'],
+    'Home Services': ['Plumbing', 'Electrical', 'HVAC', 'Roofing', 'Painting', 'Landscaping', 'Fencing', 'Concrete & Flatwork', 'Decks & Patios', 'Windows & Doors', 'Garage Doors', 'Tree Service', 'Junk Removal', 'Cleaning', 'Pest Control', 'Handyman', 'Other'],
+    'Commercial Construction': ['General Contracting', 'Concrete & Foundation', 'Steel & Framing', 'Electrical Systems', 'Mechanical / HVAC', 'Plumbing Systems', 'Interior Finish', 'Drywall & Insulation', 'Roofing', 'Fencing & Site Security', 'Demolition', 'Site Work', 'Other'],
     'Gig Work': ['Delivery', 'Moving & Hauling', 'Assembly', 'Personal Shopping', 'Pet Care', 'Tutoring', 'Photography', 'Videography', 'Food & Beverage Coverage', 'Roadside Assistance', 'Same-Day Labor', 'Grocery/Errand Run', 'Event Staff', 'Other'],
     'Events & Entertainment': ['Catering', 'DJ / Music', 'Photography', 'Videography', 'Venue Rental', 'Event Planning', 'Floral Design', 'Lighting & AV', 'Other'],
-    'Trade Labor': ['Welding', 'Carpentry', 'Masonry', 'Tile Work', 'Drywall', 'Insulation', 'Glazing', 'Flooring', 'Other'],
+    'Trade Labor': ['Welding', 'Carpentry', 'Framing', 'Masonry', 'Tile Work', 'Drywall', 'Insulation', 'Glazing', 'Flooring', 'Concrete', 'Other'],
     'Day Labor': ['General Labor', 'Warehouse', 'Construction Help', 'Yard Work', 'Clean-Up', 'Loading / Unloading', 'Other'],
     'Professional Services': ['Consulting', 'Legal', 'Accounting', 'Architecture', 'Engineering', 'Design', 'Marketing', 'Other'],
     'Technology': ['Web Development', 'App Development', 'IT Support', 'Cybersecurity', 'Data Analysis', 'AI / ML', 'Cloud Infrastructure', 'Other'],

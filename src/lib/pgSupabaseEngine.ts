@@ -86,6 +86,7 @@ const ALLOWED_TABLES = new Set([
     'item_listings',
     'oracle_events',
     'job_briefs',
+    'job_updates',
     'bid_threads',
     'bid_messages',
     'ranked_quotes',

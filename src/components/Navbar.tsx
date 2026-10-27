@@ -54,6 +54,10 @@ export default function Navbar() {
                     <span className="gradient-text">GetFreeQuote</span>
                 </Link>
 
+                <Link href="/post-job" className={styles.postCtaMobile}>
+                    Post
+                </Link>
+
                 <button
                     className={`${styles.hamburger} ${menuOpen ? styles.hamburgerOpen : ''}`}
                     onClick={() => setMenuOpen(!menuOpen)}
@@ -131,6 +135,10 @@ export default function Navbar() {
                             </>
                         )}
                     </nav>
+
+                    <Link href="/post-job" className={styles.postCta}>
+                        Post a job
+                    </Link>
 
                     <div className={styles.actions}>
                         {showUser ? (

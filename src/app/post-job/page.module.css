@@ -287,3 +287,9 @@
     font-size: 0.75rem;
     color: #6b7280;
 }
+
+.fieldError {
+    margin-top: 0.35rem;
+    font-size: 0.82rem;
+    color: #ff9b9b;
+}

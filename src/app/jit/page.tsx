@@ -3,6 +3,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { ItemListing, ItemListingType } from '@/types';
 import Navbar from '@/components/Navbar';
+import BrowseTabs from '@/components/BrowseTabs';
+import EmptyState from '@/components/EmptyState';
 
 const CATEGORIES = ['Tool', 'Equipment', 'Vehicle', 'Material', 'Other'];
 const TYPES: { value: ItemListingType; label: string }[] = [
@@ -116,10 +118,12 @@ export default function JitPage() {
             <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '2rem 1.25rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
                     <div>
-                        <h1 style={{ margin: 0 }}>JIT Tools & Gear</h1>
-                        <p style={{ margin: '0.25rem 0 0', color: 'rgba(255,255,255,0.6)' }}>
+                        <span className="gfq-eyebrow">Browse · tools</span>
+                        <h1 className="gfq-title" style={{ margin: 0 }}>Tools &amp; gear, by the day</h1>
+                        <p style={{ margin: '0.35rem 0 0.75rem', color: 'rgba(255,255,255,0.6)' }}>
                             Rent or buy tools, equipment, and gear nearby — on demand.
                         </p>
+                        <BrowseTabs />
                     </div>
                     {user && (
                         <button onClick={() => { setShowForm(v => !v); setMessage(null); }}
@@ -161,9 +165,17 @@ export default function JitPage() {
                 {error && <p style={{ color: '#f87171', marginTop: '1.5rem' }}>{error}</p>}
 
                 {!loading && !error && items.length === 0 && (
-                    <p style={{ marginTop: '1.5rem', color: 'rgba(255,255,255,0.55)' }}>
-                        No items listed yet{user ? ' — list your first tool!' : '.'}
-                    </p>
+                    <div style={{ marginTop: '1.5rem' }}>
+                        <EmptyState
+                            icon="🧰"
+                            title="No gear listed yet"
+                            body="Tools, lifts, mixers, trailers — anything that sits idle most of the week can earn here. List it once; neighbours find it by distance."
+                            actionLabel={user ? 'List an item' : 'Sign in to list'}
+                            actionHref={user ? undefined : '/login?redirect=/jit'}
+                            secondaryLabel="Browse jobs instead"
+                            secondaryHref="/marketplace"
+                        />
+                    </div>
                 )}
 
                 <div style={{ marginTop: '1.25rem' }}>
@@ -173,7 +185,7 @@ export default function JitPage() {
                                 <div>
                                     <div style={{ fontWeight: 600, fontSize: '1.05rem' }}>{i.itemName}</div>
                                     <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.55)' }}>
-                                        {i.category} · {i.locationText || 'Location TBD'}
+                                        {i.category} · {i.locationText || 'Location not given'}
                                     </div>
                                 </div>
                                 <span style={{ alignSelf: 'center', fontSize: '0.85rem', padding: '0.25rem 0.6rem', borderRadius: '999px', background: i.status === 'AVAILABLE' ? 'rgba(74,222,128,0.15)' : 'rgba(255,255,255,0.08)', color: i.status === 'AVAILABLE' ? '#4ade80' : 'rgba(255,255,255,0.6)' }}>
@@ -182,7 +194,9 @@ export default function JitPage() {
                             </div>
                             {i.description && <p style={{ margin: '0.6rem 0 0', fontSize: '0.92rem', color: 'rgba(255,255,255,0.75)' }}>{i.description}</p>}
                             <div style={{ marginTop: '0.6rem', fontSize: '0.9rem', color: 'var(--primary-light, #9dbdff)' }}>{priceLine(i)}</div>
-                            <div style={{ marginTop: '0.4rem', fontSize: '0.8rem', color: 'rgba(255,255,255,0.45)' }}>Listed by {i.ownerName}</div>
+                            <div style={{ marginTop: '0.4rem', fontSize: '0.8rem', color: 'rgba(255,255,255,0.45)' }}>
+                                Listed by {i.ownerName?.trim() || 'a verified member'}
+                            </div>
                             {user && i.ownerId === user.id && i.status === 'AVAILABLE' && (
                                 <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem' }}>
                                     <button disabled={claimingId === i.id} onClick={() => claim(i.id, 'RENTED')}

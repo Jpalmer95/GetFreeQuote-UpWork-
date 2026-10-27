@@ -26,6 +26,25 @@ function LoginForm() {
     const [error, setError] = useState<string | null>(null);
     const [signupSuccess, setSignupSuccess] = useState(false);
 
+    // Deep links carry ?redirect=; say out loud which page they were trying to open
+    // instead of dropping them on a generic "Welcome back" card.
+    const redirectParam = searchParams.get('redirect');
+    const redirectLabel: string | null = (() => {
+        if (!redirectParam || !redirectParam.startsWith('/')) return null;
+        const known: Record<string, string> = {
+            '/post-job': 'posting a job',
+            '/dashboard': 'your desk',
+            '/projects': 'your builds',
+            '/vendor': 'the vendor portal',
+            '/agent-hub': 'your agent hub',
+            '/settings/api-keys': 'your agent API keys',
+            '/onboarding': 'finishing setup',
+        };
+        if (known[redirectParam]) return known[redirectParam];
+        if (redirectParam.startsWith('/jobs/')) return 'that job';
+        return 'that page';
+    })();
+
     useEffect(() => {
         setMode(initialMode);
     }, [initialMode]);
@@ -98,6 +117,9 @@ function LoginForm() {
             if (err instanceof Error) {
                 if (err.message === 'Load failed' || err.message === 'Failed to fetch' || err.message === 'NetworkError when attempting to fetch resource.') {
                     message = 'Unable to connect to the server. Please check your internet connection and try again.';
+                } else if (/constraint|violates|relation .* does not exist/i.test(err.message)) {
+                    message = 'We could not save that account. Please try again — if it keeps happening, email the operator.';
+                    console.error('[auth] database error:', err.message);
                 } else {
                     message = err.message;
                 }
@@ -266,9 +288,17 @@ function LoginForm() {
                 </h2>
                 <p className={styles.subtitle}>
                     {mode === 'login'
-                        ? 'Sign in to manage your projects and quotes.'
+                        ? redirectLabel
+                            ? `Sign in to continue ${redirectLabel}.`
+                            : 'Sign in to manage your jobs and quotes.'
                         : 'One account for posting jobs, bidding, or connecting an agent.'}
                 </p>
+
+                {mode === 'login' && redirectLabel && (
+                    <div className="gfq-alert gfq-alert-info" role="status" style={{ marginBottom: '1rem' }}>
+                        You need an account to open that page. Signing in takes you straight there.
+                    </div>
+                )}
 
                 {error && (
                     <div className={styles.errorBox}>

@@ -12,6 +12,8 @@ interface FileUploadProps {
     hint?: string;
     single?: boolean;
     acceptPdf?: boolean;
+    /** Allow short video clips (MP4/WebM/MOV) up to 25MB — site evidence, not production footage. */
+    acceptVideo?: boolean;
     onUpload: (urls: string[]) => void;
     onRemove?: (url: string) => void;
     disabled?: boolean;
@@ -34,6 +36,7 @@ export default function FileUpload({
     hint,
     single = false,
     acceptPdf = false,
+    acceptVideo = false,
     onUpload,
     onRemove,
     disabled = false,
@@ -83,7 +86,7 @@ export default function FileUpload({
         const toUpload = files.slice(0, available);
 
         for (const f of toUpload) {
-            const validationError = storageService.validateFile(f, bucket, { acceptPdf });
+            const validationError = storageService.validateFile(f, bucket, { acceptPdf, acceptVideo });
             if (validationError) {
                 setError(validationError);
                 return;
@@ -92,7 +95,7 @@ export default function FileUpload({
 
         setUploading(true);
         try {
-            const results: UploadResult[] = await storageService.uploadFiles(toUpload, bucket, userId, { acceptPdf });
+            const results: UploadResult[] = await storageService.uploadFiles(toUpload, bucket, userId, { acceptPdf, acceptVideo });
             const newPreviews: PreviewFile[] = results.map(r => ({
                 id: r.path,
                 url: r.url,
@@ -109,7 +112,7 @@ export default function FileUpload({
         } finally {
             setUploading(false);
         }
-    }, [previews, effectiveMax, bucket, userId, single, onUpload]);
+    }, [previews, effectiveMax, bucket, userId, single, onUpload, acceptPdf, acceptVideo]);
 
     const handleRemove = useCallback(async (preview: PreviewFile) => {
         if (preview.path) {
@@ -136,6 +139,7 @@ export default function FileUpload({
     const handleDragLeave = useCallback(() => setDragOver(false), []);
 
     const isImage = (url: string) => /\.(jpg|jpeg|png|webp|gif)(\?|$)/i.test(url);
+    const isVideo = (url: string) => /\.(mp4|webm|mov|m4v)(\?|$)/i.test(url);
     const canAdd = previews.length < effectiveMax;
 
     return (
@@ -156,9 +160,11 @@ export default function FileUpload({
                         type="file"
                         className={styles.hiddenInput}
                         multiple={!single}
-                        accept={(bucket === 'job-attachments' || acceptPdf)
-                            ? 'image/jpeg,image/png,image/webp,image/gif,application/pdf'
-                            : 'image/jpeg,image/png,image/webp,image/gif'}
+                        accept={acceptVideo
+                            ? 'image/jpeg,image/png,image/webp,image/gif,application/pdf,video/mp4,video/webm,video/quicktime'
+                            : (bucket === 'job-attachments' || acceptPdf)
+                                ? 'image/jpeg,image/png,image/webp,image/gif,application/pdf'
+                                : 'image/jpeg,image/png,image/webp,image/gif'}
                         onChange={e => e.target.files && handleFiles(e.target.files)}
                     />
                     {uploading ? (
@@ -179,9 +185,11 @@ export default function FileUpload({
                                 Drop files here or <span className={styles.browse}>browse</span>
                             </span>
                             <span className={styles.dropHint}>
-                                {(bucket === 'job-attachments' || acceptPdf)
-                                    ? 'JPG, PNG, WebP, GIF, PDF up to 10MB'
-                                    : 'JPG, PNG, WebP, GIF up to 10MB'}
+                                {acceptVideo
+                                    ? 'JPG, PNG, WebP, GIF, MP4/WebM video up to 25MB, PDF'
+                                    : (bucket === 'job-attachments' || acceptPdf)
+                                        ? 'JPG, PNG, WebP, GIF, PDF up to 10MB'
+                                        : 'JPG, PNG, WebP, GIF up to 10MB'}
                                 {!single && ` \u00B7 ${previews.length}/${effectiveMax} files`}
                             </span>
                         </>
@@ -197,6 +205,11 @@ export default function FileUpload({
                         <div key={p.id} className={styles.previewItem}>
                             {isImage(p.url) ? (
                                 <img src={p.url} alt={p.name} className={styles.previewImg} />
+                            ) : isVideo(p.url) ? (
+                                <div className={styles.previewFile}>
+                                    <video src={p.url} className={styles.previewImg} muted playsInline preload="metadata" />
+                                    <span className={styles.fileName}>{p.name}</span>
+                                </div>
                             ) : (
                                 <div className={styles.previewFile}>
                                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">

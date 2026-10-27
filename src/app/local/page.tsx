@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { Job, INDUSTRY_VERTICALS, INDUSTRY_SUBCATEGORIES, KnownIndustryVertical, ProjectUrgency } from '@/types';
 import Navbar from '@/components/Navbar';
+import BrowseTabs from '@/components/BrowseTabs';
 import SurgePricingIndicator from '@/components/SurgePricingIndicator';
 import { calculateSurge } from '@/services/surgePricing';
 import LocationResolver, { ResolvedLocation } from '@/components/LocationResolver';
@@ -210,6 +211,9 @@ export default function GoLocal() {
                     <p className={styles.subtitle}>
                         Find nearby gigs and urgent tasks posted by people in your area — tire changes, baker coverage, handyman jobs, and more.
                     </p>
+                    <div style={{ marginTop: '1rem' }}>
+                        <BrowseTabs />
+                    </div>
                 </div>
 
                 <div className={`glass-panel ${styles.locationCard}`}>

@@ -362,3 +362,134 @@
 .siteFooter a:hover {
   color: var(--foreground);
 }
+
+/* ─── Live jobs on the landing page ─── */
+
+.liveSection {
+    max-width: 1260px;
+    margin: 0 auto;
+    padding: 0 1.5rem 1rem;
+}
+
+.liveHead {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+
+.liveAll {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--primary-light);
+}
+
+.jobGrid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+}
+
+/* ─── Three steps ─── */
+
+.stepsSection {
+    max-width: 1260px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem 1rem;
+}
+
+.stepsGrid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.stepCard {
+    padding: 1.4rem 1.4rem 1.5rem;
+    position: relative;
+}
+
+.stepNum {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    color: var(--primary-light);
+    margin-bottom: 0.6rem;
+}
+
+.stepCard h3 {
+    font-size: 1.02rem;
+    font-weight: 650;
+    margin-bottom: 0.45rem;
+}
+
+.stepCard p {
+    font-size: 0.88rem;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+/* ─── Agent band ─── */
+
+.agentSection {
+    max-width: 1260px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem 1rem;
+}
+
+.agentCard {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    gap: 1.75rem;
+    align-items: center;
+    padding: 2rem;
+    background: linear-gradient(135deg, rgba(79, 142, 247, 0.1), rgba(155, 109, 255, 0.08));
+}
+
+.agentCard h2 {
+    font-size: clamp(1.25rem, 1rem + 1vw, 1.65rem);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin: 0.35rem 0 0.6rem;
+}
+
+.agentCard p {
+    font-size: 0.92rem;
+    line-height: 1.65;
+    color: rgba(255, 255, 255, 0.62);
+    max-width: 60ch;
+}
+
+.agentActions {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    margin-top: 1.1rem;
+}
+
+.code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.78rem;
+    line-height: 1.6;
+    padding: 1rem 1.1rem;
+    border-radius: var(--radius-sm);
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid var(--border-mid);
+    color: #9bc0ff;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+@media (max-width: 900px) {
+    .agentCard { grid-template-columns: minmax(0, 1fr); padding: 1.5rem; }
+}
+
+@media (max-width: 768px) {
+    .liveSection,
+    .stepsSection,
+    .agentSection { padding-left: 1rem; padding-right: 1rem; }
+}
