@@ -68,8 +68,25 @@
     transform: translateY(-1px);
 }
 
+.section {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1.5rem 2.5rem;
+}
+
+.sectionCentered {
+    text-align: center;
+}
+
+/* The labs grid stays a grid, but sits centred under its centred heading. */
+.labsGrid {
+    max-width: 980px;
+    margin: 0 auto;
+    text-align: left;
+}
+
 .templateSection {
-    max-width: 1400px;
+    max-width: 1200px;
     margin: 0 auto;
     padding: 0 1.5rem 2.5rem;
 }

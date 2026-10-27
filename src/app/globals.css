@@ -69,6 +69,17 @@ a {
   text-decoration: none;
 }
 
+/* Native <button> inherits the UA's light-grey fill (buttonface), which turns any
+   class-only control — segmented filters, tag chips — into pale text on pale grey.
+   Reset it here; component classes opt back into a background explicitly. */
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
 /* ─── Utility: Glass Panel ─── */
 .glass-panel {
   background: var(--glass-bg);
@@ -364,6 +375,7 @@ select option {
 }
 .gfq-tabs::-webkit-scrollbar { display: none; }
 .gfq-tab {
+  background: transparent;
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
