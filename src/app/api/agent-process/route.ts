@@ -277,7 +277,9 @@ export async function POST(request: NextRequest) {
         const rejectedCount = allVendors.length - matched.length;
 
         await logAction(job.id, job.userId, 'job_broadcast',
-            `Broadcast project to ${vendorConfigs.length} matching vendor agent(s) (${rejectedCount} filtered out)`,
+            vendorConfigs.length > 0
+                ? `Sent this job to ${vendorConfigs.length} matching contractor agent(s)`
+                : 'Job published — no contractor agents matched yet, so it is listed for anyone browsing',
             {
                 matchedVendors: vendorConfigs.length,
                 rejectedVendors: rejectedCount,
@@ -287,7 +289,9 @@ export async function POST(request: NextRequest) {
             customerConfig?.id);
 
         await addMessage(job.id, customerAgentId(job.userId), 'customer_agent',
-            `Found ${vendorConfigs.length} qualified vendor agent(s) for your project. ${rejectedCount > 0 ? `${rejectedCount} vendor(s) were filtered out due to criteria mismatch. ` : ''}${vendorConfigs.length > 0 ? 'Initiating quote requests ranked by relevance...' : 'Your project is listed on the marketplace for manual vendor discovery.'}`);
+            vendorConfigs.length > 0
+                ? `Your job is with ${vendorConfigs.length} contractor agent(s) that handle ${job.industryVertical || 'this kind of work'}. Quotes land in your desk as they respond.`
+                : 'Your job is live on the marketplace. Quotes arrive as contractors and their agents find it — you get a notification for each one.');
 
         for (const vc of vendorConfigs) {
             const matchInfo = matched.find(m => m.config.userId === vc.userId);

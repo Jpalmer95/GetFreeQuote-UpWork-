@@ -128,7 +128,7 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ id: st
         job_id: id,
         user_id: caller.id,
         action_type: 'job_update',
-        summary: `Posted a ${kind} to the job brief (${dispatched} thread(s) reached)`,
+        summary: `Posted a ${kind.replace('_', ' ')} to the brief; ${dispatched} open thread(s) notified`,
         details: { body, kind, attachments },
         automated: false,
     });

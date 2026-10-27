@@ -493,3 +493,9 @@
     .stepsSection,
     .agentSection { padding-left: 1rem; padding-right: 1rem; }
 }
+
+.liveAll {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+}
