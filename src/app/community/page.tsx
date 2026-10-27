@@ -83,7 +83,7 @@ export default function CommunityPage() {
                 </div>
             </div>
 
-            <section aria-labelledby="labs-heading" style={{ margin: '1rem 0 2.5rem' }}>
+            <section aria-labelledby="labs-heading" className={`${styles.section} ${styles.sectionCentered}`} style={{ marginBottom: '2.5rem' }}>
                 <h2 id="labs-heading" className="gfq-section-title">
                     Community labs — designed, not live yet
                 </h2>
@@ -91,7 +91,7 @@ export default function CommunityPage() {
                     Three modules are specified and mocked so you can see where this is going. Nothing on these
                     pages moves money or books work today.
                 </p>
-                <div className="gfq-grid">
+                <div className={`gfq-grid ${styles.labsGrid}`}>
                     {[
                         { href: '/pools', title: 'Neighbourhood pools', body: 'Neighbours buy the same job together and split the group price.' },
                         { href: '/group-buys', title: 'Material group buys', body: 'Pool sheet goods, lumber and fixtures into a single supplier order.' },
@@ -106,7 +106,7 @@ export default function CommunityPage() {
                 </div>
             </section>
 
-            <div className={styles.templateSection}>
+            <div className={styles.section}>
                 <h2 className={styles.templateHeading}>Start from a Template</h2>
                 <p className={styles.templateSub}>Pick a proven community project idea and customize it for your neighborhood.</p>
                 <div className={styles.templateGrid}>
