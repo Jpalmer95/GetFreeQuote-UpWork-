@@ -254,8 +254,9 @@ function PostJob() {
 
                         {isCustomIndustry ? (
                             <div className={styles.inputGroup}>
-                                <label>Custom Industry</label>
+                                <label htmlFor="job-custom-industry">Custom industry</label>
                                 <input
+                                    id="job-custom-industry"
                                     type="text"
                                     placeholder="Enter your industry..."
                                     value={formData.customIndustry}
@@ -287,8 +288,9 @@ function PostJob() {
 
                     {isCustomIndustry && (
                         <div className={styles.inputGroup}>
-                            <label>Custom Subcategory</label>
+                            <label htmlFor="job-custom-subcategory">Custom subcategory</label>
                             <input
+                                id="job-custom-subcategory"
                                 type="text"
                                 placeholder="Enter your subcategory..."
                                 value={formData.customSubcategory}
@@ -301,8 +303,9 @@ function PostJob() {
 
                     {!isCustomIndustry && isCustomSubcategory && (
                         <div className={styles.inputGroup}>
-                            <label>Custom Subcategory</label>
+                            <label htmlFor="job-custom-subcategory">Custom subcategory</label>
                             <input
+                                id="job-custom-subcategory"
                                 type="text"
                                 placeholder="Enter your subcategory..."
                                 value={formData.customSubcategory}
@@ -341,8 +344,9 @@ function PostJob() {
                         </div>
 
                         <div className={styles.inputGroup}>
-                            <label>Budget Range</label>
+                            <label htmlFor="job-budget">Budget range</label>
                             <input
+                                id="job-budget"
                                 type="text"
                                 placeholder="e.g. $500 - $5,000"
                                 value={formData.budget}
@@ -386,8 +390,9 @@ function PostJob() {
                     )}
 
                     <div className={styles.inputGroup}>
-                        <label>Tags (comma-separated, optional)</label>
+                        <label htmlFor="job-tags">Tags (comma-separated, optional)</label>
                         <input
+                            id="job-tags"
                             type="text"
                             placeholder="e.g. residential, eco-friendly, fast turnaround"
                             value={formData.tags}
@@ -397,8 +402,9 @@ function PostJob() {
                     </div>
 
                     <div className={styles.inputGroup}>
-                        <label>Urgency</label>
+                        <label htmlFor="job-urgency">Urgency</label>
                         <select
+                            id="job-urgency"
                             value={formData.urgency}
                             onChange={(e) => setFormData({ ...formData, urgency: e.target.value as ProjectUrgency })}
                             className="field-select"
@@ -409,8 +415,9 @@ function PostJob() {
 
                     <div className={styles.inputRow}>
                         <div className={styles.inputGroup}>
-                            <label>Target Start Date</label>
+                            <label htmlFor="job-start">Target start date</label>
                             <input
+                                id="job-start"
                                 type="date"
                                 value={formData.timelineStart}
                                 onChange={(e) => setFormData({ ...formData, timelineStart: e.target.value })}
@@ -419,8 +426,9 @@ function PostJob() {
                         </div>
 
                         <div className={styles.inputGroup}>
-                            <label>Target End Date</label>
+                            <label htmlFor="job-end">Target end date</label>
                             <input
+                                id="job-end"
                                 type="date"
                                 value={formData.timelineEnd}
                                 onChange={(e) => setFormData({ ...formData, timelineEnd: e.target.value })}
@@ -432,8 +440,9 @@ function PostJob() {
                     {showPhysicalFields && (
                         <div className={styles.inputRow}>
                             <div className={styles.inputGroup}>
-                                <label>Square Footage (optional)</label>
+                                <label htmlFor="job-sqft">Square footage (optional)</label>
                                 <input
+                                    id="job-sqft"
                                     type="text"
                                     placeholder="e.g. 1,200 sq ft"
                                     value={formData.squareFootage}
@@ -443,8 +452,9 @@ function PostJob() {
                             </div>
 
                             <div className={styles.inputGroup}>
-                                <label>Materials (optional)</label>
+                                <label htmlFor="job-materials">Materials (optional)</label>
                                 <input
+                                    id="job-materials"
                                     type="text"
                                     placeholder="e.g. Hardwood, copper piping"
                                     value={formData.materials}
